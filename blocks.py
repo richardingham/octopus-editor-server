@@ -3,13 +3,16 @@ class Workspace (object):
 	def __init__ (self):
 		self.allBlocks = {}
 		self.topBlocks = {}
+		self.variables = {}
 
 	def addBlock (self, id, **args):
-		block = Block(id, args["type"])
+		block = Block(self, id, args["type"])
 		block.position = [args["x"], args["y"]]
 
 		for field, value in args["fields"].itervalues():
 			block.fields[field] = value
+
+		block.created()
 
 		self.allBlocks[block.id] = block
 		self.topBlocks[block.id] = block
@@ -23,6 +26,14 @@ class Workspace (object):
 
 	def removeBlock (self, id):
 		block = self.getBlock(id)
+
+		# Cancel parent block if waiting for data
+		try:
+			if block._complete.called is False:
+				block._complete.errback(Disconnected())
+				block._complete = None
+		except AttributeError:
+			pass
 
 		# Disconnect prevBlock connection
 		prev = block.prevBlock
@@ -59,6 +70,8 @@ class Workspace (object):
 		except KeyError:
 			pass
 
+		block.disposed()
+
 	def connectBlock (self, id, **args):
 		childBlock = self.getBlock(id)
 		parentBlock = self.getBlock(args["parent"])
@@ -84,6 +97,14 @@ class Workspace (object):
 		childBlock = self.getBlock(id)
 		parentBlock = self.getBlock(args["parent"])
 
+		# Cancel parent block if waiting for data
+		try:
+			if block._complete.called is False:
+				block._complete.errback(Disconnected())
+				block._complete = None
+		except AttributeError:
+			pass
+
 		connection = args["connection"]
 
 		self.topBlocks[id] = block
@@ -107,7 +128,7 @@ class Workspace (object):
 			block.position = [args["x"], args["y"]]
 		elif change == "field-value":
 			fieldName = args["field"]
-			block.fields[fieldName] = args["value"]
+			block.setField(fieldName, args["value"])
 		elif change == "disabled":
 			block.disabled = args["value"]
 		elif change == "inputs-inline":
@@ -117,17 +138,25 @@ class Workspace (object):
 
 
 class Block (object):
-	def __init__ (self, id, type):
+	def __init__ (self, workspace, id, type):
+		self.workspace = workspace
 		self.id = id
 		self.type = type
 		self.nextBlock = None
 		self.prevBlock = None
 		self.outputBlock = None
+		self._complete = None
 		self.fields = {}
 		self.inputs = {}
 		self.disabled = False
 		self.position = [0, 0]
 		self.inputsInline = False
+
+	def created (self):
+		pass
+
+	def disposed (self):
+		pass
 
 	def getSurroundParent (self):
 		block = self
@@ -149,8 +178,73 @@ class Block (object):
 	def getChildren (self):
 		children = []
 
-		for block in this.inputs.itervalues():
+		for block in self.inputs.itervalues():
 			children.append(block)
+
+		if self.nextBlock is not None:
+			children.append(self.nextBlock)
 
 		return children
 
+	def setField (self, fieldName, value):
+		self.fields[fieldName] = value
+
+	def getFieldValue (self, fieldName):
+		return self.fields[fieldName]
+
+	def getInput (self, fieldName):
+		return self.inputs[fieldName]
+
+	def getInputValue (self, fieldName):
+		input = self.inputs[fieldName]
+
+		def error (failure):
+			failure.trap(Disconnected)
+			return False
+
+		return input.eval().addErrback(error)
+
+	def getVariables (self):
+		variables = []
+
+		for block in self.getChildren():
+			variables.extend(block.getVariables())
+
+		return variables
+
+	def _runNext (self, complete):
+		""" Run the next block, chaining the callbacks """
+		if self.nextBlock is not None:
+			return self.nextBlock.run().addCallbacks(complete.callback, complete.errback)
+		else:
+			return complete.callback(None)
+
+	def run (self):
+		return defer.succeed(None)
+
+	def eval (self):
+		return defer.succeed(None)
+
+	def pause (self):
+		for block in self.getChildren():
+			block.pause()
+
+	def resume (self):
+		for block in self.getChildren():
+			block.resume()
+
+	def cancel (self):
+		for block in self.getChildren():
+			block.cancel()
+
+	def abort (self):
+		for block in self.getChildren():
+			block.abort()
+
+	def reset (self):
+		for block in self.getChildren():
+			block.reset()
+
+
+class Disconnected (Exception):
+	pass
