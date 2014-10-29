@@ -1,3 +1,4 @@
+from util import EventEmitter
 
 class Workspace (object):
 	def __init__ (self):
@@ -82,16 +83,11 @@ class Workspace (object):
 			del self.topBlocks[id]
 
 		if connection == "input-value":
-			input = args["input"]
-			parentBlock.inputs[input] = childBlock
-			childBlock.outputBlock = parentBlock
+			parentBlock.connectInput(args["input"], childBlock, "value")
 		elif connection == "input-statement":
-			input = args["input"]
-			parentBlock.inputs[input] = childBlock
-			childBlock.prevBlock = parentBlock
+			parentBlock.connectInput(args["input"], childBlock, "statement")
 		elif connection == "previous":
-			parentBlock.nextBlock = childBlock
-			childBlock.prevBlock = parentBlock
+			parentBlock.connectNextBlock(childBlock)
 
 	def disconnectBlock (self, id, **args):
 		childBlock = self.getBlock(id)
@@ -110,16 +106,11 @@ class Workspace (object):
 		self.topBlocks[id] = block
 
 		if connection == "input-value":
-			input = args["input"]
-			parentBlock.inputs[input] = None
-			childBlock.outputBlock = None
+			parentBlock.disconnectInput(args["input"], childBlock, "value")
 		elif connection == "input-statement":
-			input = args["input"]
-			parentBlock.inputs[input] = None
-			childBlock.prevBlock = None
+			parentBlock.disconnectInput(args["input"], childBlock, "statement")
 		elif connection == "previous":
-			parentBlock.nextBlock = None
-			childBlock.prevBlock = None
+			parentBlock.disconnectNextBlock(childBlock)
 
 	def changeBlock (self, id, change, **args):
 		block = self.getBlock(id)
@@ -128,16 +119,16 @@ class Workspace (object):
 			block.position = [args["x"], args["y"]]
 		elif change == "field-value":
 			fieldName = args["field"]
-			block.setField(fieldName, args["value"])
+			block.setFieldValue(fieldName, args["value"])
 		elif change == "disabled":
 			block.disabled = args["value"]
 		elif change == "inputs-inline":
 			block.inputsInline = args["value"]
 		elif change == "remove-input":
-			del block.inputs[args["name"]]
+			block.removeInput(args["name"])
 
 
-class Block (object):
+class Block (EventEmitter):
 	def __init__ (self, workspace, id, type):
 		self.workspace = workspace
 		self.id = id
@@ -157,6 +148,40 @@ class Block (object):
 
 	def disposed (self):
 		pass
+
+	def connectNextBlock (self, childBlock):
+		if self.nextBlock is not None:
+			raise Exception("Block.connectNextBlock: parent already has a next Block")
+		if childBlock.prevBlock is not None:
+			raise Exception("Block.connectNextBlock: child already has a previous Block")
+
+		self.nextBlock = childBlock
+		childBlock.prevBlock = self
+
+		@childBlock.on('connectivity-changed')
+		def onConnChange (data):
+			self.emit('connectivity-changed')
+
+		@childBlock.on('value-changed')
+		def onValueChange (data):
+			self.emit('value-changed')
+
+		@self.on('disconnected'):
+		def onDisconnect (data):
+			if "next" in data and data.next == True:
+				childBlock.off('connectivity-changed', onConnChange)
+				childBlock.off('value-changed', onValueChange)
+				self.off(onDisconnect)
+
+	def disconnectNextBlock (self, childBlock):
+		if self.nextBlock != childBlock:
+			raise Exception("Block.disconnectNextBlock: must pass the correct child block")
+
+		self.nextBlock = None
+		childBlock.prevBlock = None
+
+		self.emit('disconnected', next = True)
+		self.emit('connectivity-changed')
 
 	def getSurroundParent (self):
 		block = self
@@ -186,23 +211,73 @@ class Block (object):
 
 		return children
 
-	def setField (self, fieldName, value):
+	def setFieldValue (self, fieldName, value):
 		self.fields[fieldName] = value
+		self.emit('value-changed')
 
 	def getFieldValue (self, fieldName):
 		return self.fields[fieldName]
 
-	def getInput (self, fieldName):
-		return self.inputs[fieldName]
+	def getInput (self, inputName):
+		return self.inputs[inputName]
 
-	def getInputValue (self, fieldName):
-		input = self.inputs[fieldName]
+	def getInputValue (self, inputName):
+		input = self.inputs[inputName]
 
 		def error (failure):
 			failure.trap(Disconnected)
 			return False
 
 		return input.eval().addErrback(error)
+
+	def connectInput (self, inputName, childBlock, type):
+		if type == "value":
+			childBlock.outputBlock = self
+		elif type == "statement":
+			childBlock.prevBlock = self
+		else:
+			raise Exception("Block.connectInput: invalid type %s" % type)
+
+		self.inputs[inputName] = childBlock
+
+		@childBlock.on('connectivity-changed')
+		def onConnChange (data):
+			self.emit('connectivity-changed')
+
+		@childBlock.on('value-changed')
+		def onValueChange (data):
+			self.emit('value-changed')
+
+		@self.on('disconnected'):
+		def onDisconnect (data):
+			if "input" in data and data.input == inputName:
+				childBlock.off('connectivity-changed', onConnChange)
+				childBlock.off('value-changed', onValueChange)
+				self.off(onDisconnect)
+
+	def disconnectInput (self, inputName, type):
+		try:
+			childBlock = self.inputs[inputName]
+		except KeyError:
+			return
+
+		if type == "value":
+			childBlock.outputBlock = None
+		elif type == "statement":
+			childBlock.prevBlock = None
+		else:
+			raise Exception("Block.disconnectInput: invalid type %s" % type)
+
+		self.inputs[inputName] = None
+
+		self.emit('disconnected', input = inputName)
+		self.emit('connectivity-changed')
+
+	def removeInput (self, inputName):
+		if self.inputs[inputName] is not None:
+			self.disconnectInput(inputName):
+
+		del self.inputs[inputName]
 
 	def getVariables (self):
 		variables = []
@@ -214,6 +289,8 @@ class Block (object):
 
 	def _runNext (self, complete):
 		""" Run the next block, chaining the callbacks """
+		self.emit('completed')
+
 		if self.nextBlock is not None:
 			return self.nextBlock.run().addCallbacks(complete.callback, complete.errback)
 		else:
@@ -226,22 +303,27 @@ class Block (object):
 		return defer.succeed(None)
 
 	def pause (self):
+		self.emit("paused")
 		for block in self.getChildren():
 			block.pause()
 
 	def resume (self):
+		self.emit("resumed")
 		for block in self.getChildren():
 			block.resume()
 
 	def cancel (self):
+		self.emit("cancelled")
 		for block in self.getChildren():
 			block.cancel()
 
 	def abort (self):
+		self.emit("aborted")
 		for block in self.getChildren():
 			block.abort()
 
 	def reset (self):
+		self.emit("reset")
 		for block in self.getChildren():
 			block.reset()
 

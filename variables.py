@@ -4,6 +4,8 @@ class global_declaration (Block):
 		self.workspace.variables[self.fields['NAME']] = Variable()
 
 	def run (self):
+		self.emit("started")
+
 		@defer.inlineCallbacks
 		def _run ():
 			try:
@@ -12,6 +14,8 @@ class global_declaration (Block):
 				result = False
 
 			self.workspace.variables[self.fields['NAME']].set(result)
+
+			self.emit('completed')
 
 		# There will be no next block.
 		self._complete = _run()
@@ -23,10 +27,12 @@ class global_declaration (Block):
 
 class variables_set (Block):
 	def run (self):
+		self.emit("started")
+
 		@defer.inlineCallbacks
 		def _run ():
 			result = yield self.getInputValue("VALUE")
-			self.workspace.variables[self.fields['NAME']].set(result)
+			self.workspace.variables[self.fields['VAR']].set(result)
 
 		def done ():
 			return self._runNext(self._complete)
@@ -38,8 +44,8 @@ class variables_set (Block):
 class variables_get (Block):
 	def eval (self):
 		# TODO: won't work with attributes
-		return defer.succeed(self.workspace.variables[self.fields['NAME']]).value
+		return defer.succeed(self.workspace.variables[self.fields['VAR']]).value
 
 	def getVariables (self):
-		return [ self.workspace.variables[self.fields['NAME']] ]
+		return [ self.workspace.variables[self.fields['VAR']] ]
 
