@@ -1,3 +1,5 @@
+from ..workspace import Block 
+
 
 class text (Block):
 	def eval (self):

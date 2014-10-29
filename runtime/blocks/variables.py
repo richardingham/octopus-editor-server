@@ -1,3 +1,5 @@
+from ..workspace import Block 
+
 
 class global_declaration (Block):
 	def created (self):

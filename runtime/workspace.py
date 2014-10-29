@@ -1,4 +1,18 @@
+from twisted.internet import defer
 from util import EventEmitter
+
+blocks = {}
+def populate_blocks ():
+	global blocks
+	blocks = {}
+
+	from .blocks import mathematics, text, logic, controls, variables
+
+	for mod in (mathematics, text, logic, controls, variables):
+		blocks.update(dict([(name, cls) for name, cls in mod.__dict__.items() if isinstance(cls, type)]))
+
+	del blocks['Block']
+	
 
 class Workspace (object):
 	def __init__ (self):
@@ -7,11 +21,24 @@ class Workspace (object):
 		self.variables = {}
 
 	def addBlock (self, id, **args):
-		block = Block(self, id, args["type"])
-		block.position = [args["x"], args["y"]]
+		try:
+			blockType = args["type"]
+			blockClass = blocks[blockType]
+		except KeyError:
+			raise Exception("Unknown Block: %s" %  blockType)
 
-		for field, value in args["fields"].itervalues():
-			block.fields[field] = value
+		block = blockClass(self, id)
+
+		try:
+			block.position = [args["x"], args["y"]]
+		except KeyError:
+			block.position = [0, 0]
+
+		try:
+			for field, value in args["fields"].itervalues():
+				block.fields[field] = value
+		except KeyError:
+			pass
 
 		block.created()
 
@@ -20,7 +47,7 @@ class Workspace (object):
 
 	def getBlock (self, id):
 		try:
-			block = self.allBlocks[id]
+			return self.allBlocks[id]
 		except KeyError:
 			print "Attempted to access unconnected block %s" % id
 			raise
@@ -129,10 +156,10 @@ class Workspace (object):
 
 
 class Block (EventEmitter):
-	def __init__ (self, workspace, id, type):
+	def __init__ (self, workspace, id):
 		self.workspace = workspace
 		self.id = id
-		self.type = type
+		self.type = self.__class__.__name__
 		self.nextBlock = None
 		self.prevBlock = None
 		self.outputBlock = None
@@ -166,7 +193,7 @@ class Block (EventEmitter):
 		def onValueChange (data):
 			self.emit('value-changed')
 
-		@self.on('disconnected'):
+		@self.on('disconnected')
 		def onDisconnect (data):
 			if "next" in data and data.next == True:
 				childBlock.off('connectivity-changed', onConnChange)
@@ -191,7 +218,7 @@ class Block (EventEmitter):
 				block = block.outputBlock
 				continue
 
-			prev = block.prevBlock:
+			prev = block.prevBlock
 
 			if prev.nextBlock is block:
 				block = prev
@@ -248,7 +275,7 @@ class Block (EventEmitter):
 		def onValueChange (data):
 			self.emit('value-changed')
 
-		@self.on('disconnected'):
+		@self.on('disconnected')
 		def onDisconnect (data):
 			if "input" in data and data.input == inputName:
 				childBlock.off('connectivity-changed', onConnChange)
@@ -275,7 +302,7 @@ class Block (EventEmitter):
 
 	def removeInput (self, inputName):
 		if self.inputs[inputName] is not None:
-			self.disconnectInput(inputName):
+			self.disconnectInput(inputName)
 
 		del self.inputs[inputName]
 
@@ -330,3 +357,6 @@ class Block (EventEmitter):
 
 class Disconnected (Exception):
 	pass
+
+
+populate_blocks()

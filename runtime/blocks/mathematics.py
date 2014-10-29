@@ -1,7 +1,6 @@
-import operator
-import math
-import random
+from ..workspace import Block 
 
+import math, operator, random
 
 class math_number (Block):
 	def eval (self):

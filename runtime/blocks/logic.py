@@ -1,4 +1,7 @@
+from ..workspace import Block 
+
 import operator
+
 
 class logic_null (Block):
 	def eval (self):

@@ -1,6 +1,9 @@
+from ..workspace import Block 
+
 
 class controls_run (Block):
 	pass
+
 
 class controls_if (Block):
 	def _getInput (self, type, i = ""):
@@ -117,7 +120,7 @@ class controls_wait_until (Block):
 
 		self.on("connectivity-changed", onConnectivityChange)
 		self.on("value-changed", runTest)
-		onConnectivityChange(None):
+		onConnectivityChange(None)
 		runTest(None)
 
 		return self._complete
@@ -131,7 +134,7 @@ class controls_whileUntil (Block):
 		def _iter ():
 			while True:
 				try:
-					condition = bool(yield self.getInput.eval())
+					condition = yield self.getInput.eval()
 					if self.fields['MODE'] == "UNTIL":
 						condition = (condition == False)
 				except Disconnected:
@@ -175,7 +178,7 @@ class controls_repeat_ext (Block):
 				except Disconnected:
 					pass
 
-				index++
+				index += 1
 
 		def done ():
 			return self._runNext(self._complete)
