@@ -1,3 +1,10 @@
+# Dependencies
+node_modules/*
+bower_components/*
+
+# Build
+components/octopus-editor/dist/*
+
 # Stored data
 data/*
 
@@ -7,22 +14,6 @@ __pycache__/
 
 # C extensions
 *.so
-
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
 
 # PyInstaller
 #  Usually these files are written by a python script from a template 

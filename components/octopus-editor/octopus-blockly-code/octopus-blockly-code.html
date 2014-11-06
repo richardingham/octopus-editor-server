@@ -1,0 +1,21 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<script type="text/javascript" src="prettify.js"></script>
+  
+<polymer-element name="octopus-blockly-code" attributes="code">
+<template>
+
+<link rel="stylesheet" href="prettify.css">
+<pre id="blocklyCode"></pre>
+
+</template>
+<script> 
+  
+Polymer('octopus-blockly-code', {
+	codeChanged: function () {
+		this.$.blocklyCode.innerHTML = prettyPrintOne(this.code, 'python');
+	}
+});
+
+</script>
+</polymer-element>

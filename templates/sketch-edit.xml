@@ -1,0 +1,82 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+	<script src="/bower_components/platform/platform.js"></script>
+	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
+
+	<link rel="import" href="/components/octopus-editor/octopus-editor.html" />
+	<link rel="import" href="/components/octopus-runtime/octopus-runtime.html" />
+	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
+	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
+	<link rel="import" href="/bower_components/core-icons/av-icons.html" />
+
+	<link rel="stylesheet" href="/components/octopus-editor/global.css" />
+	<link rel="stylesheet" href="/resources/dropdown.css" />
+
+	<style>
+
+	html, body {
+		margin: 0;
+		padding: 0;
+		display: flex;
+		height: 100vh;
+		flex-direction: column;
+	}
+
+	body {
+		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		color: #333;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+	}
+	
+	#editor-container {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+	}
+
+	#editor-container core-toolbar {
+		background-color: #526E9C; 
+		color: #FFF;
+	}
+
+	</style>
+	
+<script>
+
+window.addEventListener('polymer-ready', function () {
+	var editor = document.getElementById("editor");
+	var runtime = document.getElementById("runtime");
+	console.log("Polymer ready");
+
+	editor.addEventListener("block-event", function (e) {
+		runtime.blockEvent.call(runtime, e.detail);
+	});
+
+	runtime.addEventListener("sketch-loaded", function (e) {
+		editor.loadSketch.call(editor, e.detail);
+	});
+});
+
+</script>
+  
+</head>
+<body unresolved="" t:render="editor_body">
+	<div id="editor-container">
+		<core-toolbar>
+			<core-icon-button icon="av:play-circle-fill" on-tap="{{runAction}}">Run</core-icon-button>
+			<!--core-icon-button icon="pause-circle-fill" on-tap="{{runAction}}">Pause</core-icon-button-->
+			<core-icon-button icon="cancel" on-tap="{{runAction}}">Stop</core-icon-button>
+		</core-toolbar>
+		<octopus-editor id="editor"></octopus-editor>
+	</div>
+	<div id="menu-container"></div>
+	<octopus-runtime id="runtime" url="ws://127.0.0.1:9000"><t:attr name="sketch"><t:slot name="sketch_id" /></t:attr></octopus-runtime>
+</body>
+</html>

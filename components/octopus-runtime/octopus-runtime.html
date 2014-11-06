@@ -1,0 +1,76 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<polymer-element name="octopus-runtime" attributes="url sketch">
+<script>
+
+Polymer('octopus-runtime', {
+    /**
+     * Fired when a block event is received.
+     *
+     * @event block-event
+     */
+
+	ready: function () {
+		var self = this;
+		var socket = new WebSocket(this.url, "octopus");
+
+		socket.onopen = function () {
+			console.log("Socket open");
+			self.open = true;
+			self.load(self.sketch)
+		};
+
+		socket.onmessage = function (e) {
+			var data = JSON.parse(e.data);
+			console.log("socket message", data);
+
+			var protocol = data.protocol;
+			var command = data.command;
+			var payload = data.payload;
+
+			if (protocol === "sketch" && command === "sketch-load") {
+				self.fire("sketch-loaded", payload);
+			}
+		};
+
+		socket.onclose = function (reason) {
+			console.log("Connection Closed: ", reason);
+			self.open = false;
+		};
+
+		this.socket = socket;
+	},
+
+	blockEvent: function (event) {
+		if (!this.open) {
+			return;
+		}
+
+		event.data.sketch = this.sketch;
+
+		var data = {
+			protocol: "sketch",
+			command: "block-" + event.eventType,
+			payload: event.data
+		};
+
+		console.log("Socket send", data);
+		this.socket.send(JSON.stringify(data));
+	},
+	
+	load: function (id) {
+		var data = {
+			protocol: "sketch",
+			command: "sketch-load",
+			payload: {
+				sketch: id
+			}
+		};
+
+		console.log("Socket send", data);
+		this.socket.send(JSON.stringify(data));
+	}
+});
+
+</script>
+</polymer-element>

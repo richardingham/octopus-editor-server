@@ -5,8 +5,9 @@ from twisted.application import internet, service
 from twisted.enterprise import adbapi
 from twisted.internet import reactor, defer, utils
 from twisted.spread import pb
-from twisted.python import log
+from twisted.python import log, filepath
 from twisted.web import server, static, resource, guard
+from twisted.web.template import flatten
 from twisted.cred.portal import IRealm, Portal
 
 # Zope Imports
@@ -20,6 +21,7 @@ from autobahn.websocket.compress import PerMessageDeflateOffer, PerMessageDeflat
 # import template
 import sketch
 import websocket
+import template
 
 # System Imports
 import os
@@ -46,32 +48,19 @@ sketch.Sketch.dataDir = os.path.join(data_path, "sketches")
 
 class Root (resource.Resource):
 	def render_GET (self, request):
-		def _done (result):
-			sketches = ["<li>%s : %s</li>" % (item["guid"], item["title"]) for item in result]
-			sketches_html = "<ul>" + "\n".join(sketches) + "</ul>"
-				
-			request.write("""
-				<!DOCTYPE html>
-				<html>
-				<head>
-					<title>Octopus</title>
-				</head>
-				<body>
-					<form action=\"/sketch/create\" method=\"post\">
-					<button type=\"submit\">New Sketch</button>
-					</form>
-					""" + sketches_html + """
-				</body>
-				</html>
-			""")
-
-			request.finish()
-
 		def _error (failure):
 			request.write("There was an error: " + str(failure))
 			request.finish()
 
-		sketch.Sketch.list().addCallback(_done).addErrback(_error)
+		saved_sketches = sketch.Sketch.list()
+		past_experiments = []
+		running_experiments = []
+		
+		tpl = template.Root(running_experiments, past_experiments, saved_sketches)
+		request.write("<!DOCTYPE html>\n")
+		d = flatten(request, tpl, request.write)
+		d.addCallbacks(lambda _: request.finish())
+		d.addErrback(_error)
 
 		return server.NOT_DONE_YET
 
@@ -113,12 +102,14 @@ class EditSketch (resource.Resource):
 	def render_GET (self, request):
 		def _done (exists):
 			if not exists:
-				request.write("Sketch %s not found." % id)
+				request.write("Sketch %s not found." % self._id)
 				request.finish()
 				return
 
-			request.write("Sketch" + str(sketch))
-			request.finish()
+			tpl = template.SketchEdit(self._id)
+			request.write("<!DOCTYPE html>\n")
+			d = flatten(request, tpl, request.write)
+			d.addCallbacks(lambda _: request.finish())
 
 		def _error (failure):
 			request.write("There was an error: " + str(failure))
@@ -155,7 +146,12 @@ def run_server ():
 	root = resource.Resource()
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
-	#root.putChild("resources", static.File("resources"))
+	
+	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
+	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
+	root.putChild("components", static.File(rootDir.child("components").path))
+	root.putChild("resources", static.File(rootDir.child("resources").path))
+
 	site = server.Site(root)
 	reactor.listenTCP(8001, site)
 	log.msg("HTTP listening on port 8001")

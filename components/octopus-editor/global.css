@@ -1,0 +1,21 @@
+.blocklyWidgetDiv {
+  position: absolute;
+  display: none;
+  z-index: 999;
+}
+
+.blocklyHtmlInput {
+  font-family: sans-serif;
+  font-size: 11pt;
+  border: none;
+  outline: none;
+  width: 100%
+}
+
+.blocklyContextMenu {
+  border-radius: 4px;
+}
+
+.blocklyDropdownMenu {
+  padding: 0 !important;
+}
