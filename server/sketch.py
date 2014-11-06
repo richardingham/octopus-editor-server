@@ -68,6 +68,7 @@ class Sketch (EventEmitter):
 		self.title = ""
 		self.loaded = False
 		self.workspace = Workspace()
+		self.subscribers = {}
 		self._eventIndex = 0
 
 		self._sketchDir = FilePath(self.dataDir).child(id)
@@ -127,47 +128,62 @@ class Sketch (EventEmitter):
 		# Close the events log
 		self._eventsLog.close()
 
+	def subscribe (self, subscriber, notifyFn):
+		self.subscribers[subscriber] = notifyFn
+
+	def unsubscribe (self, subscriber):
+		if subscriber in self.subscribers:
+			del self.subscribers[subscriber]
+
+		return len(self.subscribers)
+
+	def notifySubscribers (self, event, payload):
+		for notifyFn in self.subscribers.itervalues():
+			notifyFn(event, payload)
+
+		self.emit(event, **payload)
+
 	def renameSketch (self, newName):
 		self._writeEvent("RenameSketch", { "from": self.title, "to": newName })
 		self.db.runOperation("UPDATE sketches SET title = ? WHERE guid = ?", (newName, self.id))
 		self.title = newName
 
-		self.emit("sketch-renamed", title = newName)
+		self.notifySubscribers("sketch-renamed", { "title": newName })
 
 	def addBlock (self, payload):
 		eid = self._writeEvent("AddBlock", payload)
 		self.workspace.addBlock(payload["block"], payload)
 
 		payload['event'] = eid
-		self.emit("block-added", **payload)
+		self.notifySubscribers("block-added", payload)
 
 	def removeBlock (self, payload):
 		eid = self._writeEvent("RemoveBlock", payload)
 		self.workspace.removeBlock(payload["block"])
 
 		payload['event'] = eid
-		self.emit("block-removed", **payload)
+		self.notifySubscribers("block-removed", payload)
 
 	def changeBlock (self, payload):
 		eid = self._writeEvent("ChangeBlock", payload)
 		self.workspace.changeBlock(payload['block'], payload['change'], payload)
 
 		payload['event'] = eid
-		self.emit("block-changed", **payload)
+		self.notifySubscribers("block-changed", payload)
 
 	def connectBlock (self, payload):
 		eid = self._writeEvent("ConnectBlock", payload)
 		self.workspace.connectBlock(payload["block"], payload)
 
 		payload['event'] = eid
-		self.emit("block-connected", **payload)
+		self.notifySubscribers("block-connected", payload)
 
 	def disconnectBlock (self, payload):
 		eid = self._writeEvent("DisconnectBlock", payload)
 		self.workspace.disconnectBlock(payload["block"], payload)
 
 		payload['event'] = eid
-		self.emit("block-disconnected", **payload)
+		self.notifySubscribers("block-disconnected", payload)
 
 	def _writeEvent (self, eventType, data):
 		if not self.loaded:
