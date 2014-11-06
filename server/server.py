@@ -20,6 +20,7 @@ from autobahn.websocket.compress import PerMessageDeflateOffer, PerMessageDeflat
 # Sibling Imports
 # import template
 import sketch
+import experiment
 import websocket
 import template
 
@@ -38,6 +39,9 @@ data_path = os.path.abspath(os.path.join(os.path.basename(__file__), "..", "data
 dbfilename = os.path.join(data_path, "octopus.db")
 dbpool = adbapi.ConnectionPool("sqlite3", dbfilename, check_same_thread = False)
 print "Using database: " + dbfilename
+
+experiment.Experiment.db = dbpool
+experiment.Experiment.dataDir = os.path.join(data_path, "experiments")
 
 sketch.Sketch.db = dbpool
 sketch.Sketch.dataDir = os.path.join(data_path, "sketches")

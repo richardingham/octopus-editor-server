@@ -96,19 +96,19 @@ class SketchProtocol (object):
 			del self.sketches[id]
 
 	def addBlock (self, sketch, payload, context):
-		sketch.addBlock(args(payload, ["block", "fields", "type", "x", "y"], True))
+		sketch.addBlock(args(payload, ["block", "fields", "type", "x", "y"], True), context)
 
 	def removeBlock (self, sketch, payload, context):
-		sketch.removeBlock(args(payload, ["block"], True))
+		sketch.removeBlock(args(payload, ["block"], True), context)
 
 	def changeBlock (self, sketch, payload, context):
-		sketch.changeBlock(args(payload, ["block", "change", "x", "y", "field", "value", "name"], 2))
+		sketch.changeBlock(args(payload, ["block", "change", "x", "y", "field", "value", "name"], 2), context)
 
 	def connectBlock (self, sketch, payload, context):
-		sketch.connectBlock(args(payload, ["block", "parent", "connection", "input"], 3))
+		sketch.connectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
 
 	def disconnectBlock (self, sketch, payload, context):
-		sketch.disconnectBlock(args(payload, ["block", "parent", "connection", "input"], 3))
+		sketch.disconnectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
 
 
 def args (payload, keys, required = None, errorMsg = None, asList = False):

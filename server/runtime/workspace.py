@@ -1,4 +1,8 @@
 from twisted.internet import defer
+
+from octopus.sequence.util import Runnable, Pausable, Cancellable
+from octopus.constants import State
+
 from ..util import EventEmitter
 
 blocks = {}
@@ -14,8 +18,10 @@ def populate_blocks ():
 	del blocks['Block']
 
 
-class Workspace (object):
+class Workspace (Runnable, Pausable, Cancellable):
 	def __init__ (self):
+		self.state = State.READY
+
 		self.allBlocks = {}
 		self.topBlocks = {}
 		self.variables = {}
@@ -153,6 +159,33 @@ class Workspace (object):
 			block.inputsInline = args["value"]
 		elif change == "remove-input":
 			block.removeInput(args["name"])
+
+	def _run (self):
+		self._complete = defer.Deferred()
+
+		results = []
+		for block in self.topBlocks:
+			results.append(block.run())
+
+		defer.gatherResults(results).addCallbacks(
+			self._complete.callback,
+			self._complete.errback
+		)
+
+		return self._complete
+
+	def _pause (self):
+		for block in self.topBlocks:
+			block.pause()
+
+	def _resume (self):
+		for block in self.topBlocks:
+			block.resume()
+
+	def _cancel (self, abort = False):
+		for block in self.topBlocks:
+			block.cancel(abort)
+		
 
 	def toEvents (self):
 		events = []
