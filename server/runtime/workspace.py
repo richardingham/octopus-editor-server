@@ -1,5 +1,5 @@
 from twisted.internet import defer
-from util import EventEmitter
+from ..util import EventEmitter
 
 blocks = {}
 def populate_blocks ():
@@ -12,7 +12,7 @@ def populate_blocks ():
 		blocks.update(dict([(name, cls) for name, cls in mod.__dict__.items() if isinstance(cls, type)]))
 
 	del blocks['Block']
-	
+
 
 class Workspace (object):
 	def __init__ (self):
@@ -20,7 +20,7 @@ class Workspace (object):
 		self.topBlocks = {}
 		self.variables = {}
 
-	def addBlock (self, id, **args):
+	def addBlock (self, id, args):
 		try:
 			blockType = args["type"]
 			blockClass = blocks[blockType]
@@ -35,7 +35,7 @@ class Workspace (object):
 			block.position = [0, 0]
 
 		try:
-			for field, value in args["fields"].itervalues():
+			for field, value in args["fields"].iteritems():
 				block.fields[field] = value
 		except KeyError:
 			pass
@@ -100,7 +100,7 @@ class Workspace (object):
 
 		block.disposed()
 
-	def connectBlock (self, id, **args):
+	def connectBlock (self, id, args):
 		childBlock = self.getBlock(id)
 		parentBlock = self.getBlock(args["parent"])
 
@@ -116,7 +116,7 @@ class Workspace (object):
 		elif connection == "previous":
 			parentBlock.connectNextBlock(childBlock)
 
-	def disconnectBlock (self, id, **args):
+	def disconnectBlock (self, id, args):
 		childBlock = self.getBlock(id)
 		parentBlock = self.getBlock(args["parent"])
 
@@ -139,7 +139,7 @@ class Workspace (object):
 		elif connection == "previous":
 			parentBlock.disconnectNextBlock(childBlock)
 
-	def changeBlock (self, id, change, **args):
+	def changeBlock (self, id, change, args):
 		block = self.getBlock(id)
 
 		if change == "position":
@@ -154,6 +154,22 @@ class Workspace (object):
 		elif change == "remove-input":
 			block.removeInput(args["name"])
 
+	def toEvents (self):
+		events = []
+		for block in self.topBlocks.itervalues():
+			events.extend(block.toEvents())
+
+		return events
+
+	def fromEvents (self, events):
+		for event in events:
+			data = event['data']
+			if event['type'] == "AddBlock":
+				self.addBlock(data['block'], data)
+			elif event['type'] == "ChangeBlock":
+				self.changeBlock(data['block'], data['change'], data)
+			elif event['type'] == "ConnectBlock":
+				self.connectBlock(data['block'], data)
 
 class Block (EventEmitter):
 	def __init__ (self, workspace, id):
@@ -163,6 +179,7 @@ class Block (EventEmitter):
 		self.nextBlock = None
 		self.prevBlock = None
 		self.outputBlock = None
+		self.parentInput = None
 		self._complete = None
 		self.fields = {}
 		self.inputs = {}
@@ -184,6 +201,7 @@ class Block (EventEmitter):
 
 		self.nextBlock = childBlock
 		childBlock.prevBlock = self
+		childBlock.parentInput = None
 
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
@@ -206,6 +224,7 @@ class Block (EventEmitter):
 
 		self.nextBlock = None
 		childBlock.prevBlock = None
+		childBlock.parentInput = None
 
 		self.emit('disconnected', next = True)
 		self.emit('connectivity-changed')
@@ -266,6 +285,7 @@ class Block (EventEmitter):
 			raise Exception("Block.connectInput: invalid type %s" % type)
 
 		self.inputs[inputName] = childBlock
+		childBlock.parentInput = inputName
 
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
@@ -296,6 +316,7 @@ class Block (EventEmitter):
 			raise Exception("Block.disconnectInput: invalid type %s" % type)
 
 		self.inputs[inputName] = None
+		childBlock.parentInput = None
 
 		self.emit('disconnected', input = inputName)
 		self.emit('connectivity-changed')
@@ -354,6 +375,29 @@ class Block (EventEmitter):
 		for block in self.getChildren():
 			block.reset()
 
+	def toEvents (self):
+		events = []
+		events.append({ "type": "AddBlock", "data": { "block": self.id, "type": self.type, "fields": self.fields, "x": self.position[0], "y": self.position[1] }})
+
+		if self.disabled:
+			events.append({ "type": "ChangeBlock", "data": { "block": self.id, "change": "disabled", "value": True }})		
+
+		if self.inputsInline:
+			events.append({ "type": "ChangeBlock", "data": { "block": self.id, "change": "inputs-inline", "value": True }})		
+
+		if self.outputBlock is not None:
+			events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "input-value", "parent": self.outputBlock.id, "input": self.parentInput }})
+			
+		elif self.prevBlock is not None:
+			if self.parentInput is not None:
+				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "previous", "parent": self.prevBlock.id, "input": self.parentInput }})
+			else:
+				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "previous", "parent": self.prevBlock.id }})
+
+		for child in self.getChildren():
+			events.extend(child.toEvents())
+
+		return events
 
 class Disconnected (Exception):
 	pass
