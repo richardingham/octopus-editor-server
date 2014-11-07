@@ -6,6 +6,8 @@ from time import time as now
 from twisted.internet import defer, threads
 from twisted.python.filepath import FilePath
 
+from octopus.sequence.error import AlreadyRunning, NotRunning
+
 from util import EventEmitter
 
 
@@ -28,6 +30,12 @@ class Experiment (EventEmitter):
 		sketch = self.sketch
 		sketch_id = sketch.id
 		workspace = sketch.workspace
+
+		try:
+			yield workspace.reset()
+		except AlreadyRunning:
+			yield workspace.cancel()
+			yield workspace.reset()
 
 		self.startTime = now()
 
