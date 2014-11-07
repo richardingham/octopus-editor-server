@@ -626,6 +626,8 @@ Flyout.prototype.createBlockFunc_ = function(originBlock) {
     }
     // Start a dragging operation on the new block.
     block.onMouseDown_(e);
+    // Make sure the position is reported.
+    Blockly.Block.dragMode_ = 2;
   };
 };
 

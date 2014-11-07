@@ -22,7 +22,7 @@ class SketchProtocol (object):
 
 			# Block commands
 			if topic == 'block-created':
-				return sketch.addBlock(args(payload, ["block", "fields", "type", "x", "y"], True), context)
+				return sketch.addBlock(args(payload, ["block", "fields", "type"], True), context)
 
 			elif topic == 'block-disposed':
 				return sketch.removeBlock(args(payload, ["block"], True), context)

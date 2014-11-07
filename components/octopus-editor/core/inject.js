@@ -252,6 +252,13 @@ Blockly.createDom_ = function(container) {
   svg.appendChild(Blockly.mainWorkspace.createDom());
   Blockly.mainWorkspace.maxBlocks = Blockly.maxBlocks;
 
+  // Pass through block events
+  ["created", "disposed", "changed", "connected", "disconnected"].forEach(function (e) {
+    Blockly.mainWorkspace.on("block-" + e, function (data) {
+      Blockly.emit("block-" + e, data);
+    });
+  });
+
   if (!Blockly.readOnly) {
     Blockly.Toolbox.createDom(svg, container);
   }

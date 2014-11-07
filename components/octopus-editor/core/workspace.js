@@ -60,11 +60,6 @@ var Workspace = function(getMetrics, setMetrics) {
   Blockly.ConnectionDB.init(this);
 
   EventEmitter.call(this);
-  this.onBlockCreated_      = this.onBlockCreated_.bind(this);
-  this.onBlockDisposed_     = this.onBlockDisposed_.bind(this);
-  this.onBlockChanged_      = this.onBlockChanged_.bind(this);
-  this.onBlockConnected_    = this.onBlockConnected_.bind(this);
-  this.onBlockDisconnected_ = this.onBlockDisconnected_.bind(this);
 };
 util.inherits(Workspace, EventEmitter);
 
@@ -189,71 +184,11 @@ Workspace.prototype.getBubbleCanvas = function() {
 };
 
 /**
- * Handle block created events.
- * @param {object} data Event data.
- */
-Workspace.prototype.onBlockCreated_ = function(data) {
-  if (this === Blockly.mainWorkspace) {
-    Blockly.emit("block-created", data);
-    console.log("Block Created", data);
-  }
-};
-
-/**
- * Handle block disposed events.
- * @param {object} data Event data.
- */
-Workspace.prototype.onBlockDisposed_ = function(data) {
-  if (this === Blockly.mainWorkspace) {
-    Blockly.emit("block-disposed", data);
-    console.log("Block Disposed", data);
-  }
-};
-
-/**
- * Handle block changed events.
- * @param {object} data Event data.
- */
-Workspace.prototype.onBlockChanged_ = function(data) {
-  if (this === Blockly.mainWorkspace) {
-    Blockly.emit("block-changed", data);
-    console.log("Block Changed", data);
-  }
-};
-
-/**
- * Handle block changed events.
- * @param {object} data Event data.
- */
-Workspace.prototype.onBlockConnected_ = function(data) {
-  if (this === Blockly.mainWorkspace) {
-    Blockly.emit("block-connected", data);
-    console.log("Block Connected", data);
-  }
-};
-
-/**
- * Handle block changed events.
- * @param {object} data Event data.
- */
-Workspace.prototype.onBlockDisconnected_ = function(data) {
-  if (this === Blockly.mainWorkspace) {
-    Blockly.emit("block-disconnected", data);
-    console.log("Block Disconnected", data);
-  }
-};
-
-/**
  * Add a block to the list of blocks.
  * @param {!Blockly.Block} block Block to add.
  */
 Workspace.prototype.addBlock = function(block) {
   this.allBlocks_.push(block);
-  block.on("created", this.onBlockCreated_)
-  block.on("disposed", this.onBlockDisposed_)
-  block.on("changed", this.onBlockChanged_)
-  block.on("connected", this.onBlockConnected_)
-  block.on("disconnected", this.onBlockDisconnected_)
 };
 
 /**
@@ -264,11 +199,6 @@ Workspace.prototype.removeBlock = function(block) {
   var blocks = this.allBlocks_;
   for (var i = blocks.length - 1; i >= 0; i--) {
     if (blocks[i] === block) {
-      block.removeListener("created", this.onBlockCreated_)
-      block.removeListener("disposed", this.onBlockDisposed_)
-      block.removeListener("changed", this.onBlockChanged_)
-      block.removeListener("connected", this.onBlockConnected_)
-      block.removeListener("disconnected", this.onBlockDisconnected_)
       blocks.splice(i, 1);
       break;
     }
