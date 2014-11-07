@@ -41,9 +41,33 @@
 		height: 100vh;
 	}
 
-	#editor-container core-toolbar {
-		background-color: #526E9C; 
+	#editor-toolbar {
+		background-color: #526E9C;
 		color: #FFF;
+		transition: background-color 0.2s linear 0.5s;
+	}
+	#editor-toolbar.experiment-running {
+		background-color: #0D7C38;
+	}
+	#editor-toolbar.experiment-paused {
+		background-color: #FFC200;
+	}
+	#editor-toolbar.experiment-error {
+		background-color: #CB0909;
+	}
+
+	#editor-toolbar.experiment-running #btn-run,
+	#editor-toolbar.experiment-paused #btn-run,
+	#editor-toolbar #btn-pause,
+	#editor-toolbar #btn-resume,
+	#editor-toolbar #btn-stop {
+		display: none;
+	}
+	#editor-toolbar.experiment-running #btn-pause,
+	#editor-toolbar.experiment-paused #btn-resume,
+	#editor-toolbar.experiment-running #btn-stop,
+	#editor-toolbar.experiment-paused #btn-stop {
+		display: block;
 	}
 
 	</style>
@@ -53,9 +77,12 @@
 window.addEventListener('polymer-ready', function () {
 	var editor = document.getElementById("editor");
 	var runtime = document.getElementById("runtime");
+	var toolbar = document.getElementById("editor-toolbar");
 
 	var runButton = document.getElementById("btn-run");
 	var stopButton = document.getElementById("btn-stop");
+	var pauseButton = document.getElementById("btn-pause");
+	var resumeButton = document.getElementById("btn-resume");
 
 	editor.addEventListener("block-event", function (e) {
 		runtime.blockEvent.call(runtime, e.detail);
@@ -65,10 +92,37 @@ window.addEventListener('polymer-ready', function () {
 		editor.loadSketch.call(editor, e.detail);
 	});
 
+	//
+	// Experiment events
+	//
+	runtime.addEventListener("experiment-started", function (e) {
+		toolbar.className = "experiment-running";
+	});
+	runtime.addEventListener("experiment-paused", function (e) {
+		toolbar.className = "experiment-paused";
+	});
+	runtime.addEventListener("experiment-resumed", function (e) {
+		toolbar.className = "experiment-running";
+	});
+	runtime.addEventListener("experiment-stopped", function (e) {
+		toolbar.className = "";
+	});
+	runtime.addEventListener("experiment-error", function (e) {
+		toolbar.className = "experiment-error";
+	});
+
+	//
+	// Buttons
+	//
 	runButton.addEventListener("click", function (e) {
 		runtime.experimentAction.call(runtime, "run");
 	});
-
+	pauseButton.addEventListener("click", function (e) {
+		runtime.experimentAction.call(runtime, "pause");
+	});
+	resumeButton.addEventListener("click", function (e) {
+		runtime.experimentAction.call(runtime, "resume");
+	});
 	stopButton.addEventListener("click", function (e) {
 		runtime.experimentAction.call(runtime, "stop");
 	});
@@ -79,10 +133,10 @@ window.addEventListener('polymer-ready', function () {
 </head>
 <body unresolved="" t:render="editor_body">
 	<div id="editor-container">
-		<core-toolbar>
+		<core-toolbar id="editor-toolbar">
 			<core-icon-button icon="av:play-circle-fill" id="btn-run">Run</core-icon-button>
-			<!--core-icon-button icon="pause-circle-fill" id="btn-pause">Pause</core-icon-button-->
-			<!--core-icon-button icon="pause-circle-fill" id="btn-resume">Resume</core-icon-button-->
+			<core-icon-button icon="av:pause-circle-fill" id="btn-pause">Pause</core-icon-button>
+			<core-icon-button icon="av:play-circle-fill" id="btn-resume">Resume</core-icon-button>
 			<core-icon-button icon="cancel" id="btn-stop">Stop</core-icon-button>
 		</core-toolbar>
 		<octopus-editor id="editor"></octopus-editor>

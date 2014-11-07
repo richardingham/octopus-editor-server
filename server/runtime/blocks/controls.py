@@ -1,4 +1,4 @@
-from ..workspace import Block
+from ..workspace import Block, Disconnected, Cancelled
 
 from twisted.internet import reactor, defer
 import twisted.internet.error
@@ -29,7 +29,7 @@ class controls_if (Block):
 			while input is not None:
 				try:
 					result = yield input.eval()
-				except Disconnected:
+				except (Cancelled, Disconnected):
 					result = False
 
 				if result:
@@ -38,6 +38,8 @@ class controls_if (Block):
 						yield action.run()
 					except Disconnected:
 						yield self.cancel()
+					except Cancelled:
+						pass
 
 					defer.returnValue()
 
@@ -50,22 +52,29 @@ class controls_if (Block):
 					yield action.run()
 				except Disconnected:
 					yield self.cancel()
+				except Cancelled:
+					pass
 
 		def done (result):
 			return self._runNext(self._complete)
 
-		_run().addCallback(done)
+		_run().addCallbacks(done, self._complete.errback)
 		return self._complete
 
 
 class controls_log (Block):
 	def _run (self):
-		#self.workspace.emit("started")
 		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _run ():
-			message = yield self.getInputValue("TEXT")
+			try:
+				message = yield self.getInputValue("TEXT")
+			except Disconnected:
+				message = ""
+			except Cancelled:
+				defer.returnValue()
+
 			self.workspace.emit(
 				"log-message", 
 				level = "info", 
@@ -75,7 +84,7 @@ class controls_log (Block):
 		def done (result):
 			return self._runNext(self._complete)
 
-		_run().addCallback(done)
+		_run().addCallbacks(done, self._complete.errback)
 		return self._complete
 
 
@@ -90,12 +99,18 @@ class controls_wait (Block):
 		self._delay = 0
 
 	def _run (self):
-		#self.workspace.emit("started")
 		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _run ():
-			time = yield self.getInputValue("TIME")
+			try:
+				time = yield self.getInputValue("TIME")
+			except Disconnected:
+				time = 0
+			except Cancelled:
+				done()
+				defer.returnValue()
+
 			timeType = type(time)
 
 			if timeType in (int, float):
@@ -120,10 +135,10 @@ class controls_wait (Block):
 			self._start = now()
 			self._c = reactor.callLater(self.duration, done)
 
-		def done (result = None):
+		def done ():
 			return self._runNext(self._complete)
 
-		_run()
+		_run().addErrback(self._complete.errback)
 		return self._complete
 
 	def _pause (self):
@@ -152,7 +167,8 @@ class controls_wait (Block):
 		self._delay = 0
 
 	def _cancel (self, abort = False):
-		# Try to cancel the timer - ignore any errors.
+		# Cancel the timer, ignoring any error if the timer
+		# doesn't exist or has finished already.
 		try:
 			self._c.cancel()
 		except (
@@ -162,22 +178,24 @@ class controls_wait (Block):
 		):
 			pass
 
-		return Block._cancel(self, abort)
-
 
 class controls_wait_until (Block):
 	def _run (self):
-		#self.workspace.emit("started")
-
 		self._complete = defer.Deferred()
 		self._variables = []
 
-		def handleResult (result):
-			if result == True:
-				done()
-
+		@defer.inlineCallbacks
 		def runTest (data):
-			self.getInputValue("CONDITION").addCallback(handleResult)
+			try:
+				result = self.getInputValue("CONDITION")
+			except Disconnected:
+				# Handled by onConnectivityChange
+				pass
+			except Cancelled:
+				done() # ???
+			else:
+				if result == True:
+					done()
 
 		def onConnectivityChange (data):
 			for v in self._variables:	
@@ -191,13 +209,15 @@ class controls_wait_until (Block):
 			for v in self._variables:	
 				v.on('change', runTest)
 
-		def done (result):
+		def removeListeners (result):
 			self.off("connectivity-changed", onConnectivityChange)
 			self.off("value-changed", runTest)
 
 			for v in self._variables:	
 				v.off('change', runTest)
 
+		def done (result):
+			removeListeners()
 			return self._runNext(self._complete)
 
 		self.on("connectivity-changed", onConnectivityChange)
@@ -210,7 +230,6 @@ class controls_wait_until (Block):
 
 class controls_whileUntil (Block):
 	def _run (self):
-		#self.workspace.emit("started")
 		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
@@ -222,25 +241,28 @@ class controls_whileUntil (Block):
 						condition = (condition == False)
 				except Disconnected:
 					condition = (self.fields['MODE'] == "UNTIL")
+				except Cancelled:
+					break
 
 				if condition:
 					try:
 						yield self.getInput('DO').run()
 					except Disconnected:
 						pass
+					except Cancelled:
+						break
 				else:
 					break
 
 		def done (result):
 			return self._runNext(self._complete)
 
-		_run().addCallback(done)
+		_run().addCallbacks(done, self._complete.errback)
 		return self._complete
 
 
 class controls_repeat_ext (Block):
 	def _run (self):
-		#self.workspace.emit("started")
 		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
@@ -252,7 +274,10 @@ class controls_repeat_ext (Block):
 				# I imagine this is expected if a simple number block is used,
 				# but if variables are involved it may turn out to lead to
 				# unexpected behaviour!
-				count = yield self.getInputValue('TIMES')
+				try:
+					count = yield self.getInputValue('TIMES')
+				except (Disconnected, Cancelled):
+					break
 
 				if count is None or index >= count:
 					break
@@ -261,11 +286,13 @@ class controls_repeat_ext (Block):
 					yield self.getInput('DO').run()
 				except Disconnected:
 					pass
+				except Cancelled:
+					break
 
 				index += 1
 
 		def done (result):
 			return self._runNext(self._complete)
 
-		_run().addCallback(done)
+		_run().addCallbacks(done, self._complete.errback)
 		return self._complete

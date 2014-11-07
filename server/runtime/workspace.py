@@ -1,9 +1,13 @@
 from twisted.internet import defer
+from twisted.python import log
 
 from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
+from octopus.sequence.error import NotRunning, AlreadyRunning, NotPaused
 from octopus.constants import State
 
 from ..util import EventEmitter
+
+defer.Deferred.debug = True
 
 blocks = {}
 def populate_blocks ():
@@ -160,6 +164,10 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		elif change == "remove-input":
 			block.removeInput(args["name"])
 
+	#
+	# Controls
+	#
+
 	def _run (self):
 		self._complete = defer.Deferred()
 
@@ -167,40 +175,66 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		for block in self.topBlocks.itervalues():
 			results.append(block.run())
 
-		defer.gatherResults(results).addCallbacks(
+		def _error (failure):
+			try:
+				self._cancel(abort = True).addErrback(log.err)
+			except NotRunning:
+				pass
+
+			# Return the actual error
+			return failure.value.subFailure
+
+		# If any one step fails, cancel the rest.
+		defer.gatherResults(results, consumeErrors = True).addCallbacks(
 			self._complete.callback,
-			self._complete.errback
-		)
+			_error
+		).addErrback(self._complete.errback)
 
 		return self._complete
 
 	def _reset (self):
 		results = []
 		for block in self.topBlocks.itervalues():
-			results.append(block.reset())
+			try:
+				results.append(block.reset())
+			except AlreadyRunning:
+				pass
 
 		return defer.DeferredList(results)
 
 	def _pause (self):
 		results = []
 		for block in self.topBlocks.itervalues():
-			results.append(block.pause())
+			try:
+				results.append(block.pause())
+			except NotRunning:
+				pass
 
 		return defer.DeferredList(results)
 
 	def _resume (self):
 		results = []
 		for block in self.topBlocks.itervalues():
-			block.resume()
+			try:
+				block.resume()
+			except NotPaused:
+				pass
 
 		return defer.DeferredList(results)
 
 	def _cancel (self, abort = False):
 		results = []
 		for block in self.topBlocks.itervalues():
-			block.cancel(abort)
+			try:
+				block.cancel(abort)
+			except NotRunning:
+				pass
 
 		return defer.DeferredList(results)
+
+	#
+	# Serialisation
+	#
 
 	def toEvents (self):
 		events = []
@@ -218,6 +252,14 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				self.changeBlock(data['block'], data['change'], data)
 			elif event['type'] == "ConnectBlock":
 				self.connectBlock(data['block'], data)
+
+
+def anyOfStackIs (block, states):
+	while block:
+		if block.state in states:
+			return True
+
+		block = block.nextBlock
 
 
 class Block (BaseStep, EventEmitter):
@@ -398,36 +440,148 @@ class Block (BaseStep, EventEmitter):
 
 	def _runNext (self, complete):
 		""" Run the next block, chaining the callbacks """
-		#self.workspace.emit('completed')
-		self.state = State.COMPLETE
+
+		if self.state not in (State.CANCELLED, State.ERROR):
+			self.state = State.COMPLETE
 
 		if self.nextBlock is not None:
-			return self.nextBlock.run().addCallbacks(complete.callback, complete.errback)
+			return self.nextBlock.run().addCallbacks(
+				complete.callback, 
+				complete.errback
+			)
 		else:
 			return complete.callback(None)
+
+	#
+	# Control
+	#
+
+	def run (self, parent = None):
+		# If this is ready, then the entire stack must be ready.
+		if self.state is not State.READY:
+			raise AlreadyRunning
+
+		self.state = State.RUNNING
+		self.parent = parent
+		return defer.maybeDeferred(self._run)
 
 	def eval (self):
 		return defer.succeed(None)
 
-	def _pause (self):
-		for block in self.getChildren():
-			block.pause()
+	def pause (self):
+		if self.state is State.RUNNING:
+			self.state = State.PAUSED
 
-	def _resume (self):
-		for block in self.getChildren():
-			block.resume()
+			results = [defer.maybeDeferred(self._pause)]
+			for block in self.getChildren():
+				try:
+					results.append(block.pause())
+				except NotRunning:
+					pass
 
-	def _cancel (self):
-		for block in self.getChildren():
-			block.cancel()
+			return defer.DeferredList(results)
 
-	def _abort (self):
-		for block in self.getChildren():
-			block.abort()
+		# Pass on pause call to next block.
+		elif self.nextBlock is not None:
+			return self.nextBlock.pause()
 
-	def _reset (self):
-		for block in self.getChildren():
-			block.reset()
+		# Bottom of stack, nothing was running
+		else:
+			raise NotRunning
+
+	def resume (self):
+		if self.state is State.PAUSED:
+			self.state = State.RUNNING
+
+			results = [defer.maybeDeferred(self._resume)]
+
+			# Blocks can set a function to call when they are resumed
+			try:
+				onResume, self._onResume = self._onResume, None
+				onResume()
+			except (AttributeError, TypeError):
+				pass
+
+			# Resume all children
+			for block in self.getChildren():
+				try:
+					block.resume()
+				except NotPaused:
+					pass
+
+			return defer.DeferredList(results)
+
+		# Pass on resume call
+		elif self.nextBlock is not None:
+			return self.nextBlock.resume()
+
+		# Bottom of stack, nothing needed resuming
+		else:
+			raise NotPaused
+
+	def cancel (self, abort = False):
+		if self.state in (State.RUNNING, State.PAUSED):
+			self.state = State.CANCELLED
+
+			self._onResume = None
+
+			results = [defer.maybeDeferred(self._cancel, abort)]
+			for block in self.getChildren():
+				# Cancel all children
+				try:
+					results.append(block.cancel(abort))
+				except NotRunning:
+					pass
+
+			# Send cancelled message to any parent block.
+			try:
+				if self._complete.called is False:
+					self._complete.errback(Cancelled())
+					self._complete = None
+			except AttributeError:
+				pass
+
+			return defer.DeferredList(results)
+
+		# Pass on cancel call to next block.
+		elif self.nextBlock is not None:
+			return self.nextBlock.cancel(abort)
+
+		# Bottom of stack, nothing was running
+		else:
+			raise NotRunning
+
+	def reset (self):
+		# Entire stack must not be RUNNING or PAUSED
+		if anyOfStackIs(self, (State.RUNNING, State.PAUSED)):
+			raise AlreadyRunning
+
+		if self.state is not State.READY:
+			self.state = State.READY
+			self._onResume = None
+
+			results = [defer.maybeDeferred(self._reset)]
+			for block in self.getChildren():
+				try:
+					results.append(block.reset())
+				except AlreadyRunning:
+					# Something has gone wrong as the this block's state should
+					# reflect those of its (input) children.
+					# Try to cancel the child.
+					results.append(block.cancel().addCallback(block.reset))
+
+			return defer.DeferredList(results)
+
+		elif self.nextBlock is not None:
+			return self.nextBlock.reset()
+
+		# Bottom of stack, nothing needed to be reset.
+		else:
+			return defer.succeed(None)
+
+	#
+	# Serialise
+	#
 
 	def toEvents (self):
 		events = []
@@ -456,5 +610,10 @@ class Block (BaseStep, EventEmitter):
 class Disconnected (Exception):
 	pass
 
+class Cancelled (Exception):
+	pass
+
+class Aborted (Cancelled):
+	pass
 
 populate_blocks()

@@ -35,16 +35,18 @@ Polymer('octopus-runtime', {
 
 				if (command === "experiment-started") {
 					self.experiment = payload.experiment;
-					console.log("experiment-started", payload);
+					self.fire("experiment-started", payload);
 				} else if (command === "experiment-stopped") {
 					self.experiment = null;
-					console.log("experiment-stopped", payload);
+					self.fire("experiment-stopped", payload);
 				} else if (command === "experiment-paused") {
-					console.log("experiment-paused", payload);
+					self.fire("experiment-paused", payload);
 				} else if (command === "experiment-resumed") {
-					console.log("experiment-resumed", payload);
-				} else if (command === "experiment-log") {
-					console.log("experiment-log", payload);
+					self.fire("experiment-resumed", payload);
+				} else if (command === "experiment-error") {
+					self.fire("experiment-error", payload);
+				} else if (command === "experiment-log" && payload.experiment == self.experiment) {
+					console.log("experiment-log", "[", payload.level, "]", payload.message);
 				}
 			}
 		};

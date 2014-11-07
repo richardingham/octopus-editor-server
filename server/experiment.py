@@ -96,8 +96,19 @@ class Experiment (EventEmitter):
 			self._eventsLog.close()
 			self._sketchLog.close()
 
+	def pause (self):
+		return self.sketch.workspace.pause()
+
+	def resume (self):
+		return self.sketch.workspace.resume()
+
+	def stop (self):
+		return self.sketch.workspace.abort()
 
 	def _writeSketchEvent (self, eventType, data):
+		if eventType == "block-state":
+			return
+
 		time = now()
 
 		event = {
@@ -108,5 +119,3 @@ class Experiment (EventEmitter):
 		}
 
 		self._sketchLog.write(json.dumps(event) + "\n")
-
-		return self._eventIndex

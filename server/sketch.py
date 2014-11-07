@@ -8,7 +8,7 @@ from twisted.python import log
 from twisted.python.filepath import FilePath
 
 from util import EventEmitter
-from runtime.workspace import Workspace
+from runtime.workspace import Workspace, Aborted, Cancelled
 from experiment import Experiment
 
 
@@ -178,7 +178,7 @@ class Sketch (EventEmitter):
 
 	def runExperiment (self, context):
 		if self.experiment is not None:
-			raise Error("Experiment already running")
+			raise ExperimentAlreadyRunning
 
 		self.experiment = Experiment(self)
 
@@ -195,6 +195,16 @@ class Sketch (EventEmitter):
 
 			self.experiment = None
 
+		def _cancelled (failure):
+			f = failure.trap(Aborted, Cancelled)
+
+			if f is not Aborted:
+				_done(failure)
+				return
+
+			else:
+				return failure
+
 		def _error (failure):
 			self.notifySubscribers("experiment-error", { 
 				"sketch": self.id,
@@ -204,35 +214,53 @@ class Sketch (EventEmitter):
 
 			self.experiment = None
 
-		self.experiment.run().addCallbacks(_done, _error)
+		d = self.experiment.run()
+		d.addCallbacks(_done, _cancelled)
+		d.addErrback(_error)
 
 	def pauseExperiment (self, context):
 		if self.experiment is None:
-			raise Error("No experiment running")
+			raise NoExperimentRunning
 
-		self.experiment.pause()
+		def _notify (result):
+			self.notifySubscribers("experiment-paused", { 
+				"sketch": self.id,
+				"experiment": self.experiment.id
+			}, self.experiment)
 
-		self.notifySubscribers("experiment-paused", { 
-			"sketch": self.id,
-			"experiment": self.experiment.id
-		}, self.experiment)
+		def _error (failure):
+			self.notifySubscribers("experiment-error", { 
+				"sketch": self.id,
+				"experiment": self.experiment.id,
+				"error": str(failure)
+			}, self.experiment)
+
+		self.experiment.pause().addCallbacks(_notify, _error)
 
 	def resumeExperiment (self, context):
 		if self.experiment is None:
-			raise Error("No experiment running")
+			raise NoExperimentRunning
 
-		self.experiment.resume()
+		def _notify (result):
+			self.notifySubscribers("experiment-resumed", { 
+				"sketch": self.id,
+				"experiment": self.experiment.id
+			}, self.experiment)
 
-		self.notifySubscribers("experiment-resumed", { 
-			"sketch": self.id,
-			"experiment": self.experiment.id
-		}, self.experiment)
+		def _error (failure):
+			self.notifySubscribers("experiment-error", { 
+				"sketch": self.id,
+				"experiment": self.experiment.id,
+				"error": str(failure)
+			}, self.experiment)
+
+		self.experiment.resume().addCallbacks(_notify, _error)
 
 	def stopExperiment (self, context):
 		if self.experiment is None:
-			raise Error("No experiment running")
+			raise NoExperimentRunning
 
-		self.experiment.abort()
+		self.experiment.stop()
 
 	#
 	# Operations
@@ -300,4 +328,10 @@ class Sketch (EventEmitter):
 
 
 class Error (Exception):
+	pass
+
+class ExperimentAlreadyRunning (Error):
+	pass
+
+class NoExperimentRunning (Error):
 	pass
