@@ -62,7 +62,11 @@ class controls_log (Block):
 		@defer.inlineCallbacks
 		def _run ():
 			message = yield self.getInputValue("TEXT")
-			self.workspace.emit("log-message", level = "info", message = message)
+			self.workspace.emit(
+				"log-message", 
+				level = "info", 
+				message = str(message)
+			)
 
 		def done (result):
 			return self._runNext(self._complete)
