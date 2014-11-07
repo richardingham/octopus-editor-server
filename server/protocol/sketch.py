@@ -4,6 +4,8 @@ from ..sketch import Sketch
 import copy
 from collections import defaultdict
 
+from twisted.internet import reactor
+
 class SketchProtocol (object):
 	def __init__ (self, transport):
 		self.transport = transport
@@ -104,7 +106,12 @@ class SketchProtocol (object):
 
 		@sketch.on("closed")
 		def onSketchClosed (data):
-			del self.sketches[id]
+			# This must be performed later to avoid an exception 
+			# in sketches.iteritems() in disconnected() 
+			def _del ():
+				del self.sketches[id]
+
+			reactor.callLater(0, _del)
 
 		return sketch.load().addCallbacks(_done, _error)
 
