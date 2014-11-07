@@ -457,7 +457,14 @@ class Block (BaseStep, EventEmitter):
 	#
 
 	def run (self, parent = None):
-		# If this is ready, then the entire stack must be ready.
+		# This block has been disabled or cancelled - skip it.
+		if self.disabled is True or self.state is State.CANCELLED:
+			if self.nextBlock is not None:
+				return self.nextBlock.run(parent)
+			else:
+				return defer.succeed(None)
+
+		# If this block is ready, then the entire stack must be ready.
 		if self.state is not State.READY:
 			raise AlreadyRunning
 
@@ -526,17 +533,28 @@ class Block (BaseStep, EventEmitter):
 			self._onResume = None
 
 			results = [defer.maybeDeferred(self._cancel, abort)]
-			for block in self.getChildren():
-				# Cancel all children
+			for block in self.inputs.itervalues():
+				# Cancel all input children
 				try:
 					results.append(block.cancel(abort))
-				except NotRunning:
+				except (AttributeError, NotRunning):
+					pass
+
+			# Only abort will propagate down. 
+			# Cancel is limited to one block and its inputs.
+			if abort:
+				try:
+					results.append(block.nextBlock.abort())
+				except (AttributeError, NotRunning):
 					pass
 
 			# Send cancelled message to any parent block.
 			try:
 				if self._complete.called is False:
-					self._complete.errback(Cancelled())
+					if abort:
+						self._complete.errback(Aborted())
+					else:
+						self._complete.errback(Cancelled())
 					self._complete = None
 			except AttributeError:
 				pass
@@ -544,12 +562,17 @@ class Block (BaseStep, EventEmitter):
 			return defer.DeferredList(results)
 
 		# Pass on cancel call to next block.
-		elif self.nextBlock is not None:
+		elif abort and self.nextBlock is not None:
 			return self.nextBlock.cancel(abort)
 
 		# Bottom of stack, nothing was running
-		else:
-			raise NotRunning
+		elif abort:
+			return defer.succeed(None)
+
+		# This step is not running yet. Stop it from running.
+		elif self.State is State.READY:
+			self.state = State.CANCELLED
+			return defer.succeed(None)
 
 	def reset (self):
 		# Entire stack must not be RUNNING or PAUSED
@@ -565,10 +588,10 @@ class Block (BaseStep, EventEmitter):
 				try:
 					results.append(block.reset())
 				except AlreadyRunning:
-					# Something has gone wrong as the this block's state should
-					# reflect those of its (input) children.
+					# Something has gone wrong as the this block's state
+					# should reflect those of its (input) children.
 					# Try to cancel the child.
-					results.append(block.cancel().addCallback(block.reset))
+					results.append(block.abort().addCallback(block.reset))
 
 			return defer.DeferredList(results)
 

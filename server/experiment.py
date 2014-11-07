@@ -34,7 +34,7 @@ class Experiment (EventEmitter):
 		try:
 			yield workspace.reset()
 		except AlreadyRunning:
-			yield workspace.cancel()
+			yield workspace.abort()
 			yield workspace.reset()
 
 		self.startTime = now()

@@ -92,6 +92,10 @@ window.addEventListener('polymer-ready', function () {
 		editor.loadSketch.call(editor, e.detail);
 	});
 
+	runtime.addEventListener("block-state", function (e) {
+		editor.setBlockState.call(editor, e.detail);
+	});
+
 	//
 	// Experiment events
 	//

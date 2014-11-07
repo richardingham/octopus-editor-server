@@ -200,10 +200,8 @@ class Sketch (EventEmitter):
 
 			if f is not Aborted:
 				_done(failure)
-				return
-
 			else:
-				return failure
+				_error("Stopped by user")
 
 		def _error (failure):
 			self.notifySubscribers("experiment-error", { 
