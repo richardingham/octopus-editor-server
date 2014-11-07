@@ -155,6 +155,8 @@ Block.prototype.fill = function(workspace, prototypeName) {
   this.workspace = workspace;
   this.isInFlyout = workspace.isFlyout;
 
+  self.runningState_ = "ready";
+
   // Copy the type-specific functions and data from the prototype.
   if (prototypeName) {
     this.type = prototypeName;
@@ -200,6 +202,19 @@ Block.prototype.fill = function(workspace, prototypeName) {
   if (util.isFunction(this.created)) {
     this.created();
   }
+};
+
+/**
+ * Set the block's running state.
+ * @param {String} state One of "READY", "RUNNING", "PAUSED", "COMPLETE", "CANCELLED" or "ERROR"
+ */
+Block.prototype.setRunningState = function(state) {
+  var oldState = self.runningState_;
+  state = state.toLowerCase();
+  self.runningState_ = state;
+
+  Blockly.removeClass_(this.svg_.svgGroup_, 'state-' + oldState);
+  Blockly.addClass_(this.svg_.svgGroup_, 'state-' + state);
 };
 
 /**

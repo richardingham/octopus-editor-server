@@ -33,6 +33,10 @@ Polymer('octopus-runtime', {
 					self.fire("sketch-loaded", payload);
 				}
 
+				if (command === "block-state") {
+					self.fire("block-state", payload);
+				}
+
 				if (command === "experiment-started") {
 					self.experiment = payload.experiment;
 					self.fire("experiment-started", payload);

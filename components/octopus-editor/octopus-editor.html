@@ -303,6 +303,13 @@ Polymer('octopus-editor', {
 		});
 	},
 
+	setBlockState: function (e) {
+		var block = Blockly.mainWorkspace.getBlockById(e.block);
+		if (block) {
+			block.setRunningState(e.state);
+		}
+	},
+
 	toolboxPopulate: function (xml) {
 		// Iterate over each category.
 		var toolbox = [];
