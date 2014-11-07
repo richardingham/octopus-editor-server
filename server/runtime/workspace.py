@@ -174,18 +174,33 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		return self._complete
 
-	def _pause (self):
+	def _reset (self):
+		results = []
 		for block in self.topBlocks.itervalues():
-			block.pause()
+			results.append(block.reset())
+
+		return defer.DeferredList(results)
+
+	def _pause (self):
+		results = []
+		for block in self.topBlocks.itervalues():
+			results.append(block.pause())
+
+		return defer.DeferredList(results)
 
 	def _resume (self):
+		results = []
 		for block in self.topBlocks.itervalues():
 			block.resume()
 
+		return defer.DeferredList(results)
+
 	def _cancel (self, abort = False):
+		results = []
 		for block in self.topBlocks.itervalues():
 			block.cancel(abort)
-		
+
+		return defer.DeferredList(results)
 
 	def toEvents (self):
 		events = []
