@@ -1,5 +1,5 @@
-from ..workspace import Block 
-
+from ..workspace import Block
+from twisted.internet import defer
 
 class text (Block):
 	def eval (self):

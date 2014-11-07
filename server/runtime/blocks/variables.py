@@ -1,4 +1,6 @@
-from ..workspace import Block 
+from ..workspace import Block
+from twisted.internet import defer
+from octopus.constants import State
 
 
 class global_declaration (Block):
@@ -6,7 +8,7 @@ class global_declaration (Block):
 		self.workspace.variables[self.fields['NAME']] = Variable()
 
 	def run (self):
-		self.emit("started")
+		#self.emit("started")
 
 		@defer.inlineCallbacks
 		def _run ():
@@ -17,7 +19,8 @@ class global_declaration (Block):
 
 			self.workspace.variables[self.fields['NAME']].set(result)
 
-			self.emit('completed')
+			self.state = State.COMPLETE
+			#self.emit('completed')
 
 		# There will be no next block.
 		self._complete = _run()
@@ -29,7 +32,7 @@ class global_declaration (Block):
 
 class variables_set (Block):
 	def run (self):
-		self.emit("started")
+		#self.emit("started")
 
 		@defer.inlineCallbacks
 		def _run ():

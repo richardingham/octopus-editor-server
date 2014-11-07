@@ -1,6 +1,6 @@
 from twisted.internet import defer
 
-from octopus.sequence.util import Runnable, Pausable, Cancellable
+from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
 from octopus.constants import State
 
 from ..util import EventEmitter
@@ -18,7 +18,7 @@ def populate_blocks ():
 	del blocks['Block']
 
 
-class Workspace (Runnable, Pausable, Cancellable):
+class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 	def __init__ (self):
 		self.state = State.READY
 
@@ -128,20 +128,20 @@ class Workspace (Runnable, Pausable, Cancellable):
 
 		# Cancel parent block if waiting for data
 		try:
-			if block._complete.called is False:
-				block._complete.errback(Disconnected())
-				block._complete = None
+			if childBlock._complete.called is False:
+				childBlock._complete.errback(Disconnected())
+				childBlock._complete = None
 		except AttributeError:
 			pass
 
 		connection = args["connection"]
 
-		self.topBlocks[id] = block
+		self.topBlocks[id] = childBlock
 
 		if connection == "input-value":
-			parentBlock.disconnectInput(args["input"], childBlock, "value")
+			parentBlock.disconnectInput(args["input"], "value")
 		elif connection == "input-statement":
-			parentBlock.disconnectInput(args["input"], childBlock, "statement")
+			parentBlock.disconnectInput(args["input"], "statement")
 		elif connection == "previous":
 			parentBlock.disconnectNextBlock(childBlock)
 
@@ -164,7 +164,7 @@ class Workspace (Runnable, Pausable, Cancellable):
 		self._complete = defer.Deferred()
 
 		results = []
-		for block in self.topBlocks:
+		for block in self.topBlocks.itervalues():
 			results.append(block.run())
 
 		defer.gatherResults(results).addCallbacks(
@@ -175,15 +175,15 @@ class Workspace (Runnable, Pausable, Cancellable):
 		return self._complete
 
 	def _pause (self):
-		for block in self.topBlocks:
+		for block in self.topBlocks.itervalues():
 			block.pause()
 
 	def _resume (self):
-		for block in self.topBlocks:
+		for block in self.topBlocks.itervalues():
 			block.resume()
 
 	def _cancel (self, abort = False):
-		for block in self.topBlocks:
+		for block in self.topBlocks.itervalues():
 			block.cancel(abort)
 		
 
@@ -204,11 +204,23 @@ class Workspace (Runnable, Pausable, Cancellable):
 			elif event['type'] == "ConnectBlock":
 				self.connectBlock(data['block'], data)
 
-class Block (EventEmitter):
+
+class Block (BaseStep, EventEmitter):
+
+	@property
+	def state (self):
+		return self._state
+
+	@state.setter
+	def state (self, value):
+		self._state = value
+		self.workspace.emit("block-state", block = self.id, state = value.name)
+
 	def __init__ (self, workspace, id):
 		self.workspace = workspace
 		self.id = id
 		self.type = self.__class__.__name__
+		self.state = State.READY
 		self.nextBlock = None
 		self.prevBlock = None
 		self.outputBlock = None
@@ -246,10 +258,10 @@ class Block (EventEmitter):
 
 		@self.on('disconnected')
 		def onDisconnect (data):
-			if "next" in data and data.next == True:
+			if "next" in data and data['next'] is True:
 				childBlock.off('connectivity-changed', onConnChange)
 				childBlock.off('value-changed', onValueChange)
-				self.off(onDisconnect)
+				self.off('disconnected', onDisconnect)
 
 	def disconnectNextBlock (self, childBlock):
 		if self.nextBlock != childBlock:
@@ -283,7 +295,8 @@ class Block (EventEmitter):
 		children = []
 
 		for block in self.inputs.itervalues():
-			children.append(block)
+			if block is not None:
+				children.append(block)
 
 		if self.nextBlock is not None:
 			children.append(self.nextBlock)
@@ -330,10 +343,10 @@ class Block (EventEmitter):
 
 		@self.on('disconnected')
 		def onDisconnect (data):
-			if "input" in data and data.input == inputName:
+			if "input" in data and data['input'] == inputName:
 				childBlock.off('connectivity-changed', onConnChange)
 				childBlock.off('value-changed', onValueChange)
-				self.off(onDisconnect)
+				self.off('disconnected', onDisconnect)
 
 	def disconnectInput (self, inputName, type):
 		try:
@@ -370,41 +383,34 @@ class Block (EventEmitter):
 
 	def _runNext (self, complete):
 		""" Run the next block, chaining the callbacks """
-		self.emit('completed')
+		#self.workspace.emit('completed')
+		self.state = State.COMPLETE
 
 		if self.nextBlock is not None:
 			return self.nextBlock.run().addCallbacks(complete.callback, complete.errback)
 		else:
 			return complete.callback(None)
 
-	def run (self):
-		return defer.succeed(None)
-
 	def eval (self):
 		return defer.succeed(None)
 
-	def pause (self):
-		self.emit("paused")
+	def _pause (self):
 		for block in self.getChildren():
 			block.pause()
 
-	def resume (self):
-		self.emit("resumed")
+	def _resume (self):
 		for block in self.getChildren():
 			block.resume()
 
-	def cancel (self):
-		self.emit("cancelled")
+	def _cancel (self):
 		for block in self.getChildren():
 			block.cancel()
 
-	def abort (self):
-		self.emit("aborted")
+	def _abort (self):
 		for block in self.getChildren():
 			block.abort()
 
-	def reset (self):
-		self.emit("reset")
+	def _reset (self):
 		for block in self.getChildren():
 			block.reset()
 

@@ -20,14 +20,35 @@ class SketchProtocol (object):
 			# Find locally stored sketch by ID
 			sketch = self.resolveSketch(payload)
 
-			# Run command
-			if topic == 'block-created':     return self.addBlock       (sketch, payload, context)
-			elif topic == 'block-disposed':  return self.removeBlock    (sketch, payload, context)
-			elif topic == 'block-changed':   return self.changeBlock    (sketch, payload, context)
-			elif topic == 'block-connected': return self.connectBlock   (sketch, payload, context)
-			elif topic == 'block-disposed':  return self.disconnectBlock(sketch, payload, context)
+			# Block commands
+			if topic == 'block-created':
+				return sketch.addBlock(args(payload, ["block", "fields", "type", "x", "y"], True), context)
 
-			elif topic == 'sketch-renames':  return self.renameSketch   (sketch, payload, context)
+			elif topic == 'block-disposed':
+				return sketch.removeBlock(args(payload, ["block"], True), context)
+
+			elif topic == 'block-changed':
+				return sketch.changeBlock(args(payload, ["block", "change", "x", "y", "field", "value", "name"], 2), context)
+
+			elif topic == 'block-connected':
+				return sketch.connectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
+
+			elif topic == 'block-disconnected':
+				return sketch.disconnectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
+
+			# Sketch commands
+			elif topic == 'sketch-rename':	
+				return sketch.renameSketch(args(payload, ["name"], True), context)
+
+			# Experiment commands
+			elif topic == 'experiment-run':
+				return sketch.runExperiment(context)
+			elif topic == 'experiment-pause':
+				return sketch.pauseExperiment(context)
+			elif topic == 'experiment-resume':
+				return sketch.resumeExperiment(context)
+			elif topic == 'experiment-stop':
+				return sketch.stopExperiment(context)
 
 		except Error as e:
 			self.send('error', e, context)
@@ -57,7 +78,7 @@ class SketchProtocol (object):
 
 		def _sendData (sketch):
 			sketchData = {
-				"id": sketch.id,
+				"sketch": sketch.id,
 				"title": sketch.title,
 				"events": sketch.workspace.toEvents()
 			}
@@ -80,35 +101,16 @@ class SketchProtocol (object):
 			self.send('error', str(failure), context)
 
 		sketch = Sketch(id)
+
+		@sketch.on("closed")
+		def onSketchClosed (data):
+			del self.sketches[id]
+
 		return sketch.load().addCallbacks(_done, _error)
 
 	def disconnected (self, context):
-		close = []
-
 		for id, sketch in self.sketches.iteritems():
-			count = sketch.unsubscribe(context)
-
-			if count is 0:
-				close.append(id)
-
-		for id in close:
-			self.sketches[id].close()
-			del self.sketches[id]
-
-	def addBlock (self, sketch, payload, context):
-		sketch.addBlock(args(payload, ["block", "fields", "type", "x", "y"], True), context)
-
-	def removeBlock (self, sketch, payload, context):
-		sketch.removeBlock(args(payload, ["block"], True), context)
-
-	def changeBlock (self, sketch, payload, context):
-		sketch.changeBlock(args(payload, ["block", "change", "x", "y", "field", "value", "name"], 2), context)
-
-	def connectBlock (self, sketch, payload, context):
-		sketch.connectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
-
-	def disconnectBlock (self, sketch, payload, context):
-		sketch.disconnectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
+			sketch.unsubscribe(context)
 
 
 def args (payload, keys, required = None, errorMsg = None, asList = False):

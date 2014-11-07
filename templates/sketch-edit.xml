@@ -53,7 +53,9 @@
 window.addEventListener('polymer-ready', function () {
 	var editor = document.getElementById("editor");
 	var runtime = document.getElementById("runtime");
-	console.log("Polymer ready");
+
+	var runButton = document.getElementById("btn-run");
+	var stopButton = document.getElementById("btn-stop");
 
 	editor.addEventListener("block-event", function (e) {
 		runtime.blockEvent.call(runtime, e.detail);
@@ -61,6 +63,14 @@ window.addEventListener('polymer-ready', function () {
 
 	runtime.addEventListener("sketch-loaded", function (e) {
 		editor.loadSketch.call(editor, e.detail);
+	});
+
+	runButton.addEventListener("click", function (e) {
+		runtime.experimentAction.call(runtime, "run");
+	});
+
+	stopButton.addEventListener("click", function (e) {
+		runtime.experimentAction.call(runtime, "stop");
 	});
 });
 
@@ -70,9 +80,10 @@ window.addEventListener('polymer-ready', function () {
 <body unresolved="" t:render="editor_body">
 	<div id="editor-container">
 		<core-toolbar>
-			<core-icon-button icon="av:play-circle-fill" on-tap="{{runAction}}">Run</core-icon-button>
-			<!--core-icon-button icon="pause-circle-fill" on-tap="{{runAction}}">Pause</core-icon-button-->
-			<core-icon-button icon="cancel" on-tap="{{runAction}}">Stop</core-icon-button>
+			<core-icon-button icon="av:play-circle-fill" id="btn-run">Run</core-icon-button>
+			<!--core-icon-button icon="pause-circle-fill" id="btn-pause">Pause</core-icon-button-->
+			<!--core-icon-button icon="pause-circle-fill" id="btn-resume">Resume</core-icon-button-->
+			<core-icon-button icon="cancel" id="btn-stop">Stop</core-icon-button>
 		</core-toolbar>
 		<octopus-editor id="editor"></octopus-editor>
 	</div>

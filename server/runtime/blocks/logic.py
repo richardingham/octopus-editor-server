@@ -1,4 +1,5 @@
-from ..workspace import Block 
+from ..workspace import Block
+from twisted.internet import defer
 
 import operator
 
@@ -58,18 +59,18 @@ class logic_operation (Block):
 			if op == "AND":
 				if bool(lhs):
 					rhs = yield self.getInputValue('B')
-					returnValue(bool(rhs))
+					defer.returnValue(bool(rhs))
 				else:
-					returnValue(False)
+					defer.returnValue(False)
 			elif op == "OR":
 				if bool(lhs):
-					returnValue(True)
+					defer.returnValue(True)
 				else:
 					rhs = yield self.getInputValue('B')
-					returnValue(bool(rhs))
+					defer.returnValue(bool(rhs))
 
 			# Emit a warning
-			returnValue(None)
+			defer.returnValue(None)
 
 		self._complete = _run()
 		return self._complete
@@ -83,10 +84,10 @@ class logic_ternary (Block):
 
 			if bool(test):
 				result = yield self.getInputValue('THEN')
-				returnValue(result)
+				defer.returnValue(result)
 			else:
 				result = yield self.getInputValue('ELSE')
-				returnValue(result)
+				defer.returnValue(result)
 
 		self._complete = _run()
 		return self._complete

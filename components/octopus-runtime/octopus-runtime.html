@@ -28,8 +28,24 @@ Polymer('octopus-runtime', {
 			var command = data.command;
 			var payload = data.payload;
 
-			if (protocol === "sketch" && command === "sketch-load") {
-				self.fire("sketch-loaded", payload);
+			if (protocol === "sketch" && payload.sketch == self.sketch) {
+				if (command === "sketch-load") {
+					self.fire("sketch-loaded", payload);
+				}
+
+				if (command === "experiment-started") {
+					self.experiment = payload.experiment;
+					console.log("experiment-started", payload);
+				} else if (command === "experiment-stopped") {
+					self.experiment = null;
+					console.log("experiment-stopped", payload);
+				} else if (command === "experiment-paused") {
+					console.log("experiment-paused", payload);
+				} else if (command === "experiment-resumed") {
+					console.log("experiment-resumed", payload);
+				} else if (command === "experiment-log") {
+					console.log("experiment-log", payload);
+				}
 			}
 		};
 
@@ -52,6 +68,23 @@ Polymer('octopus-runtime', {
 			protocol: "sketch",
 			command: "block-" + event.eventType,
 			payload: event.data
+		};
+
+		console.log("Socket send", data);
+		this.socket.send(JSON.stringify(data));
+	},
+
+	experimentAction: function (action) {
+		if (!this.open) {
+			return;
+		}
+
+		var data = {
+			protocol: "sketch",
+			command: "experiment-" + action,
+			payload: {
+				sketch: this.sketch
+			}
 		};
 
 		console.log("Socket send", data);

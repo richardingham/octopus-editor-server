@@ -1,4 +1,5 @@
-from ..workspace import Block 
+from ..workspace import Block
+from twisted.internet import defer
 
 import math, operator, random
 
@@ -179,7 +180,7 @@ class math_change (Block):
 
 		variable.set(result.value + add)
 
-		self._complete = defer.succed(None)
+		self._complete = defer.succeed(None)
 		self._runNext(self._complete)
 		return self._complete
 

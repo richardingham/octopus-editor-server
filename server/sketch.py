@@ -1,13 +1,16 @@
 import uuid
 import os
 import json
-from datetime import datetime as now
+from time import time as now
 
 from twisted.internet import defer, threads
+from twisted.python import log
 from twisted.python.filepath import FilePath
 
 from util import EventEmitter
 from runtime.workspace import Workspace
+from experiment import Experiment
+
 
 class Sketch (EventEmitter):
 	""" This object is the representation of the persistent sketch, 
@@ -61,13 +64,18 @@ class Sketch (EventEmitter):
 				"created_date": int(row[4])
 			} for row in rows]
 
-		return cls.db.runQuery("SELECT guid, title, user_id, modified_date, created_date FROM sketches ORDER BY modified_date").addCallback(_done)
+		return cls.db.runQuery("""
+			SELECT guid, title, user_id, modified_date, created_date 
+			FROM sketches 
+			ORDER BY modified_date
+		""").addCallback(_done)
 
 	def __init__ (self, id):
 		self.id = id
 		self.title = ""
 		self.loaded = False
 		self.workspace = Workspace()
+		self.experiment = None
 		self.subscribers = {}
 		self._eventIndex = 0
 
@@ -83,7 +91,10 @@ class Sketch (EventEmitter):
 
 	@defer.inlineCallbacks
 	def load (self):
-		sketch = yield self.db.runQuery("SELECT title FROM sketches WHERE guid = ?", (self.id,))
+		sketch = yield self.db.runQuery(
+			"SELECT title FROM sketches WHERE guid = ?", 
+			(self.id, )
+		)
 
 		if len(sketch) == 0:
 			raise Error("Sketch %s not found." % self.id)
@@ -93,11 +104,20 @@ class Sketch (EventEmitter):
 
 		# Find the most recent snapshot file
 		try:
-			print "glob: " + str(self._sketchDir.globChildren('snapshot.*.log'))
 			max_snap = max(map(
-				lambda fp: int(os.path.splitext(fp.basename())[0].split('.')[1]),
+				lambda fp: int(
+					os.path.splitext(fp.basename())[0].split('.')[1]
+				),
 				self._sketchDir.globChildren('snapshot.*.log')
 			))
+
+			log.msg(
+				"Found snapshot {:d} for sketch {:s}".format(
+					max_snap, 
+					self.id
+				)
+			)
+
 		except ValueError:
 			self._eventIndex = 0
 			self._snapEventIndex = 0
@@ -114,6 +134,8 @@ class Sketch (EventEmitter):
 				))
 
 	def close (self):
+		log.msg("Closing sketch {:s}".format(self.id))
+
 		# If anything has changed...
 		if self._eventIndex > self._snapEventIndex:
 			# Write a snapshot
@@ -121,12 +143,18 @@ class Sketch (EventEmitter):
 			if not snapFile.exists():
 				snapFile.create()
 
-			with fp = snapFile.open('w'):
+			with snapFile.open('w') as fp:
 				fp.write("\n".join(map(json.dumps, self.workspace.toEvents())))
 
 		# Close the events log
 		self._eventsLog.close()
 
+		self.emit("closed")
+
+	#
+	# Subscribers
+	#
+	
 	def subscribe (self, subscriber, notifyFn):
 		self.subscribers[subscriber] = notifyFn
 
@@ -134,21 +162,90 @@ class Sketch (EventEmitter):
 		if subscriber in self.subscribers:
 			del self.subscribers[subscriber]
 
-		return len(self.subscribers)
+		if len(self.subscribers) is 0:
+			self.close()
 
 	def notifySubscribers (self, event, payload, source = None):
 		for subscriber, notifyFn in self.subscribers.iteritems():
 			if subscriber is not source:
 				notifyFn(event, payload)
 
-		self.emit(event, **payload)
+		#self.emit(event, **payload)
 
-	def renameSketch (self, newName):
+	#
+	# Experiment
+	#
+
+	def runExperiment (self, context):
+		if self.experiment is not None:
+			raise Error("Experiment already running")
+
+		self.experiment = Experiment(self)
+
+		self.notifySubscribers("experiment-started", { 
+			"sketch": self.id,
+			"experiment": self.experiment.id
+		}, self.experiment)
+
+		def _done (result):
+			self.notifySubscribers("experiment-stopped", { 
+				"sketch": self.id,
+				"experiment": self.experiment.id
+			}, self.experiment)
+
+			self.experiment = None
+
+		def _error (failure):
+			self.notifySubscribers("experiment-error", { 
+				"sketch": self.id,
+				"experiment": self.experiment.id,
+				"error": str(failure)
+			}, self.experiment)
+
+			self.experiment = None
+
+		self.experiment.run().addCallbacks(_done, _error)
+
+	def pauseExperiment (self, context):
+		if self.experiment is None:
+			raise Error("No experiment running")
+
+		self.experiment.pause()
+
+		self.notifySubscribers("experiment-paused", { 
+			"sketch": self.id,
+			"experiment": self.experiment.id
+		}, self.experiment)
+
+	def resumeExperiment (self, context):
+		if self.experiment is None:
+			raise Error("No experiment running")
+
+		self.experiment.resume()
+
+		self.notifySubscribers("experiment-resumed", { 
+			"sketch": self.id,
+			"experiment": self.experiment.id
+		}, self.experiment)
+
+	def stopExperiment (self, context):
+		if self.experiment is None:
+			raise Error("No experiment running")
+
+		self.experiment.abort()
+
+	#
+	# Operations
+	#
+
+	def renameSketch (self, payload, context):
+		newName = payload['name']
+
 		self._writeEvent("RenameSketch", { "from": self.title, "to": newName })
 		self.db.runOperation("UPDATE sketches SET title = ? WHERE guid = ?", (newName, self.id))
 		self.title = newName
 
-		self.notifySubscribers("sketch-renamed", { "title": newName })
+		self.notifySubscribers("sketch-renamed", { "title": newName }, context)
 
 	def addBlock (self, payload, context):
 		eid = self._writeEvent("AddBlock", payload)

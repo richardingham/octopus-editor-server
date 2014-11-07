@@ -1,4 +1,5 @@
-from ..workspace import Block 
+from ..workspace import Block
+from twisted.internet import defer
 
 
 class controls_run (Block):
@@ -12,8 +13,9 @@ class controls_if (Block):
 		except KeyError:
 			return None
 
-	def run (self):
-		self.emit("started")
+	def _run (self):
+		self.workspace.emit("started")
+		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _run ():
@@ -33,7 +35,7 @@ class controls_if (Block):
 					except Disconnected:
 						yield self.cancel()
 
-					returnValue()
+					defer.returnValue()
 
 				i += 1
 				input = self._getInput("IF", i)
@@ -45,47 +47,49 @@ class controls_if (Block):
 				except Disconnected:
 					yield self.cancel()
 
-		def done ():
+		def done (result):
 			return self._runNext(self._complete)
 
-		self._complete = _run().addCallback(done)
+		_run().addCallback(done)
 		return self._complete
 
 
 class controls_log (Block):
-	def run (self):
-		self.emit("started")
+	def _run (self):
+		#self.workspace.emit("started")
+		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _run ():
 			message = yield self.getInputValue("TEXT")
 			self.workspace.emit("log-message", level = "info", message = message)
 
-		def done ():
+		def done (result):
 			return self._runNext(self._complete)
 
-		self._complete = _run().addCallback(done)
+		_run().addCallback(done)
 		return self._complete
 
 
 class controls_wait (Block):
-	def run (self):
-		self.emit("started")
+	def _run (self):
+		#self.workspace.emit("started")
+		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _run ():
 			time = yield self.getInputValue("TIME")
 
-		def done ():
+		def done (result):
 			return self._runNext(self._complete)
 
-		self._complete = _run().addCallback(done)
+		_run().addCallback(done)
 		return self._complete
 
 
 class controls_wait_until (Block):
-	def run (self):
-		self.emit("started")
+	def _run (self):
+		#self.workspace.emit("started")
 
 		self._complete = defer.Deferred()
 		self._variables = []
@@ -109,7 +113,7 @@ class controls_wait_until (Block):
 			for v in self._variables:	
 				v.on('change', runTest)
 
-		def done ():
+		def done (result):
 			self.off("connectivity-changed", onConnectivityChange)
 			self.off("value-changed", runTest)
 
@@ -127,8 +131,9 @@ class controls_wait_until (Block):
 
 
 class controls_whileUntil (Block):
-	def run (self):
-		self.emit("started")
+	def _run (self):
+		#self.workspace.emit("started")
+		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _iter ():
@@ -148,16 +153,17 @@ class controls_whileUntil (Block):
 				else:
 					break
 
-		def done ():
+		def done (result):
 			return self._runNext(self._complete)
 
-		self._complete = _run().addCallback(done)
+		_run().addCallback(done)
 		return self._complete
 
 
 class controls_repeat_ext (Block):
-	def run (self):
-		self.emit("started")
+	def _run (self):
+		#self.workspace.emit("started")
+		self._complete = defer.Deferred()
 
 		@defer.inlineCallbacks
 		def _iter ():
@@ -180,8 +186,8 @@ class controls_repeat_ext (Block):
 
 				index += 1
 
-		def done ():
+		def done (result):
 			return self._runNext(self._complete)
 
-		self._complete = _run().addCallback(done)
+		_run().addCallback(done)
 		return self._complete
