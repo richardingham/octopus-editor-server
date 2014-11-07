@@ -5,7 +5,11 @@ import math, operator, random
 
 class math_number (Block):
 	def eval (self):
-		return defer.succeed(self.fields['NUM'])
+		number = float(self.fields['NUM'])
+		if number % 1 == 0:
+			number = int(number)
+
+		return defer.succeed(number)
 
 
 class math_constant (Block):
