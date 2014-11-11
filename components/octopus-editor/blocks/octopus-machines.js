@@ -57,7 +57,7 @@ var _ARROW_CHAR = /*goog.userAgent.ANDROID ? ' \u25B6 ' :*/ ' \u25B8 ';
 
 Blockly.Blocks['machine_vapourtec_R2R4'] = {
   init: function() {
-	var default_name = "reactor";
+    var default_name = "reactor";
 
     //this.setHelpUrl('http://www.example.com/');
     this.setColour(0);
@@ -73,35 +73,36 @@ Blockly.Blocks['machine_vapourtec_R2R4'] = {
         .setAlign(Blockly.ALIGN_RIGHT)
         .appendField("connection");
     this.setTooltip('');
-	this.setInputsInline(false);
+    this.setInputsInline(false);
 
-	if (!this.isInFlyout) {
-		var machineVar = Blockly.GlobalScope.addVariable(default_name, "machine");
-		machineVar.setType("component");
-		machineVar.setReadonly("true");
+    if (!this.isInFlyout) {
+      var machineVar = Blockly.GlobalScope.addVariable(default_name, "machine");
+      machineVar.setType("component");
+      machineVar.setReadonly("true");
 
-		var addParts = function (variable, parts, titlePart) {
-			var part;
-			for (var i = 0; i < parts.length; i++) {
-				part = parts[i];
-				var display = titlePart + _ARROW_CHAR + part.title;
-				var partVar = variable.addAttribute(part.name);
-				partVar.setMenu(part.title);
-				partVar.setDisplay(display);
-				partVar.setType(part.parts ? "component" : part.type);
-				partVar.setReadonly(part.readonly || part.parts);
+      var addParts = function (variable, parts, titlePart) {
+        var part;
+        for (var i = 0; i < parts.length; i++) {
+          part = parts[i];
+          var display = titlePart + _ARROW_CHAR + part.title;
+          var partVar = variable.addAttribute(part.name);
+          partVar.setMenu(part.title);
+          partVar.setDisplay(display);
+          partVar.setType(part.parts ? "component" : part.type);
+          partVar.setReadonly(part.readonly || part.parts);
 
-				if (part.parts) {
-					addParts(partVar, part.parts, display);
-				}
-			}
-		}
-		
-		addParts(machineVar, _R2R4_vars, "");
-		this.variable_ = machineVar;
-		this.getField_('NAME').setValue(machineVar.getVarName());
-	}
+          if (part.parts) {
+            addParts(partVar, part.parts, display);
+          }
+        }
+      }
+
+      addParts(machineVar, _R2R4_vars, "");
+      this.variable_ = machineVar;
+      this.getField_('NAME').setValue(machineVar.getVarName());
+    }
   },
+
   /**
    * Return all variables referenced by this block.
    * @return {!Array.<string>} List of variable names.
@@ -110,6 +111,7 @@ Blockly.Blocks['machine_vapourtec_R2R4'] = {
   getVars: function() {
     return [this.getFieldValue('NAME')];
   },
+
   /**
    * Notification that a variable is renaming.
    * If the name matches one of this block's variables, rename it.
@@ -126,30 +128,31 @@ Blockly.Blocks['machine_vapourtec_R2R4'] = {
 
   rename_: function (newName) {
     var oldName = this.getFieldValue('NAME');
-	if (oldName === newName && this.variable_) {
-	  return newName;
-	}
-	this.variable_.setName(newName);
-	return this.variable_.getVarName();
+    if (oldName === newName && this.variable_) {
+      return newName;
+    }
+    this.variable_.setName(newName);
+    return this.variable_.getVarName();
   },
+
   disposed: function () {
-	if (this.variable_) {
-	  this.variable_.getScope().removeVariable(this.variable_.getVarName());
-	}
+    if (this.variable_) {
+      this.variable_.getScope().removeVariable(this.variable_.getVarName());
+    }
   },
 
   getVariablesMenu: function(name, forSetter) {
-	return [
-	  ["Pump A", [name, "pump1"], forSetter, [
-	    ["Target", [name, "pump1", "target"]],
-	    ["Flow Rate", [name, "pump1", "rate"], forSetter],
-	    ["Pressure", [name, "pump1", "pressure"], forSetter]
-	  ]],
-	  ["Pump B", [name, "pump2"], forSetter, [
-	    ["Target", [name, "pump2", "target"]],
-	    ["Flow Rate", [name, "pump2", "rate"], forSetter],
-	    ["Pressure", [name, "pump2", "pressure"], forSetter]
-	  ]],
-	];
+    return [
+      ["Pump A", [name, "pump1"], forSetter, [
+        ["Target", [name, "pump1", "target"]],
+        ["Flow Rate", [name, "pump1", "rate"], forSetter],
+        ["Pressure", [name, "pump1", "pressure"], forSetter]
+      ]],
+      ["Pump B", [name, "pump2"], forSetter, [
+        ["Target", [name, "pump2", "target"]],
+        ["Flow Rate", [name, "pump2", "rate"], forSetter],
+        ["Pressure", [name, "pump2", "pressure"], forSetter]
+      ]],
+    ];
   }
 };

@@ -18,10 +18,10 @@ Blockly.Blocks['global_declaration'] = {
         .appendField('to'); //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TO);
     this.setTooltip('Declare a global variable'); //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TOOLTIP);
 
-	if (!this.isInFlyout) {
-		this.rename_('name');
-		this.getField_('NAME').setValue(this.variable_.getVarName());
-	}
+    if (!this.isInFlyout) {
+      this.rename_('name');
+      this.getField_('NAME').setValue(this.variable_.getVarName());
+    }
   },
   getVars: function() {
     return [this.getFieldValue('NAME')];
@@ -34,20 +34,20 @@ Blockly.Blocks['global_declaration'] = {
   },*/
   rename_: function (newName) {
     var oldName = this.getFieldValue('NAME');
-	if (oldName === newName && this.variable_) {
-	  return newName;
-	}
-	if (!this.variable_) {
-	  this.variable_ = Blockly.GlobalScope.addVariable(newName);
-	} else {
-	  this.variable_.setName(newName);
-	} 
-	return this.variable_.getVarName();
+    if (oldName === newName && this.variable_) {
+      return newName;
+    }
+    if (!this.variable_) {
+      this.variable_ = Blockly.GlobalScope.addVariable(newName);
+    } else {
+      this.variable_.setName(newName);
+    } 
+    return this.variable_.getVarName();
   },
   disposed: function () {
-	if (this.variable_) {
-	  this.variable_.getScope().removeVariable(this.variable_.getVarName());
-	}
+    if (this.variable_) {
+      this.variable_.getScope().removeVariable(this.variable_.getVarName());
+    }
   }
   //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TITLE_INIT }]
 };
