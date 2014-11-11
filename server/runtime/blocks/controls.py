@@ -260,10 +260,10 @@ class controls_repeat_ext (Block):
 				break
 
 			try:
-				yield self.getInput('DO').run()
-			except Disconnected:
+				input = self.getInput('DO')
+				yield input.reset()
+				yield input.run()
+			except (Disconnected, Cancelled, AttributeError):
 				pass
-			except Cancelled:
-				break
 
 			index += 1
