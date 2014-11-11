@@ -1,7 +1,9 @@
 import uuid
 import os
 import json
-from time import time as now
+import time
+
+now = time.time # shortcut
 
 from twisted.internet import defer, threads
 from twisted.python.filepath import FilePath
@@ -48,26 +50,19 @@ class Experiment (EventEmitter):
 			(id, sketch_id, 1, self.startTime)
 		)
 
-		self._experimentDir = FilePath(self.dataDir).child(id)
-		if not self._experimentDir.exists():
-			self._experimentDir.createDirectory()
+		stime = time.gmtime(self.startTime)
 
-		eventFile = self._experimentDir.child("events.log")
-		if not eventFile.exists():
-			eventFile.create()
+		self._experimentDir = FilePath(self.dataDir)
+		for segment in [stime.tm_year, stime.tm_mon, stime.tm_mday, id]:
+			self._experimentDir = self._experimentDir.child(str(segment))
+			if not self._experimentDir.exists():
+				self._experimentDir.createDirectory()
 
-		sketchFile = self._experimentDir.child("sketch.log")
-		if not sketchFile.exists():
-			sketchFile.create()
-
+		eventFile = self._experimentDir.child("events.log").create()
+		sketchFile = self._experimentDir.child("sketch.log").create()
 		snapFile = self._experimentDir.child("sketch.snapshot.log")
-		if not snapFile.exists():
-			snapFile.create()
 
-		self._eventsLog = eventFile.open('a')
-		self._sketchLog = sketchFile.open('a')
-
-		with snapFile.open('w') as fp:
+		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
 
 		sketch.subscribe(self, self._writeSketchEvent)
@@ -93,8 +88,10 @@ class Experiment (EventEmitter):
 			yield workspace.run()
 		finally:
 			sketch.unsubscribe(self)
-			self._eventsLog.close()
-			self._sketchLog.close()
+			workspace.off("block-state", onBlockStateChange)
+			workspace.off("log-message", onLogMessage)
+			eventFile.close()
+			sketchFile.close()
 
 	def pause (self):
 		return self.sketch.workspace.pause()
