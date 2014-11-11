@@ -22,7 +22,7 @@ Polymer('octopus-runtime', {
 
 		socket.onmessage = function (e) {
 			var data = JSON.parse(e.data);
-			console.log("socket message", data);
+			//console.log("socket message", data);
 
 			var protocol = data.protocol;
 			var command = data.command;
@@ -35,6 +35,7 @@ Polymer('octopus-runtime', {
 
 				if (command === "block-state") {
 					self.fire("block-state", payload);
+					console.log("Block", payload.block, "state", payload.state);
 				}
 
 				if (command === "experiment-started") {

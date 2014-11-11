@@ -310,6 +310,12 @@ Polymer('octopus-editor', {
 		}
 	},
 
+	clearBlockStates: function () {
+		Blockly.mainWorkspace.getAllBlocks().forEach(function (block) {
+			block.setRunningState("ready");
+		});
+	},
+
 	toolboxPopulate: function (xml) {
 		// Iterate over each category.
 		var toolbox = [];

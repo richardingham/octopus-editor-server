@@ -119,6 +119,7 @@ window.addEventListener('polymer-ready', function () {
 	// Buttons
 	//
 	runButton.addEventListener("click", function (e) {
+		editor.clearBlockStates.call(editor);
 		runtime.experimentAction.call(runtime, "run");
 	});
 	pauseButton.addEventListener("click", function (e) {

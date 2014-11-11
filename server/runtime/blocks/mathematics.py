@@ -177,14 +177,10 @@ class math_random_float (Block):
 
 class math_change (Block):
 	def run (self):
-		self.emit("started")
-
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1 
 		variable = self.workspace.variables[self.fields['VAR']]
 
 		variable.set(result.value + add)
 
-		self._complete = defer.succeed(None)
-		self._runNext(self._complete)
-		return self._complete
+		return defer.succeed(None)
 

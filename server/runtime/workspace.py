@@ -1,4 +1,4 @@
-from twisted.internet import defer
+from twisted.internet import reactor, defer
 from twisted.python import log
 
 from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
@@ -9,14 +9,15 @@ from ..util import EventEmitter
 
 defer.Deferred.debug = True
 
+
 blocks = {}
 def populate_blocks ():
 	global blocks
 	blocks = {}
 
-	from .blocks import mathematics, text, logic, controls, variables
+	from .blocks import mathematics, text, logic, controls, variables, machines
 
-	for mod in (mathematics, text, logic, controls, variables):
+	for mod in (mathematics, text, logic, controls, variables, machines):
 		blocks.update(dict([(name, cls) for name, cls in mod.__dict__.items() if isinstance(cls, type)]))
 
 	del blocks['Block']
@@ -170,25 +171,103 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 	def _run (self):
 		self._complete = defer.Deferred()
+		dependencyGraph = []
+		runningBlocks = set()
+		resumeBlocks = []
+		self.emit("workspace-started")
 
-		results = []
-		for block in self.topBlocks.itervalues():
-			results.append(block.run())
+		def _runBlock (block, decls):
+			if self.state is State.PAUSED:
+				self._onResume = _onResume
+				resumeBlocks.add((block, decls))
+				return
 
-		def _error (failure):
-			try:
-				self._cancel(abort = True).addErrback(log.err)
-			except NotRunning:
-				pass
+			runningBlocks.add(block)
+			d = block.run()
+			d.addCallbacks(
+				callback = _blockComplete,
+				callbackArgs = [block, decls],
+				errback = _blockError, 
+				errbackArgs = [block]
+			)
+			d.addErrback(log.err)
 
-			# Return the actual error
-			return failure.value.subFailure
+		def _onResume ():
+			for block, decls in resumeBlocks:
+				_runBlock(block, decls)
 
-		# If any one step fails, cancel the rest.
-		defer.gatherResults(results, consumeErrors = True).addCallbacks(
-			self._complete.callback,
-			_error
-		).addErrback(self._complete.errback)
+			resumeBlocks = []
+
+		def _blockComplete (result, block, decls):
+			runningBlocks.discard(block)
+
+			# Check if any other blocks can be run
+			toRun = []
+			for item in dependencyGraph:
+				for decl in decls:
+					item["deps"].discard(decl)
+
+				if len(item["deps"]) is 0:
+					toRun.append(item)
+
+			# _runBlock needs to be called in the next tick so that
+			# the dependency graph is updated before any new blocks run. 
+			for item in toRun:
+				dependencyGraph.remove(item)
+				reactor.callLater(0, _runBlock, item["block"], item["decls"])
+
+			log.msg("Block %s completed, now running %s" % (block.id, [i["block"].id for i in toRun]))
+			log.msg("(Waiting for %s blocks)" % (len(runningBlocks) + len(toRun)))
+
+			# Nothing left to run, finish the experiment
+			if len(runningBlocks) + len(toRun) is 0:
+				_finish()
+
+		def _blockError (failure, block):
+			# If any one step fails, cancel the rest.
+			if not _blockError.called:
+				log.msg("Received error %s from block %s. Aborting." % (failure, block.id))
+
+				def _errback (error):
+					# Pass the error if this is called as errback, or else
+					# the original failure if abort() had no errors.
+					# Call later to try to allow any other block-state events
+					# to propagate before the listeners are cancelled.
+					reactor.callLater(0, self._complete.errback, error or failure)
+					self.emit("workspace-stopped")
+					_blockError.called = True
+
+				try:
+					self.abort().addBoth(_errback)
+				except NotRunning:
+					pass
+
+		# Allow access to called within scope of _blockError
+		_blockError.called = False
+
+		def _finish (error = None):
+			if not _blockError.called:
+				self._complete.callback(None)
+				self.emit("workspace-stopped")
+
+		# Get all blocks ordered by x then y.
+		blocks = sorted(self.topBlocks.itervalues(), key = lambda b: b.position)
+
+		# Run each block based on the dependency graph
+		for block in blocks:
+			deps = block.getVariableNames()
+			decls = block.getDeclarationNames()
+
+			if len(deps) is 0:
+				log.msg("Block %s has no deps, running now" % block.id)
+				reactor.callLater(0, _runBlock, block, decls)
+			else:
+				log.msg("Block %s waiting for %s" % (block.id, deps))
+				dependencyGraph.append({
+					"block": block,
+					"deps": set(deps),
+					"decls": decls
+				})
 
 		return self._complete
 
@@ -210,6 +289,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			except NotRunning:
 				pass
 
+		self.emit("workspace-paused")
 		return defer.DeferredList(results)
 
 	def _resume (self):
@@ -220,6 +300,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			except NotPaused:
 				pass
 
+		self.emit("workspace-resumed")
 		return defer.DeferredList(results)
 
 	def _cancel (self, abort = False):
@@ -361,8 +442,14 @@ class Block (BaseStep, EventEmitter):
 		return children
 
 	def setFieldValue (self, fieldName, value):
+		oldValue = self.fields[fieldName]
 		self.fields[fieldName] = value
-		self.emit('value-changed')
+		self.emit('value-changed', 
+			block = self,
+			field = fieldName,
+			oldValue = oldValue,
+			newValue = value
+		)
 
 	def getFieldValue (self, fieldName):
 		return self.fields[fieldName]
@@ -396,7 +483,7 @@ class Block (BaseStep, EventEmitter):
 
 		@childBlock.on('value-changed')
 		def onValueChange (data):
-			self.emit('value-changed')
+			self.emit('value-changed', **data)
 
 		@self.on('disconnected')
 		def onDisconnect (data):
@@ -438,19 +525,21 @@ class Block (BaseStep, EventEmitter):
 
 		return variables
 
-	def _runNext (self, complete):
-		""" Run the next block, chaining the callbacks """
+	def getVariableNames (self):
+		variables = []
 
-		if self.state not in (State.CANCELLED, State.ERROR):
-			self.state = State.COMPLETE
+		for block in self.getChildren():
+			variables.extend(block.getVariableNames())
 
-		if self.nextBlock is not None:
-			return self.nextBlock.run().addCallbacks(
-				complete.callback, 
-				complete.errback
-			)
-		else:
-			return complete.callback(None)
+		return variables
+
+	def getDeclarationNames (self):
+		variables = []
+
+		for block in self.getChildren():
+			variables.extend(block.getDeclarationNames())
+
+		return variables
 
 	#
 	# Control
@@ -470,7 +559,40 @@ class Block (BaseStep, EventEmitter):
 
 		self.state = State.RUNNING
 		self.parent = parent
-		return defer.maybeDeferred(self._run)
+
+		self._complete = defer.Deferred()
+
+		def _done (result = None):
+			""" Run the next block, chaining the callbacks """
+
+			if self.state is State.PAUSED:
+				self._onResume = _done
+				return
+
+			if self.state not in (State.CANCELLED, State.ERROR):
+				self.state = State.COMPLETE
+
+			if self.state is State.ERROR or self._complete is None:
+				# Don't continue execution if there has been an error
+				# (i.e. abort has been called)
+				pass
+			elif self.nextBlock is not None:
+				self.nextBlock.run().addCallbacks(
+					self._complete.callback, 
+					self._complete.errback
+				)
+			else:
+				self._complete.callback(None)
+
+		def _error (failure):
+			log.err("Block %s #%s Error: %s" % (self.type, self.id, failure))
+			self.state = State.ERROR
+			self._complete.errback(failure)
+
+		d = defer.maybeDeferred(self._run)
+		d.addCallbacks(_done, _error)
+
+		return self._complete
 
 	def eval (self):
 		return defer.succeed(None)
@@ -528,11 +650,27 @@ class Block (BaseStep, EventEmitter):
 
 	def cancel (self, abort = False):
 		if self.state in (State.RUNNING, State.PAUSED):
-			self.state = State.CANCELLED
+			if abort:
+				self.state = State.ERROR
+			else:
+				self.state = State.CANCELLED
 
 			self._onResume = None
 
+			# Send cancelled message to any parent block.
+			try:
+				if abort and self._complete.called is False:
+					self._complete.errback(Aborted())
+					self._complete = None
+			except AttributeError:
+				pass
+
+			# Cancel the block execution
 			results = [defer.maybeDeferred(self._cancel, abort)]
+
+			# Cancel any inputs
+			# NB. only abort will propagate down. 
+			# Cancel is limited to one block and its inputs.
 			for block in self.inputs.itervalues():
 				# Cancel all input children
 				try:
@@ -540,38 +678,33 @@ class Block (BaseStep, EventEmitter):
 				except (AttributeError, NotRunning):
 					pass
 
-			# Only abort will propagate down. 
-			# Cancel is limited to one block and its inputs.
+			# Propagate abort call
 			if abort:
 				try:
-					results.append(block.nextBlock.abort())
+					results.append(block.nextBlock.cancel(abort))
 				except (AttributeError, NotRunning):
 					pass
 
-			# Send cancelled message to any parent block.
-			try:
-				if self._complete.called is False:
-					if abort:
-						self._complete.errback(Aborted())
-					else:
-						self._complete.errback(Cancelled())
-					self._complete = None
-			except AttributeError:
-				pass
-
 			return defer.DeferredList(results)
 
-		# Pass on cancel call to next block.
+		# Pass on abort call to next block.
 		elif abort and self.nextBlock is not None:
+			if self.state is State.READY:
+				self.state = State.CANCELLED
+
 			return self.nextBlock.cancel(abort)
 
 		# Bottom of stack, nothing was running
 		elif abort:
+			if self.state is State.READY:
+				self.state = State.CANCELLED
+
 			return defer.succeed(None)
 
 		# This step is not running yet. Stop it from running.
-		elif self.State is State.READY:
+		elif self.state is State.READY:
 			self.state = State.CANCELLED
+
 			return defer.succeed(None)
 
 	def reset (self):
