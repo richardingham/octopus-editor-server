@@ -4,11 +4,12 @@
 <script>
 
 Polymer('octopus-runtime', {
-    /**
-     * Fired when a block event is received.
-     *
-     * @event block-event
-     */
+    publish: {
+		experiment: {
+			id: null,
+			state: "ready"
+		}
+	},
 
 	ready: function () {
 		var self = this;
@@ -39,17 +40,17 @@ Polymer('octopus-runtime', {
 				}
 
 				if (command === "experiment-started") {
-					self.experiment = payload.experiment;
-					self.fire("experiment-started", payload);
+					self.experiment.id = payload.experiment;
+					self.experiment.state = "running";
 				} else if (command === "experiment-stopped") {
-					self.experiment = null;
-					self.fire("experiment-stopped", payload);
+					self.experiment.id = null;
+					self.experiment.state = "ready";
 				} else if (command === "experiment-paused") {
-					self.fire("experiment-paused", payload);
+					self.experiment.state = "paused";
 				} else if (command === "experiment-resumed") {
-					self.fire("experiment-resumed", payload);
+					self.experiment.state = "running";
 				} else if (command === "experiment-error") {
-					self.fire("experiment-error", payload);
+					self.experiment.state = "error";
 				} else if (command === "experiment-log" && payload.experiment == self.experiment) {
 					console.log("experiment-log", "[", payload.level, "]", payload.message);
 				}
