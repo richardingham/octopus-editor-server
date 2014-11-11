@@ -246,7 +246,6 @@ Connection.prototype.disconnect = function() {
     // Superior block.
     parentBlock = this.sourceBlock_;
     childBlock = otherConnection.sourceBlock_;
-    otherConnection.emit("disconnect", childBlock, parentBlock);
   } else {
     // Inferior block.
     parentBlock = otherConnection.sourceBlock_;

@@ -1403,12 +1403,6 @@ Block.prototype.setPreviousStatement = function(newBoolean, opt_check) {
     this.previousConnection =
         new Blockly.Connection(this, Blockly.PREVIOUS_STATEMENT);
     this.previousConnection.setCheck(opt_check);
-    this.previousConnection.on("connect", function (child, parent) {
-      this.workspaceEmit("block-connected", { block: child.id, parent: parent.id, connection: "previous" });
-    }.bind(this));
-    this.previousConnection.on("disconnect", function (child, parent) {
-      this.workspaceEmit("block-disconnected", { block: child.id, parent: parent.id, connection: "previous" });
-    }.bind(this));
   }
   if (this.rendered) {
     this.render();
@@ -1436,12 +1430,12 @@ Block.prototype.setNextStatement = function(newBoolean, opt_check) {
     this.nextConnection =
         new Blockly.Connection(this, Blockly.NEXT_STATEMENT);
     this.nextConnection.setCheck(opt_check);
-    /*this.nextConnection.on("connect", function (child, parent) {
-      console.log("Connect stack " + parent.id + " as previous statement of " + child.id + " - via (next) " + this.id);
+    this.nextConnection.on("connect", function (child, parent) {
+      this.workspaceEmit("block-connected", { block: child.id, parent: parent.id, connection: "previous" });
     }.bind(this));
     this.nextConnection.on("disconnect", function (child, parent) {
-      console.log("Disconnect stack " + parent.id + " as previous statement of " + child.id + " - via (next) " + this.id);
-    }.bind(this));*/
+      this.workspaceEmit("block-disconnected", { block: child.id, parent: parent.id, connection: "previous" });
+    }.bind(this));
   }
   if (this.rendered) {
     this.render();
