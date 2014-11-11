@@ -233,7 +233,9 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 					# the original failure if abort() had no errors.
 					# Call later to try to allow any other block-state events
 					# to propagate before the listeners are cancelled.
-					reactor.callLater(0, self._complete.errback, error or failure)
+					if not self._complete.called:
+						reactor.callLater(0, self._complete.errback, error or failure)
+
 					self.emit("workspace-stopped")
 					_blockError.called = True
 
@@ -246,7 +248,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		_blockError.called = False
 
 		def _finish (error = None):
-			if not _blockError.called:
+			if not (_blockError.called or self._complete.called):
 				self._complete.callback(None)
 				self.emit("workspace-stopped")
 
@@ -378,9 +380,9 @@ class Block (BaseStep, EventEmitter):
 
 	def connectNextBlock (self, childBlock):
 		if self.nextBlock is not None:
-			raise Exception("Block.connectNextBlock: parent already has a next Block")
+			raise Exception("Block.connectNextBlock (#%s): parent #%s already has a next Block" % (childBlock.id, self.id))
 		if childBlock.prevBlock is not None:
-			raise Exception("Block.connectNextBlock: child already has a previous Block")
+			raise Exception("Block.connectNextBlock (#%s): child #%s already has a previous Block" % (self.id, childBlock.id))
 
 		self.nextBlock = childBlock
 		childBlock.prevBlock = self
@@ -754,7 +756,7 @@ class Block (BaseStep, EventEmitter):
 			
 		elif self.prevBlock is not None:
 			if self.parentInput is not None:
-				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "previous", "parent": self.prevBlock.id, "input": self.parentInput }})
+				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "input-statement", "parent": self.prevBlock.id, "input": self.parentInput }})
 			else:
 				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "previous", "parent": self.prevBlock.id }})
 
