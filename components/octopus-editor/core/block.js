@@ -209,9 +209,9 @@ Block.prototype.fill = function(workspace, prototypeName) {
  * @param {String} state One of "READY", "RUNNING", "PAUSED", "COMPLETE", "CANCELLED" or "ERROR"
  */
 Block.prototype.setRunningState = function(state) {
-  var oldState = self.runningState_;
+  var oldState = this.runningState_;
   state = state.toLowerCase();
-  self.runningState_ = state;
+  this.runningState_ = state;
 
   Blockly.removeClass_(this.svg_.svgGroup_, 'state-' + oldState);
   Blockly.addClass_(this.svg_.svgGroup_, 'state-' + state);
