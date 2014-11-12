@@ -90,12 +90,20 @@
 			<core-icon-button icon="av:pause-circle-fill" id="btn-pause" on-click="{{pauseClicked}}">Pause</core-icon-button>
 			<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-click="{{resumeClicked}}">Resume</core-icon-button>
 			<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
-			<input is="core-input" id="experiment-title" value="title" />
+			<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
 		</core-toolbar>
 		<octopus-editor id="editor" on-block-event="{{onEditorBlockEvent}}"></octopus-editor>
 	</div>
 	<div id="menu-container"></div>
-	<octopus-runtime id="runtime" url="ws://127.0.0.1:9000" experiment="{{experiment}}" on-sketch-loaded="{{onSketchLoaded}}" on-block-state="{{onBlockState}}"><t:attr name="sketch"><t:slot name="sketch_id" /></t:attr></octopus-runtime>
+	<octopus-runtime 
+		id="runtime" url="ws://127.0.0.1:9000" 
+		experiment="{{experiment}}" 
+		on-sketch-loaded="{{onRuntimeSketchLoaded}}" 
+		on-sketch-renamed="{{onRuntimeSketchRenamed}}"
+		on-block-state="{{onRuntimeBlockStateChanged}}"
+	>
+		<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
+	</octopus-runtime>
 </template>
 <script>
 
@@ -116,12 +124,20 @@ template.stopClicked = function (e) {
 template.onEditorBlockEvent = function (e) {
 	this.$.runtime.blockEvent.call(this.$.runtime, e.detail);
 };
-template.onSketchLoaded = function (e) {
+template.onRuntimeSketchLoaded = function (e) {
+	this.$['experiment-title'].value = e.detail.title;
 	this.$.editor.loadSketch.call(this.$.editor, e.detail);
 };
-template.onBlockState = function (e) {
+template.onRuntimeSketchRenamed = function (e) {
+	this.$['experiment-title'].value = e.detail;
+};
+template.onRuntimeBlockStateChanged = function (e) {
 	this.$.editor.setBlockState.call(this.$.editor, e.detail);
 };
+template.onTitleChanged = function (e) {
+	this.$.runtime.changeTitle.call(this.$.runtime, e.srcElement.value);
+};
+
 
 </script>
 </body>

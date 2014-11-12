@@ -40,7 +40,7 @@ class SketchProtocol (object):
 
 			# Sketch commands
 			elif topic == 'sketch-rename':	
-				return sketch.renameSketch(args(payload, ["name"], True), context)
+				return sketch.renameSketch(args(payload, ["title"], True), context)
 
 			# Experiment commands
 			elif topic == 'experiment-run':

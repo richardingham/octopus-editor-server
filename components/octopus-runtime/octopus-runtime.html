@@ -32,14 +32,18 @@ Polymer('octopus-runtime', {
 			if (protocol === "sketch" && payload.sketch == self.sketch) {
 				if (command === "sketch-load") {
 					self.fire("sketch-loaded", payload);
-				}
+				} 
 
-				if (command === "block-state") {
+				else if (command === "sketch-renamed") {
+					self.fire("title-renamed", payload.title);
+				} 
+
+				else if (command === "block-state") {
 					self.fire("block-state", payload);
 					console.log("Block", payload.block, "state", payload.state);
-				}
+				} 
 
-				if (command === "experiment-started") {
+				else if (command === "experiment-started") {
 					self.experiment.id = payload.experiment;
 					self.experiment.state = "running";
 				} else if (command === "experiment-stopped") {
@@ -51,7 +55,9 @@ Polymer('octopus-runtime', {
 					self.experiment.state = "running";
 				} else if (command === "experiment-error") {
 					self.experiment.state = "error";
-				} else if (command === "experiment-log" && payload.experiment == self.experiment) {
+				} 
+
+				else if (command === "experiment-log" && payload.experiment == self.experiment) {
 					console.log("experiment-log", "[", payload.level, "]", payload.message);
 				}
 			}
@@ -65,51 +71,39 @@ Polymer('octopus-runtime', {
 		this.socket = socket;
 	},
 
-	blockEvent: function (event) {
+	_socketSend: function (protocol, command, payload) {
 		if (!this.open) {
 			return;
 		}
 
-		event.data.sketch = this.sketch;
-
-		var data = {
-			protocol: "sketch",
-			command: "block-" + event.eventType,
-			payload: event.data
-		};
+		var data = { protocol: protocol, command: command, payload: payload };
 
 		console.log("Socket send", data);
 		this.socket.send(JSON.stringify(data));
+	},
+
+	blockEvent: function (event) {
+		event.data.sketch = this.sketch;
+		this._socketSend("sketch", "block-" + event.eventType, event.data);
+	},
+
+	changeTitle: function (title) {
+		this._socketSend("sketch", "sketch-rename", { 
+			sketch: this.sketch, 
+			title: title 
+		});
 	},
 
 	experimentAction: function (action) {
-		if (!this.open) {
-			return;
-		}
-
-		var data = {
-			protocol: "sketch",
-			command: "experiment-" + action,
-			payload: {
-				sketch: this.sketch
-			}
-		};
-
-		console.log("Socket send", data);
-		this.socket.send(JSON.stringify(data));
+		this._socketSend("sketch", "experiment-" + action, {
+			sketch: this.sketch
+		});
 	},
-	
-	load: function (id) {
-		var data = {
-			protocol: "sketch",
-			command: "sketch-load",
-			payload: {
-				sketch: id
-			}
-		};
 
-		console.log("Socket send", data);
-		this.socket.send(JSON.stringify(data));
+	load: function (id) {
+		this._socketSend("sketch", "sketch-load", {
+			sketch: id
+		});
 	}
 });
 

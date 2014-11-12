@@ -265,7 +265,7 @@ class Sketch (EventEmitter):
 	#
 
 	def renameSketch (self, payload, context):
-		newName = payload['name']
+		newName = payload['title']
 
 		self._writeEvent("RenameSketch", { "from": self.title, "to": newName })
 		self.db.runOperation("UPDATE sketches SET title = ? WHERE guid = ?", (newName, self.id))
