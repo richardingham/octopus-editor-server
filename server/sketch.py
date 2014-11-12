@@ -23,7 +23,6 @@ class Sketch (EventEmitter):
 
 	@classmethod
 	def createId (cls):
-		result = defer.Deferred()
 		id = str(uuid.uuid4())
 		created_date = now()
 
@@ -36,15 +35,13 @@ class Sketch (EventEmitter):
 		def _done (result):
 			return id
 
-		cls.db.runOperation("""
+		return cls.db.runOperation("""
 				INSERT INTO sketches 
 				(guid, title, user_id, created_date, modified_date) 
 				VALUES (?, ?, ?, ?, ?)
 			""", 
 			(id, "New Sketch", 1, created_date, created_date)
-		).addCallbacks(_done, result.errback)
-
-		return result
+		).addCallback(_done)
 
 	@classmethod
 	def exists (cls, id):
