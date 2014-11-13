@@ -96,6 +96,24 @@ class machine_vapourtec_R2R4 (machine_declaration):
 		return vapourtec.R2R4
 
 
+class machine_knauer_K120 (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import knauer
+		return knauer.K120
+
+
+class machine_knauer_S100 (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import knauer
+		return knauer.S100
+
+
+class machine_vici_multivalve (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import vici
+		return vici.MultiValve
+
+
 class connection_tcp (Block):
 	def eval (self):
 		return octopus.transport.basic.tcp(

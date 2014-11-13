@@ -26,43 +26,82 @@
 
 
 var _R2R4_vars = [{
+	name: "status", title: "Status", type: "String", readonly: true
+}, {
 	name: "power", title: "Power", type: "String"
-},{
+}, {
+	name: "pressure_limit", title: "Pressure Limit", type: "Number"
+}, {
 	name: "pressure", title: "System Pressure", type: "Number", readonly: true
 }, {
-	name: "pump1", title: "Pump A", parts: [
-		{ name: "target", title: "Target", type: "Number" },
-		{ name: "rate", title: "Flow Rate", type: "Number", readonly: true },
-		{ name: "pressure", title: "Pressure", type: "Number", readonly: true },
-		{ name: "input", title: "Input", type: "String" },
-		{ name: "airlock", title: "Airlock", type: "Number", readonly: true }
-	]
-}, {
-	name: "heater1", title: "Heater A", parts: [
-		{ name: "target", title: "Target", type: "Number" },
-		{ name: "temp", title: "Temperature", type: "Number", readonly: true },
-		{ name: "mode", title: "Mode", type: "Number", readonly: true },
-		{ name: "power", title: "Power", type: "Number", readonly: true }
-	]
-}, {
-	name: "heater2", title: "Heater B", parts: [
-		{ name: "target", title: "Target", type: "Number" },
-		{ name: "temp", title: "Temperature", type: "Number", readonly: true },
-		{ name: "mode", title: "Mode", type: "Number", readonly: true },
-		{ name: "power", title: "Power", type: "Number", readonly: true }
-	]
+	name: "output", title: "Output", type: "String"
 }]
+for (var i = 1; i < 3; i++) {
+  _R2R4_vars.push({
+    name: "pump" + i, title: "Pump " + String.fromCharCode(64 + i), parts: [
+      { name: "target", title: "Target", type: "Number" },
+      { name: "rate", title: "Flow Rate", type: "Number", readonly: true },
+      { name: "pressure", title: "Pressure", type: "Number", readonly: true },
+      { name: "input", title: "Input", type: "String" },
+      { name: "airlock", title: "Airlock", type: "Number", readonly: true }
+    ]
+  });
+}
+for (var i = 1; i < 5; i++) {
+  _R2R4_vars.push({
+    name: "heater" + i, title: "Heater " + String.fromCharCode(64 + i), parts: [
+      { name: "target", title: "Target", type: "Number" },
+      { name: "temp", title: "Temperature", type: "Number", readonly: true },
+      { name: "mode", title: "Mode", type: "Number", readonly: true },
+      { name: "power", title: "Power", type: "Number", readonly: true }
+    ]
+  });
+}
+
+var _K120_vars = [
+  { name: "status", title: "Status", type: "String", readonly: true },
+	{ name: "power", title: "Power", type: "String" },
+  { name: "target", title: "Target", type: "Number" },
+  { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
+];
+var _S100_vars = [
+  { name: "status", title: "Status", type: "String", readonly: true },
+	{ name: "power", title: "Power", type: "String" },
+  { name: "target", title: "Target", type: "Number" },
+  { name: "pressure", title: "Pressure", type: "Number", readonly: true },
+  { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
+];
+
+var _MultiValve_vars = [
+  { name: "position", title: "Position", type: "Number" }
+];
 
 var _ARROW_CHAR = /*goog.userAgent.ANDROID ? ' \u25B6 ' :*/ ' \u25B8 ';
 
-Blockly.Blocks['machine_vapourtec_R2R4'] = {
+var extend = function (defaults, options) {
+    var extended = {};
+    var prop;
+    for (prop in defaults) {
+        if (Object.prototype.hasOwnProperty.call(defaults, prop)) {
+            extended[prop] = defaults[prop];
+        }
+    }
+    for (prop in options) {
+        if (Object.prototype.hasOwnProperty.call(options, prop)) {
+            extended[prop] = options[prop];
+        }
+    }
+    return extended;
+};
+
+var machineBlock = {
   init: function() {
     var default_name = "reactor";
 
     //this.setHelpUrl('http://www.example.com/');
     this.setColour(0);
     this.appendDummyInput()
-        .appendField("Vapourtec R2+/R4 ")
+        .appendField(this.machineTitle + " ")
         .appendField(new Blockly.FieldMachineFlydown(
             default_name, //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
             Blockly.FieldFlydown.DISPLAY_BELOW,
@@ -97,7 +136,7 @@ Blockly.Blocks['machine_vapourtec_R2R4'] = {
         }
       }
 
-      addParts(machineVar, _R2R4_vars, "");
+      addParts(machineVar, this.machineVars, "");
       this.variable_ = machineVar;
       this.getField_('NAME').setValue(machineVar.getVarName());
     }
@@ -139,20 +178,27 @@ Blockly.Blocks['machine_vapourtec_R2R4'] = {
     if (this.variable_) {
       this.variable_.getScope().removeVariable(this.variable_.getVarName());
     }
-  },
-
-  getVariablesMenu: function(name, forSetter) {
-    return [
-      ["Pump A", [name, "pump1"], forSetter, [
-        ["Target", [name, "pump1", "target"]],
-        ["Flow Rate", [name, "pump1", "rate"], forSetter],
-        ["Pressure", [name, "pump1", "pressure"], forSetter]
-      ]],
-      ["Pump B", [name, "pump2"], forSetter, [
-        ["Target", [name, "pump2", "target"]],
-        ["Flow Rate", [name, "pump2", "rate"], forSetter],
-        ["Pressure", [name, "pump2", "pressure"], forSetter]
-      ]],
-    ];
   }
 };
+
+
+
+Blockly.Blocks['machine_vapourtec_R2R4'] = extend(machineBlock, {
+  machineTitle: "Vapourtec R2+/R4",
+  machineVars: _R2R4_vars,
+});
+
+Blockly.Blocks['machine_knauer_K120'] = extend(machineBlock, {
+  machineTitle: "Knauer K120",
+  machineVars: _K120_vars,
+});
+
+Blockly.Blocks['machine_knauer_S100'] = extend(machineBlock, {
+  machineTitle: "Knauer S100",
+  machineVars: _S100_vars,
+});
+
+Blockly.Blocks['machine_vici_multivalve'] = extend(machineBlock, {
+  machineTitle: "VICI multi-position valve",
+  machineVars: _MultiValve_vars,
+});
