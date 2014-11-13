@@ -46,19 +46,24 @@ Polymer('octopus-runtime', {
 				else if (command === "experiment-started") {
 					self.experiment.id = payload.experiment;
 					self.experiment.state = "running";
+					self._fireLogMessage(payload.experiment, "status", "Experiment running", new Date());
 				} else if (command === "experiment-stopped") {
 					self.experiment.id = null;
 					self.experiment.state = "ready";
+					self._fireLogMessage(payload.experiment, "status", "Experiment complete", new Date());
 				} else if (command === "experiment-paused") {
 					self.experiment.state = "paused";
+					self._fireLogMessage(payload.experiment, "status", "Experiment paused", new Date());
 				} else if (command === "experiment-resumed") {
 					self.experiment.state = "running";
+					self._fireLogMessage(payload.experiment, "status", "Experiment resumed", new Date());
 				} else if (command === "experiment-error") {
 					self.experiment.state = "error";
+					self._fireLogMessage(payload.experiment, "error", "Experiment error", new Date());
 				} 
 
-				else if (command === "experiment-log" && payload.experiment == self.experiment) {
-					console.log("experiment-log", "[", payload.level, "]", payload.message);
+				else if (command === "experiment-log" && payload.experiment == self.experiment.id) {
+					self._fireLogMessage(payload.experiment, payload.level, payload.message, new Date());
 				}
 			}
 		};
@@ -69,6 +74,15 @@ Polymer('octopus-runtime', {
 		};
 
 		this.socket = socket;
+	},
+
+	_fireLogMessage: function (experiment, level, message, time) {
+		this.fire("experiment-log", { 
+			experiment: experiment,
+			level: level,
+			message: message,
+			time: time
+		});
 	},
 
 	_socketSend: function (protocol, command, payload) {

@@ -8,6 +8,7 @@
 	<link rel="import" href="/components/octopus-runtime/octopus-runtime.html" />
 	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
 	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
+	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
 	<link rel="import" href="/bower_components/core-icons/av-icons.html" />
 	<link rel="import" href="/bower_components/core-input/core-input.html" />
 
@@ -15,7 +16,8 @@
 	<link rel="stylesheet" href="/resources/dropdown.css" />
 
 	<style>
-
+	/* <![CDATA[ */
+	
 	html, body {
 		margin: 0;
 		padding: 0;
@@ -78,6 +80,44 @@
 		margin-left: 15px;
 	}
 
+	#experiments-log {
+		position: absolute;
+		right: 10px;
+		top: 10px;
+		width: 500px;
+		-webkit-user-selct: text;
+		-moz-user-select: text;
+		-ms-user-select: element;
+	}
+
+	#experiments-log .experiment {
+		background: #fff;
+		border: 2px solid #223388;
+		margin-top: 10px;
+		padding: 5px;
+		position: relative;
+	}
+
+	#experiments-log .experiment core-icon {
+		color: #223388;
+		cursor: pointer;
+		position: absolute;
+		right: 4px;
+		top: 0px;
+		width: 16px;
+	}
+	#experiments-log .experiment core-icon:hover {
+		color: #526E9C;
+	}
+	
+	#experiments-log .experiment ul {
+		font-size: 12px;
+		list-style-type: none;
+		margin: 0;
+		padding-left: 0;
+	}
+
+	/* ]]> */
 	</style>
 	
   
@@ -94,6 +134,18 @@
 		</core-toolbar>
 		<octopus-editor id="editor" on-block-event="{{onEditorBlockEvent}}"></octopus-editor>
 	</div>
+	<div id="experiments-log">
+		<template repeat="{{ logMessages as experiment }}">
+		<div class="experiment">
+			<core-icon icon="cancel" on-click="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
+			<ul>
+				<template repeat="{{ experiment.messages as item }}">
+				<li>[{{item.time | formatLogTime}} {{ item.level }}] {{ item.message }}</li>
+				</template>
+			</ul>
+		</div>
+		</template>
+	</div>
 	<div id="menu-container"></div>
 	<octopus-runtime 
 		id="runtime" url="ws://127.0.0.1:9000" 
@@ -101,13 +153,16 @@
 		on-sketch-loaded="{{onRuntimeSketchLoaded}}" 
 		on-sketch-renamed="{{onRuntimeSketchRenamed}}"
 		on-block-state="{{onRuntimeBlockStateChanged}}"
+		on-experiment-log="{{onRuntimeLogMessage}}"
 	>
 		<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
 	</octopus-runtime>
 </template>
 <script>
+// <![CDATA[
 
 var template = document.getElementById('application');
+template.logMessages = [];
 template.runClicked = function (e) {
     this.$.editor.clearBlockStates();
 	this.$.runtime.experimentAction.call(this.$.runtime, "run");
@@ -137,8 +192,41 @@ template.onRuntimeBlockStateChanged = function (e) {
 template.onTitleChanged = function (e) {
 	this.$.runtime.changeTitle.call(this.$.runtime, e.srcElement.value);
 };
+template.onRuntimeLogMessage = function (e) {
+	var logMessages = this.logMessages;
+	var experiment;
+	for (var i = 0, m = logMessages.length; i < m; i++) {
+		if (logMessages[i].id === e.detail.experiment) {
+			experiment = logMessages[i];
+		}
+	}
+	if (!experiment) {
+		experiment = {
+			id: e.detail.experiment,
+			messages: []
+		};
+		logMessages.push(experiment);
+	}
+	experiment.messages.push({
+		time: e.detail.time,
+		level: e.detail.level,
+		message: e.detail.message
+	});
+};
+template.closeLog = function (e) {
+	var experimentId = e.srcElement.dataset.experiment;
+	var logMessages = this.logMessages;
+	for (var i = 0, m = logMessages.length; i < m; i++) {
+		if (logMessages[i].id === experimentId) {
+			logMessages.splice(i, 1);
+		}
+	}
+};
+template.formatLogTime = function (date) {
+	return [date.getHours(), date.getMinutes(), date.getSeconds()].join(":");
+};
 
-
+// ]]>
 </script>
 </body>
 </html>
