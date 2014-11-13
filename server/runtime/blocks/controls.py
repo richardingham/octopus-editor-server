@@ -20,7 +20,7 @@ class controls_if (Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		i = 0
-		input = self.getInput("IF", i)
+		input = self._getInput("IF", i)
 
 		while input is not None:
 			try:
@@ -37,8 +37,10 @@ class controls_if (Block):
 				except Cancelled:
 					pass
 
-				defer.returnValue()
+				# Skip any further conditions
+				defer.returnValue(None)
 
+			# Move to the next condition
 			i += 1
 			input = self._getInput("IF", i)
 
