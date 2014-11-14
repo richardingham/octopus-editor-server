@@ -1,4 +1,4 @@
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, task
 from twisted.python import log
 
 from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
@@ -135,7 +135,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		try:
 			if childBlock._complete.called is False:
 				childBlock._complete.errback(Disconnected())
-				childBlock._complete = None
+				childBlock._complete = defer.Deferred()
 		except AttributeError:
 			pass
 
@@ -176,30 +176,35 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		resumeBlocks = []
 		self.emit("workspace-started")
 
-		def _runBlock (block, decls):
+		def _runBlock (block):
 			if self.state is State.PAUSED:
 				self._onResume = _onResume
-				resumeBlocks.add((block, decls))
+				resumeBlocks.add(block)
 				return
 
 			runningBlocks.add(block)
-			d = block.run()
+
+			# Run in the next tick so that dependency graph
+			# and runningBlocks are all updated before blocks
+			# are run (and potentially finish)
+			d = task.deferLater(reactor, 0, block.run)
 			d.addCallbacks(
 				callback = _blockComplete,
-				callbackArgs = [block, decls],
+				callbackArgs = [block],
 				errback = _blockError, 
 				errbackArgs = [block]
 			)
 			d.addErrback(log.err)
 
 		def _onResume ():
-			for block, decls in resumeBlocks:
-				_runBlock(block, decls)
+			for block in resumeBlocks:
+				_runBlock(block)
 
 			resumeBlocks = []
 
-		def _blockComplete (result, block, decls):
+		def _blockComplete (result, block):
 			runningBlocks.discard(block)
+			decls = block.getDeclarationNames()
 
 			# Check if any other blocks can be run
 			toRun = []
@@ -210,20 +215,21 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				if len(item["deps"]) is 0:
 					toRun.append(item)
 
-			# _runBlock needs to be called in the next tick so that
-			# the dependency graph is updated before any new blocks run. 
+			# _runBlock needs to be called in the next tick (done in _runBlock)
+			# so that the dependency graph is updated before any new blocks run. 
 			for item in toRun:
 				dependencyGraph.remove(item)
-				reactor.callLater(0, _runBlock, item["block"], item["decls"])
+				_runBlock(item["block"], item["decls"])
 
 			log.msg("Block %s completed, now running %s" % (block.id, [i["block"].id for i in toRun]))
-			log.msg("(Waiting for %s blocks)" % (len(runningBlocks) + len(toRun)))
 
-			# Nothing left to run, finish the experiment
-			if len(runningBlocks) + len(toRun) is 0:
-				_finish()
+			# Check if the experiment can be finished
+			reactor.callLater(0, _checkFinished)
 
 		def _blockError (failure, block):
+			if failure.type is Disconnected:
+				return _blockComplete(block)
+
 			# If any one step fails, cancel the rest.
 			if not _blockError.called:
 				log.msg("Received error %s from block %s. Aborting." % (failure, block.id))
@@ -247,10 +253,39 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		# Allow access to called within scope of _blockError
 		_blockError.called = False
 
-		def _finish (error = None):
+		def _updateDependencyGraph (data = None):
+			for item in dependencyGraph:
+				item['deps'] = item['block'].getVariableNames()
+
+		@self.on('top-block-added')
+		def onTopBlockAdded (data):
+			block = data['block']
+			print "Block #%s added to top blocks (%s)" % (block.id, block._complete)
+
+			if block._complete is not None and block._complete.called is False:
+				runningBlocks.add(block)
+				block._complete.addCallbacks(
+					callback = _blockComplete,
+					callbackArgs = [block],
+					errback = _blockError, 
+					errbackArgs = [block]
+				).addErrback(log.err)
+
+			_updateDependencyGraph()
+
+		self.on('top-block-removed', _updateDependencyGraph)
+
+		def _checkFinished (error = None):
+			log.msg("Finished?: Waiting for %s blocks" % len(runningBlocks))
+
+			if len(runningBlocks) > 0:
+				return
+
 			if not (_blockError.called or self._complete.called):
 				self._complete.callback(None)
 				self.emit("workspace-stopped")
+				self.off('top-block-added', onTopBlockAdded)
+				self.off('top-block-removed', _updateDependencyGraph)
 
 		# Get all blocks ordered by x then y.
 		blocks = sorted(self.topBlocks.itervalues(), key = lambda b: b.position)
@@ -262,13 +297,12 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 			if len(deps) is 0:
 				log.msg("Block %s has no deps, running now" % block.id)
-				reactor.callLater(0, _runBlock, block, decls)
+				_runBlock(block)
 			else:
 				log.msg("Block %s waiting for %s" % (block.id, deps))
 				dependencyGraph.append({
 					"block": block,
-					"deps": set(deps),
-					"decls": decls
+					"deps": set(deps)
 				})
 
 		return self._complete
@@ -388,13 +422,19 @@ class Block (BaseStep, EventEmitter):
 		childBlock.prevBlock = self
 		childBlock.parentInput = None
 
+		if self.state in (State.READY, State.RUNNING, State.PAUSED):
+			try:
+				childBlock.reset()
+			except AlreadyRunning:
+				pass
+
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
-			self.emit('connectivity-changed')
+			self.emit('connectivity-changed', **data)
 
 		@childBlock.on('value-changed')
 		def onValueChange (data):
-			self.emit('value-changed')
+			self.emit('value-changed', **data)
 
 		@self.on('disconnected')
 		def onDisconnect (data):
@@ -402,6 +442,8 @@ class Block (BaseStep, EventEmitter):
 				childBlock.off('connectivity-changed', onConnChange)
 				childBlock.off('value-changed', onValueChange)
 				self.off('disconnected', onDisconnect)
+
+		self.workspace.emit('top-block-removed', block = childBlock)
 
 	def disconnectNextBlock (self, childBlock):
 		if self.nextBlock != childBlock:
@@ -413,6 +455,7 @@ class Block (BaseStep, EventEmitter):
 
 		self.emit('disconnected', next = True)
 		self.emit('connectivity-changed')
+		self.workspace.emit('top-block-added', block = childBlock)
 
 	def getSurroundParent (self):
 		block = self
@@ -481,7 +524,7 @@ class Block (BaseStep, EventEmitter):
 
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
-			self.emit('connectivity-changed')
+			self.emit('connectivity-changed', **data)
 
 		@childBlock.on('value-changed')
 		def onValueChange (data):
@@ -493,6 +536,8 @@ class Block (BaseStep, EventEmitter):
 				childBlock.off('connectivity-changed', onConnChange)
 				childBlock.off('value-changed', onValueChange)
 				self.off('disconnected', onDisconnect)
+
+		self.workspace.emit('top-block-removed', block = childBlock)
 
 	def disconnectInput (self, inputName, type):
 		try:
@@ -512,6 +557,7 @@ class Block (BaseStep, EventEmitter):
 
 		self.emit('disconnected', input = inputName)
 		self.emit('connectivity-changed')
+		self.workspace.emit('top-block-added', block = childBlock)
 
 	def removeInput (self, inputName):
 		if self.inputs[inputName] is not None:
@@ -579,9 +625,17 @@ class Block (BaseStep, EventEmitter):
 				# (i.e. abort has been called)
 				pass
 			elif self.nextBlock is not None:
-				self.nextBlock.run().addCallbacks(
-					self._complete.callback, 
-					self._complete.errback
+				def _disconnected (failure):
+					f = failure.trap(Cancelled, Disconnected)
+
+					if f is Aborted:
+						raise f
+
+				self.nextBlock.run().addErrback(
+					_disconnected
+				).addCallbacks(
+					lambda result: self._complete.callback(result),
+					lambda failure: self._complete.errback(failure)
 				)
 			else:
 				self._complete.callback(None)
