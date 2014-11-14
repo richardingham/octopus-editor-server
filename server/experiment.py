@@ -65,7 +65,22 @@ class Experiment (EventEmitter):
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
 
-		sketch.subscribe(self, self._writeSketchEvent)
+		def writeSketchEvent (eventType, data):
+			if eventType == "block-state":
+				return
+
+			time = now()
+
+			event = {
+				"time": time,
+				"relative": time - self.startTime,
+				"type": eventType,
+				"data": data
+			}
+
+			sketchFile.write(json.dumps(event) + "\n")
+
+		sketch.subscribe(self, writeSketchEvent)
 
 		# Subscribe to workspace events
 		@workspace.on("block-state")
@@ -102,17 +117,3 @@ class Experiment (EventEmitter):
 	def stop (self):
 		return self.sketch.workspace.abort()
 
-	def _writeSketchEvent (self, eventType, data):
-		if eventType == "block-state":
-			return
-
-		time = now()
-
-		event = {
-			"time": time,
-			"relative": time - self.startTime,
-			"type": eventType,
-			"data": data
-		}
-
-		self._sketchLog.write(json.dumps(event) + "\n")
