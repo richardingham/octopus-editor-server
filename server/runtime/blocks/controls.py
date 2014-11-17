@@ -176,7 +176,7 @@ class controls_wait_until (Block):
 			try:
 				result = yield self.getInputValue("CONDITION")
 			except Disconnected:
-				# Handled by onConnectivityChange
+				# Handled by setListeners
 				pass
 			except Cancelled as e:
 				removeListeners()
@@ -188,32 +188,32 @@ class controls_wait_until (Block):
 				if result == True:
 					done()
 
-		def onConnectivityChange (data):
+		def setListeners (data):
 			for v in self._variables:	
 				v.off('change', runTest)
 
 			try:
-				self._variables = self.getInput("VALUE").getVariables()
+				self._variables = self.getInput("CONDITION").getVariables()
 			except AttributeError:
 				self._variables = []
 
 			for v in self._variables:	
 				v.on('change', runTest)
 
-		def removeListeners (result):
-			self.off("connectivity-changed", onConnectivityChange)
+		def removeListeners ():
+			self.off("connectivity-changed", setListeners)
 			self.off("value-changed", runTest)
 
 			for v in self._variables:	
 				v.off('change', runTest)
 
-		def done (result):
+		def done ():
 			removeListeners()
-			complete.callback(result)
+			complete.callback(None)
 
-		self.on("connectivity-changed", onConnectivityChange)
+		self.on("connectivity-changed", setListeners)
 		self.on("value-changed", runTest)
-		onConnectivityChange(None)
+		setListeners(None)
 		runTest(None)
 
 		return complete
