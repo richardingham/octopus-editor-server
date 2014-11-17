@@ -219,7 +219,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			# so that the dependency graph is updated before any new blocks run. 
 			for item in toRun:
 				dependencyGraph.remove(item)
-				_runBlock(item["block"], item["decls"])
+				_runBlock(item["block"])
 
 			log.msg("Block %s completed, now running %s" % (block.id, [i["block"].id for i in toRun]))
 
