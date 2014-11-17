@@ -101,3 +101,12 @@ class lexical_variable_get (lexical_variable, Block):
 		print "returning value %s" % variable.value
 		return defer.succeed(variable.value)
 
+
+class math_change (lexical_variable, Block):
+	def run (self):
+		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1 
+		variable = self._getVariable()
+
+		variable.set(result.value + add)
+
+		return defer.succeed(None)
