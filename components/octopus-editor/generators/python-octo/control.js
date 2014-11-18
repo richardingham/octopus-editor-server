@@ -1,40 +1,8 @@
-/*
- * Control blocks.
- * ON / when
- * [ PARALLEL ]
- * LOOP
- * IF
- */
- 
- /*
-  * Timing
-  * WAIT
-  * WAIT UNTIL
-  */
-  
- /*
-  * Misc
-  * LOG
-  */
- 
- /*
-  * Variables
-  * SET
-  * GET
-  */
- 
- /*
-  * Procedures
-  * DEF
-  * CALL
-  */
- 
 /**
  * @fileoverview Generating Python-Octo for control blocks.
  * @author mail@richardingham.net (Richard Ingham)
  */
 'use strict';
-
 
 Blockly.PythonOcto['controls_if'] = function(block) {
   function stringFill (x, n) { 
@@ -105,3 +73,20 @@ Blockly.PythonOcto['controls_run'] = function(block) {
   return code;
 };
 
+Blockly.PythonOcto['controls_dependents'] = function(block) {
+  var code = [];
+  var branch = Blockly.PythonOcto.statementToCode(block, 'STACK') || 'sequence()';
+
+  var depCode;
+  for (var n = 0; n < block.dependentCount_; n++) {
+    depCode = Blockly.PythonOcto.valueToCode(block, 'DEP' + n,
+        Blockly.PythonOcto.ORDER_NONE);
+    if (depCode) {
+      code.push(depCode);
+    }
+  }
+
+  code = 'with_dependents(' + branch + ', [' +
+      code.join(',\n') + '])';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};

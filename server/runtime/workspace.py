@@ -15,9 +15,9 @@ def populate_blocks ():
 	global blocks
 	blocks = {}
 
-	from .blocks import mathematics, text, logic, controls, variables, machines
+	from .blocks import mathematics, text, logic, controls, variables, machines, dependents
 
-	for mod in (mathematics, text, logic, controls, variables, machines):
+	for mod in (mathematics, text, logic, controls, variables, machines, dependents):
 		blocks.update(dict([(name, cls) for name, cls in mod.__dict__.items() if isinstance(cls, type)]))
 
 	del blocks['Block']
