@@ -125,51 +125,90 @@ Blockly.Blocks['controls_if'] = {
    * @this Blockly.Block
    */
   compose: function(containerBlock) {
-    // Disconnect the else input blocks and remove the inputs.
-    if (this.elseCount_) {
-      this.removeInput('ELSE');
-    }
-    this.elseCount_ = 0;
-    // Disconnect all the elseif input blocks and remove the inputs.
-    for (var x = this.elseifCount_; x > 0; x--) {
-      this.removeInput('IF' + x);
-      this.removeInput('DO' + x);
-    }
-    this.elseifCount_ = 0;
-    // Rebuild the block's optional inputs.
     var clauseBlock = containerBlock.getInputTargetBlock('STACK');
+    var i = 0, newElseIfCount = 0, newElseCount = 0;
+    var disconnect = [], connect = {};
+
+    // Calculate changes
     while (clauseBlock) {
-      switch (clauseBlock.type) {
-        case 'controls_if_elseif':
-          this.elseifCount_++;
-          var ifInput = this.appendValueInput('IF' + this.elseifCount_)
-              .setCheck('Boolean')
-              .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
-          var doInput = this.appendStatementInput('DO' + this.elseifCount_);
-          doInput.appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
-          // Reconnect any child blocks.
-          if (clauseBlock.valueConnection_) {
-            ifInput.connection.connect(clauseBlock.valueConnection_);
-          }
-          if (clauseBlock.statementConnection_) {
-            doInput.connection.connect(clauseBlock.statementConnection_);
-          }
-          break;
-        case 'controls_if_else':
-          this.elseCount_++;
-          var elseInput = this.appendStatementInput('ELSE');
-          elseInput.appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
-          // Reconnect any child blocks.
-          if (clauseBlock.statementConnection_) {
-            elseInput.connection.connect(clauseBlock.statementConnection_);
-          }
-          break;
-        default:
-          throw 'Unknown block type.';
+      if (clauseBlock.type === 'controls_if_elseif') {
+        newElseIfCount++;
+
+        if (clauseBlock.valueConnection_ != this.connections_['IF' + newElseIfCount]) {
+          disconnect.push('IF' + newElseIfCount);
+          connect['IF' + newElseIfCount] = clauseBlock.valueConnection_;
+        }
+        if (clauseBlock.statementConnection_ != this.connections_['DO' + newElseIfCount]) {
+          disconnect.push('DO' + newElseIfCount);
+          connect['DO' + newElseIfCount] = clauseBlock.statementConnection_;
+        }
+      } else if (clauseBlock.type === 'controls_if_else') {
+        newElseCount++;
+
+        if (clauseBlock.statementConnection_ != this.connections_['ELSE']) {
+          disconnect.push('ELSE');
+          connect['ELSE'] = clauseBlock.statementConnection_;
+        }
+      } else {
+        throw 'Unknown block type.';
       }
       clauseBlock = clauseBlock.nextConnection &&
           clauseBlock.nextConnection.targetBlock();
     }
+
+    // Add / remove else if inputs as necessary
+    if (newElseIfCount > this.elseifCount_) {
+      for (var x = this.elseifCount_ + 1; x <= newElseIfCount; x++) {
+        this.appendValueInput('IF' + x)
+          .setCheck('Boolean')
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
+        this.appendStatementInput('DO' + x)
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+      }
+    } else {
+      for (var x = this.elseifCount_; x > newElseIfCount; x--) {
+        this.removeInput('IF' + x);
+        this.removeInput('DO' + x);
+      }
+    }
+    this.elseifCount_ = newElseIfCount;
+
+    // Disconnect the else input block if necessary.
+    if (newElseCount > 1) {
+      throw "Only one else is allowed"; // This could be an assert.
+    }
+
+    if (this.elseCount_ > newElseCount) {
+      this.removeInput('ELSE');
+      this.elseCount_ = 0;
+    } else if (this.elseCount_ < newElseCount) {
+      this.appendStatementInput('ELSE')
+        .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
+      this.elseCount_ = 1;
+    } else if (this.elseCount_ > 0) {
+      this.moveInputBefore('ELSE');
+      this.elseCount_ = 1;
+    }
+
+    // Disconnections.
+    var input, inputName;
+    for (var x = 0, max = disconnect.length; x < max; x++) {
+      inputName = disconnect[x];
+      input = this.getInput(inputName);
+      if (input && input.connection.targetConnection) {
+        input.connection.targetBlock().setParent();
+      }
+    }
+
+    // Connections.
+    var targetConnection;
+    for (var inputName in connect) {
+      targetConnection = connect[inputName];
+      input = this.getInput(inputName);
+      input && targetConnection && input.connection.connect(targetConnection);
+    }
+
+    //this.saveConnections(containerBlock);
   },
   /**
    * Store pointers to any connected child blocks.
@@ -178,22 +217,33 @@ Blockly.Blocks['controls_if'] = {
    */
   saveConnections: function(containerBlock) {
     var clauseBlock = containerBlock.getInputTargetBlock('STACK');
+
     var x = 1;
+    this.connections_ = {};
+
+    var inputIf = this.getInput('IF0');
+    var inputDo = this.getInput('DO0');
+    this.connections_['IF0'] = inputIf && inputIf.connection.targetConnection;
+    this.connections_['DO0'] = inputDo && inputDo.connection.targetConnection;
+
     while (clauseBlock) {
       switch (clauseBlock.type) {
         case 'controls_if_elseif':
-          var inputIf = this.getInput('IF' + x);
-          var inputDo = this.getInput('DO' + x);
+          inputIf = this.getInput('IF' + x);
+          inputDo = this.getInput('DO' + x);
           clauseBlock.valueConnection_ =
               inputIf && inputIf.connection.targetConnection;
           clauseBlock.statementConnection_ =
               inputDo && inputDo.connection.targetConnection;
+          this.connections_['IF' + x] = clauseBlock.valueConnection_;
+          this.connections_['DO' + x] = clauseBlock.statementConnection_;
           x++;
           break;
         case 'controls_if_else':
-          var inputDo = this.getInput('ELSE');
+          inputDo = this.getInput('ELSE');
           clauseBlock.statementConnection_ =
               inputDo && inputDo.connection.targetConnection;
+          this.connections_['ELSE'] = clauseBlock.statementConnection_;
           break;
         default:
           throw 'Unknown block type.';
