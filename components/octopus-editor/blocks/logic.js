@@ -207,8 +207,6 @@ Blockly.Blocks['controls_if'] = {
       input = this.getInput(inputName);
       input && targetConnection && input.connection.connect(targetConnection);
     }
-
-    //this.saveConnections(containerBlock);
   },
   /**
    * Store pointers to any connected child blocks.
