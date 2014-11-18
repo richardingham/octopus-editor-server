@@ -74,6 +74,40 @@ Blockly.Blocks['text_join'] = {
     this.itemCount_ = 2;
   },
   /**
+   * Create JSON to represent number of text inputs.
+   * @return {String} JSON representation of mutation.
+   * @this Blockly.Block
+   */
+  mutationToJSON: function() {
+    return {
+      items: this.itemCount_
+    };
+  },
+  /**
+   * Parse JSON to restore the text inputs.
+   * @param {!String} mutation JSON representation of mutation.
+   * @this Blockly.Block
+   */
+  JSONToMutation: function(obj) {
+    for (var x = 0; x < this.itemCount_; x++) {
+      this.removeInput('ADD' + x);
+    }
+    this.itemCount_ = obj.items && parseInt(obj.items, 10) || 0;
+    for (var x = 0; x < this.itemCount_; x++) {
+      var input = this.appendValueInput('ADD' + x);
+      if (x == 0) {
+        input.appendField(Blockly.Msg.TEXT_JOIN_TITLE_CREATEWITH);
+      }
+    }
+    if (this.itemCount_ == 0) {
+      this.appendDummyInput('EMPTY')
+          .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
+          'media/quote0.png', 12, 12, '"'))
+          .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
+          'media/quote1.png', 12, 12, '"'));
+    }
+  },
+  /**
    * Create XML to represent number of text inputs.
    * @return {Element} XML storage element.
    * @this Blockly.Block
@@ -89,23 +123,9 @@ Blockly.Blocks['text_join'] = {
    * @this Blockly.Block
    */
   domToMutation: function(xmlElement) {
-    for (var x = 0; x < this.itemCount_; x++) {
-      this.removeInput('ADD' + x);
-    }
-    this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
-    for (var x = 0; x < this.itemCount_; x++) {
-      var input = this.appendValueInput('ADD' + x);
-      if (x == 0) {
-        input.appendField(Blockly.Msg.TEXT_JOIN_TITLE_CREATEWITH);
-      }
-    }
-    if (this.itemCount_ == 0) {
-      this.appendDummyInput('EMPTY')
-          .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
-          'media/quote0.png', 12, 12, '"'))
-          .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
-          'media/quote1.png', 12, 12, '"'));
-    }
+    this.JSONToMutation({
+      items: parseInt(xmlElement.getAttribute('items'), 10)
+    });
   },
   /**
    * Populate the mutator's dialog with this block's components.
