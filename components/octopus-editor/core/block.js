@@ -196,7 +196,7 @@ Block.prototype.fill = function(workspace, prototypeName) {
       this.workspace.emit(event, data);
     }
   };
-  this.workspaceEmit("block-created", { block: this.id, type: prototypeName, fields: fields });
+  this.workspaceEmit("block-created", { id: this.id, type: prototypeName, fields: fields });
 
   // Call the created() function if necessary
   if (util.isFunction(this.created)) {
@@ -343,7 +343,7 @@ Block.terminateDrag_ = function() {
       delete selected.draggedBubbles_;
       selected.setDragging_(false);
       selected.render();
-      selected.workspaceEmit("block-changed", { block: selected.id, change: "position", x: xy.x, y: xy.y });
+      selected.workspaceEmit("block-set-position", { id: selected.id, x: xy.x, y: xy.y });
       window.setTimeout(
           selected.bumpNeighbours_.bind(selected), Blockly.BUMP_DELAY);
       // Fire an event to allow scrollbars to resize.
@@ -401,7 +401,7 @@ Block.prototype.dispose = function(healStack, animate,
 
   if (this.workspace) {
     this.workspace.removeBlock(this);
-    this.workspaceEmit("block-disposed", { block: this.id });
+    this.workspaceEmit("block-disposed", { id: this.id });
   }
 
   // This block is now at the top of the workspace.
@@ -1219,7 +1219,7 @@ Block.prototype.isDeletable = function() {
  */
 Block.prototype.setDeletable = function(deletable) {
   this.deletable_ = deletable;
-  this.workspaceEmit("block-changed", { block: this.id, change: "deletable", value: deletable });
+  this.workspaceEmit("block-set-deletable", { id: this.id, value: deletable });
   this.svg_ && this.svg_.updateMovable();
 };
 
@@ -1237,7 +1237,7 @@ Block.prototype.isMovable = function() {
  */
 Block.prototype.setMovable = function(movable) {
   this.movable_ = movable;
-  this.workspaceEmit("block-changed", { block: this.id, change: "movable", value: movable });
+  this.workspaceEmit("block-set-movable", { id: this.id, change: "movable", value: movable });
 };
 
 /**
@@ -1263,7 +1263,7 @@ Block.prototype.setEditable = function(editable) {
   for (var x = 0; x < icons.length; x++) {
     icons[x].updateEditable();
   }
-  this.workspaceEmit("block-changed", { block: this.id, change: "editable", value: editable });
+  this.workspaceEmit("block-set-editable", { id: this.id, value: editable });
 };
 
 /**
@@ -1273,7 +1273,7 @@ Block.prototype.setEditable = function(editable) {
  */
 Block.prototype.setHelpUrl = function(url) {
   this.helpUrl = url;
-  this.workspaceEmit("block-changed", { block: this.id, change: "help-url", url: url });
+  this.workspaceEmit("block-set-help-url", { id: this.id, url: url });
 };
 
 /**
@@ -1306,7 +1306,7 @@ Block.prototype.setColour = function(colourHue) {
     }
     this.render();
   }
-  this.workspaceEmit("block-changed", { block: this.id, change: "colour", colour: colourHue });
+  this.workspaceEmit("block-set-colour", { id: this.id, colour: colourHue });
 };
 
 /**
@@ -1431,10 +1431,10 @@ Block.prototype.setNextStatement = function(newBoolean, opt_check) {
         new Blockly.Connection(this, Blockly.NEXT_STATEMENT);
     this.nextConnection.setCheck(opt_check);
     this.nextConnection.on("connect", function (child, parent) {
-      this.workspaceEmit("block-connected", { block: child.id, parent: parent.id, connection: "previous" });
+      this.workspaceEmit("block-connected", { id: child.id, parent: parent.id, connection: "previous" });
     }.bind(this));
     this.nextConnection.on("disconnect", function (child, parent) {
-      this.workspaceEmit("block-disconnected", { block: child.id, parent: parent.id, connection: "previous" });
+      this.workspaceEmit("block-disconnected", { id: child.id, parent: parent.id, connection: "previous" });
     }.bind(this));
   }
   if (this.rendered) {
@@ -1497,7 +1497,7 @@ Block.prototype.setInputsInline = function(newBoolean) {
     this.render();
     this.bumpNeighbours_();
     this.workspace.fireChangeEvent();
-    this.workspaceEmit("block-changed", { block: this.id, change: "inputs-inline", value: newBoolean });
+    this.workspaceEmit("block-set-inputs-inline", { id: this.id, value: newBoolean });
   }
 };
 
@@ -1512,7 +1512,7 @@ Block.prototype.setDisabled = function(disabled) {
   this.disabled = disabled;
   this.svg_.updateDisabled();
   this.workspace.fireChangeEvent();
-  this.workspaceEmit("block-changed", { block: this.id, change: "disabled", value: disabled });
+  this.workspaceEmit("block-set-disabled", { id: this.id, value: disabled });
 };
 
 /**
@@ -1579,7 +1579,7 @@ Block.prototype.setCollapsed = function(collapsed) {
     this.bumpNeighbours_();
   }
 
-  this.workspaceEmit("block-changed", { block: this.id, change: "collapsed", value: collapsed });
+  this.workspaceEmit("block-set-collapsed", { id: this.id, value: collapsed });
 };
 
 /**
@@ -1769,23 +1769,23 @@ Block.prototype.appendInput_ = function(type, name) {
   }
   if (type == Blockly.INPUT_VALUE) {
    connection.on("connect", function (child, parent) {
-        this.workspaceEmit("block-connected", { block: child.id, parent: parent.id, connection: "input-value", input: name });
+        this.workspaceEmit("block-connected", { id: child.id, parent: parent.id, connection: "input-value", input: name });
     }.bind(this));
     connection.on("disconnect", function (child, parent) {
-      this.workspaceEmit("block-disconnected", { block: child.id, parent: parent.id, connection: "input-value", input: name });
+      this.workspaceEmit("block-disconnected", { id: child.id, parent: parent.id, connection: "input-value", input: name });
     }.bind(this));
   }
   if (type == Blockly.NEXT_STATEMENT) {
     connection.on("connect", function (child, parent) {
-      this.workspaceEmit("block-connected", { block: child.id, parent: parent.id, connection: "input-statement", input: name });
+      this.workspaceEmit("block-connected", { id: child.id, parent: parent.id, connection: "input-statement", input: name });
     }.bind(this));
     connection.on("disconnect", function (child, parent) {
-      this.workspaceEmit("block-disconnected", { block: child.id, parent: parent.id, connection: "input-statement", input: name });
+      this.workspaceEmit("block-disconnected", { id: child.id, parent: parent.id, connection: "input-statement", input: name });
     }.bind(this));
   }
   var input = new Blockly.Input(type, name, this, connection);
   input.on("field-changed", function (fieldName, value) {
-    this.workspaceEmit("block-changed", { block: this.id, change: "field-value", field: fieldName, value: value });
+    this.workspaceEmit("block-set-field-value", { id: this.id, field: fieldName, value: value });
   }.bind(this));
   // Append input to list.
   this.inputList.push(input);
@@ -1794,7 +1794,7 @@ Block.prototype.appendInput_ = function(type, name) {
     // Adding an input will cause the block to change shape.
     this.bumpNeighbours_();
   }
-  this.workspaceEmit("block-changed", { block: this.id, change: "add-input", type: type, name: name });
+  this.workspaceEmit("block-add-input", { id: this.id, type: type, input: name });
   return input;
 };
 
@@ -1855,7 +1855,7 @@ Block.prototype.moveNumberedInputBefore = function(
     // Moving an input will cause the block to change shape.
     this.bumpNeighbours_();
   }
-  this.workspaceEmit("block-changed", { block: this.id, change: "move-input", input: inputIndex, before: refIndex });
+  this.workspaceEmit("block-move-input", { id: this.id, input: inputIndex, before: refIndex });
 };
 
 /**
@@ -1880,7 +1880,7 @@ Block.prototype.removeInput = function(name, opt_quiet) {
         // Removing an input will cause the block to change shape.
         this.bumpNeighbours_();
       }
-      this.workspaceEmit("block-changed", { block: this.id, change: "remove-input", name: name });
+      this.workspaceEmit("block-remove-input", { id: this.id, input: name });
       return;
     }
   }
@@ -1957,12 +1957,12 @@ Block.prototype.setCommentText = function(text) {
       changedState = true;
     }
     this.comment.setText(/** @type {string} */ (text));
-    this.workspaceEmit("block-changed", { block: this.id, change: "comment", value: text });
+    this.workspaceEmit("block-set-comment", { id: this.id, value: text });
   } else {
     if (this.comment) {
       this.comment.dispose();
       changedState = true;
-      this.workspaceEmit("block-changed", { block: this.id, change: "comment", value: "" });
+      this.workspaceEmit("block-set-comment", { id: this.id, value: "" });
     }
   }
   if (this.rendered) {

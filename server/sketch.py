@@ -270,40 +270,11 @@ class Sketch (EventEmitter):
 
 		self.notifySubscribers("sketch-renamed", { "title": newName }, context)
 
-	def addBlock (self, payload, context):
-		eid = self._writeEvent("AddBlock", payload)
-		self.workspace.addBlock(payload["block"], payload)
+	def processEvent (self, event, context):
+		event.apply(self.workspace)
+		eid = self._writeEvent(event.type, event.values)
 
-		payload['event'] = eid
-		self.notifySubscribers("block-added", payload, context)
-
-	def removeBlock (self, payload, context):
-		eid = self._writeEvent("RemoveBlock", payload)
-		self.workspace.removeBlock(payload["block"])
-
-		payload['event'] = eid
-		self.notifySubscribers("block-removed", payload, context)
-
-	def changeBlock (self, payload, context):
-		eid = self._writeEvent("ChangeBlock", payload)
-		self.workspace.changeBlock(payload['block'], payload['change'], payload)
-
-		payload['event'] = eid
-		self.notifySubscribers("block-changed", payload, context)
-
-	def connectBlock (self, payload, context):
-		eid = self._writeEvent("ConnectBlock", payload)
-		self.workspace.connectBlock(payload["block"], payload)
-
-		payload['event'] = eid
-		self.notifySubscribers("block-connected", payload, context)
-
-	def disconnectBlock (self, payload, context):
-		eid = self._writeEvent("DisconnectBlock", payload)
-		self.workspace.disconnectBlock(payload["block"], payload)
-
-		payload['event'] = eid
-		self.notifySubscribers("block-disconnected", payload, context)
+		self.notifySubscribers(event.jsName, event.valuesWithEventId(eid), context)
 
 	def _writeEvent (self, eventType, data):
 		if not self.loaded:

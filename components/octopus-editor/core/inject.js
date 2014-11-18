@@ -253,7 +253,12 @@ Blockly.createDom_ = function(container) {
   Blockly.mainWorkspace.maxBlocks = Blockly.maxBlocks;
 
   // Pass through block events
-  ["created", "disposed", "changed", "connected", "disconnected"].forEach(function (e) {
+  [
+    "created", "disposed", "connected", "disconnected", "set-position", 
+    "set-disabled", "set-deletable", "set-editable", "set-movable",
+    "set-help-url", "set-colour", "set-comment", "set-collapsed",
+    "set-field-value", "set-inputs-inline", "add-input", "remove-input"
+  ].forEach(function (e) {
     Blockly.mainWorkspace.on("block-" + e, function (data) {
       Blockly.emit("block-" + e, data);
     });

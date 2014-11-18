@@ -255,7 +255,7 @@ Polymer('octopus-editor', {
 			event = sketch.events[i];
 			data = event.data;
 			if (event.type === "AddBlock") {
-				var block = Blockly.Block.obtain(workspace, data.type, data.block);
+				var block = Blockly.Block.obtain(workspace, data.type, data.id);
 				block.initSvg();
 				block.render();
 
@@ -264,16 +264,17 @@ Polymer('octopus-editor', {
 				for (var field in data.fields) {
 					block.setFieldValue(data.fields[field], field);
 				}
-			} else if (event.type === "ChangeBlock") {
-				var block = workspace.getBlockById(data.block);
 
-				if (data.change === "inputs-inline") {
-					block.setInputsInline(data.value);
-				} else if (data.change === "disabled") {
-					block.setDisabled(data.value);
-				}
+			} else if (event.type === "SetBlockInputsInline") {
+				var block = workspace.getBlockById(data.id);
+				block.setInputsInline(data.value);
+
+			} else if (event.type === "SetBlockDisabled") {
+				var block = workspace.getBlockById(data.id);
+				block.setDisabled(data.value);
+
 			} else if (event.type === "ConnectBlock") {
-				var block = workspace.getBlockById(data.block);
+				var block = workspace.getBlockById(data.id);
 				var parent = workspace.getBlockById(data.parent);
 
 				if (data.connection === "input-value") {
@@ -294,7 +295,11 @@ Polymer('octopus-editor', {
 
 		workspace.render();
 
-		var blockEvents = ["created", "disposed", "changed", "connected", "disconnected"];
+		var blockEvents = [
+			"created", "disposed", "connected", "disconnected",
+			"set-position", "set-field-value", "set-disabled", 
+			"set-inputs-inline", "add-input", "remove-input"
+		];
 		var editor = this;
 		blockEvents.forEach(function (type) {
 			Blockly.on("block-" + type, function (detail) {

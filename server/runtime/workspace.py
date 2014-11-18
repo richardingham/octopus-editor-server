@@ -31,24 +31,20 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		self.topBlocks = {}
 		self.variables = {}
 
-	def addBlock (self, id, args):
+	def addBlock (self, id, type, fields = None, x = 0, y = 0):
 		try:
-			blockType = args["type"]
+			blockType = type
 			blockClass = blocks[blockType]
 		except KeyError:
 			raise Exception("Unknown Block: %s" %  blockType)
 
 		block = blockClass(self, id)
+		block.position = [x, y]
 
 		try:
-			block.position = [args["x"], args["y"]]
-		except KeyError:
-			block.position = [0, 0]
-
-		try:
-			for field, value in args["fields"].iteritems():
+			for field, value in fields.iteritems():
 				block.fields[field] = value
-		except KeyError:
+		except AttributeError:
 			pass
 
 		block.created()
@@ -111,25 +107,23 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		block.disposed()
 
-	def connectBlock (self, id, args):
+	def connectBlock (self, id, parent, connection, input = None):
 		childBlock = self.getBlock(id)
-		parentBlock = self.getBlock(args["parent"])
-
-		connection = args["connection"]
+		parentBlock = self.getBlock(parent)
 
 		if id in self.topBlocks:
 			del self.topBlocks[id]
 
 		if connection == "input-value":
-			parentBlock.connectInput(args["input"], childBlock, "value")
+			parentBlock.connectInput(input, childBlock, "value")
 		elif connection == "input-statement":
-			parentBlock.connectInput(args["input"], childBlock, "statement")
+			parentBlock.connectInput(input, childBlock, "statement")
 		elif connection == "previous":
 			parentBlock.connectNextBlock(childBlock)
 
-	def disconnectBlock (self, id, args):
+	def disconnectBlock (self, id, parent, connection, input = None):
 		childBlock = self.getBlock(id)
-		parentBlock = self.getBlock(args["parent"])
+		parentBlock = self.getBlock(parent)
 
 		# Cancel parent block if waiting for data
 		try:
@@ -139,31 +133,14 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		except AttributeError:
 			pass
 
-		connection = args["connection"]
-
 		self.topBlocks[id] = childBlock
 
 		if connection == "input-value":
-			parentBlock.disconnectInput(args["input"], "value")
+			parentBlock.disconnectInput(input, "value")
 		elif connection == "input-statement":
-			parentBlock.disconnectInput(args["input"], "statement")
+			parentBlock.disconnectInput(input, "statement")
 		elif connection == "previous":
 			parentBlock.disconnectNextBlock(childBlock)
-
-	def changeBlock (self, id, change, args):
-		block = self.getBlock(id)
-
-		if change == "position":
-			block.position = [args["x"], args["y"]]
-		elif change == "field-value":
-			fieldName = args["field"]
-			block.setFieldValue(fieldName, args["value"])
-		elif change == "disabled":
-			block.disabled = args["value"]
-		elif change == "inputs-inline":
-			block.inputsInline = args["value"]
-		elif change == "remove-input":
-			block.removeInput(args["name"])
 
 	#
 	# Controls
@@ -361,14 +338,11 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		return events
 
 	def fromEvents (self, events):
-		for event in events:
-			data = event['data']
-			if event['type'] == "AddBlock":
-				self.addBlock(data['block'], data)
-			elif event['type'] == "ChangeBlock":
-				self.changeBlock(data['block'], data['change'], data)
-			elif event['type'] == "ConnectBlock":
-				self.connectBlock(data['block'], data)
+		for e in events:
+			if "block" in e['data']:
+				e['data']['id'] = e['data']['block']
+			event = Event.fromPayload(e['type'], e['data'])
+			event.apply(self)
 
 
 def anyOfStackIs (block, states):
@@ -404,7 +378,7 @@ class Block (BaseStep, EventEmitter):
 		self.inputs = {}
 		self.disabled = False
 		self.position = [0, 0]
-		self.inputsInline = False
+		self.inputsInline = None
 
 	def created (self):
 		pass
@@ -558,6 +532,10 @@ class Block (BaseStep, EventEmitter):
 		self.emit('disconnected', input = inputName)
 		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-added', block = childBlock)
+
+	def addInput (self, inputName):
+		if inputName not in self.inputs:
+			 self.inputs[inputName] = None
 
 	def removeInput (self, inputName):
 		if self.inputs[inputName] is not None:
@@ -797,27 +775,173 @@ class Block (BaseStep, EventEmitter):
 
 	def toEvents (self):
 		events = []
-		events.append({ "type": "AddBlock", "data": { "block": self.id, "type": self.type, "fields": self.fields, "x": self.position[0], "y": self.position[1] }})
+		events.append({ "type": "AddBlock", "data": { "id": self.id, "type": self.type, "fields": self.fields, "x": self.position[0], "y": self.position[1] }})
 
 		if self.disabled:
-			events.append({ "type": "ChangeBlock", "data": { "block": self.id, "change": "disabled", "value": True }})		
+			events.append({ "type": "SetBlockDisabled", "data": { "id": self.id, "value": True }})		
 
-		if self.inputsInline:
-			events.append({ "type": "ChangeBlock", "data": { "block": self.id, "change": "inputs-inline", "value": True }})		
+		if self.inputsInline is False:
+			events.append({ "type": "SetBlockInputsInline", "data": { "id": self.id, "value": False }})		
 
 		if self.outputBlock is not None:
-			events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "input-value", "parent": self.outputBlock.id, "input": self.parentInput }})
+			events.append({ "type": "ConnectBlock", "data": { "id": self.id, "connection": "input-value", "parent": self.outputBlock.id, "input": self.parentInput }})
 			
 		elif self.prevBlock is not None:
 			if self.parentInput is not None:
-				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "input-statement", "parent": self.prevBlock.id, "input": self.parentInput }})
+				events.append({ "type": "ConnectBlock", "data": { "id": self.id, "connection": "input-statement", "parent": self.prevBlock.id, "input": self.parentInput }})
 			else:
-				events.append({ "type": "ConnectBlock", "data": { "block": self.id, "connection": "previous", "parent": self.prevBlock.id }})
+				events.append({ "type": "ConnectBlock", "data": { "id": self.id, "connection": "previous", "parent": self.prevBlock.id }})
 
 		for child in self.getChildren():
 			events.extend(child.toEvents())
 
 		return events
+
+
+def _toHyphenated (name):
+	import re
+	s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
+	return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
+
+def _toUpperCamel (name):
+	# We capitalize the first letter of each component except the first one
+	# with the 'title' method and join them together.
+	return "".join(map(str.capitalize, str(name).split('-')))
+
+class Event (object):
+	"""
+	Events that can be applied to a workspace.
+	"""
+
+	@classmethod
+	def fromPayload (cls, action, payload):
+		try:
+			try:
+				return cls.types[action](**payload)
+			except AttributeError:
+				cls.types = { c.jsName: c for c in cls.__subclasses__() }
+				cls.types.update({ c.__name__: c for c in cls.__subclasses__() })
+				return cls.types[action](**payload)
+		except KeyError:
+			raise UnknownEventError(_toUpperCamel(action))
+
+	_fields = ()
+
+	def __init__ (self, **fields):
+		values = {}
+
+		for f in self._fields:
+			values[f] = fields[f] if f in fields else None
+
+		self.values = values
+		self.type = self.__class__.__name__
+
+	def valuesWithEventId (self, event_id):
+		values = self.values.copy()
+		values['event'] = event_id
+		return values
+
+	def apply (self, workspace):
+		pass
+
+	def toJSON (self):
+		import json
+		return json.dumps({
+			"type": self.type,
+			"data": self.values
+		})
+
+class AddBlock (Event):
+	_fields = ("id", "type", "fields", "x", "y")
+	jsName = "block-created"
+
+	def apply (self, workspace):
+		workspace.addBlock(**self.values)
+
+class RemoveBlock (Event):
+	_fields = ("id", )
+	jsName = "block-disposed"
+
+	def apply (self, workspace):
+		workspace.removeBlock(**self.values)
+
+class ConnectBlock (Event):
+	_fields = ("id", "connection", "parent", "input")
+	jsName = "block-connected"
+
+	def apply (self, workspace):
+		workspace.connectBlock(**self.values)
+
+class DisconnectBlock (Event):
+	_fields = ("id", "connection", "parent", "input")
+	jsName = "block-disconnected"
+
+	def apply (self, workspace):
+		workspace.disconnectBlock(**self.values)
+
+class SetBlockPosition (Event):
+	_fields = ("id", "x", "y")
+	jsName = "block-set-position"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.position = [
+			int(self.values['x']),
+			int(self.values['y'])
+		]
+
+class SetBlockFieldValue (Event):
+	_fields = ("id", "field", "value")
+	jsName = "block-set-field-value"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.setFieldValue(self.values['field'], self.values['value'])
+
+class SetBlockDisabled (Event):
+	_fields = ("id", "value")
+	jsName = "block-set-disabled"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.disabled = bool(self.values['value'])
+
+class SetBlockInputsInline (Event):
+	_fields = ("id", "value")
+	jsName = "block-set-inputs-inline"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.inputsInline = bool(self.values['value'])
+
+class AddBlockInput (Event):
+	_fields = ("id", "input")
+	jsName = "block-add-input"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.addInput(self.values['input'])
+
+class RemoveBlockInput (Event):
+	_fields = ("id", "input")
+	jsName = "block-remove-input"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.removeInput(self.values['input'])
+
+# Not Implemented:
+# block-set-deletable (value)
+# block-set-editable (value)
+# block-set-movable (value)
+# block-set-help-url (value)
+# block-set-colour (value)
+# block-set-comment (value)
+# block-set-collapsed (value)
+# block-move-input
+
+class UnknownEventError (Exception):
+	pass
 
 class Disconnected (Exception):
 	pass

@@ -1,4 +1,4 @@
-from ..runtime.workspace import Workspace
+from ..runtime.workspace import Workspace, Event, UnknownEventError
 from ..sketch import Sketch
 
 import copy
@@ -23,23 +23,16 @@ class SketchProtocol (object):
 			sketch = self.resolveSketch(payload)
 
 			# Block commands
-			if topic == 'block-created':
-				return sketch.addBlock(args(payload, ["block", "fields", "type"], True), context)
+			try:
+				event = Event.fromPayload(topic, payload)
+				print "Loaded event: " + event.toJSON()
+				return sketch.processEvent(event, context)
 
-			elif topic == 'block-disposed':
-				return sketch.removeBlock(args(payload, ["block"], True), context)
-
-			elif topic == 'block-changed':
-				return sketch.changeBlock(args(payload, ["block", "change", "x", "y", "field", "value", "name"], 2), context)
-
-			elif topic == 'block-connected':
-				return sketch.connectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
-
-			elif topic == 'block-disconnected':
-				return sketch.disconnectBlock(args(payload, ["block", "parent", "connection", "input"], 3), context)
+			except UnknownEventError:
+				pass
 
 			# Sketch commands
-			elif topic == 'sketch-rename':	
+			if topic == 'sketch-rename':	
 				return sketch.renameSketch(args(payload, ["title"], True), context)
 
 			# Experiment commands
