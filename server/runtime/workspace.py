@@ -376,6 +376,8 @@ class Block (BaseStep, EventEmitter):
 		self._complete = None
 		self.fields = {}
 		self.inputs = {}
+		self.mutation = ""
+		#self._addedInputs = []
 		self.disabled = False
 		self.position = [0, 0]
 		self.inputsInline = None
@@ -533,15 +535,20 @@ class Block (BaseStep, EventEmitter):
 		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-added', block = childBlock)
 
-	def addInput (self, inputName):
-		if inputName not in self.inputs:
-			 self.inputs[inputName] = None
+	# def addInput (self, inputName):
+		# if inputName not in self.inputs:
+			# self.inputs[inputName] = None
+			# self._addedInputs.append(inputName)
 
-	def removeInput (self, inputName):
-		if self.inputs[inputName] is not None:
-			self.disconnectInput(inputName)
+	# def removeInput (self, inputName):
+		# if inputName not in self._addedInputs:
+			# raise Exception ("Cannot remove input %s" % inputName)
 
-		del self.inputs[inputName]
+		# if self.inputs[inputName] is not None:
+			# self.disconnectInput(inputName)
+
+		# self._addedInputs.remove(inputName)
+		# del self.inputs[inputName]
 
 	def getVariables (self):
 		variables = []
@@ -777,6 +784,9 @@ class Block (BaseStep, EventEmitter):
 		events = []
 		events.append({ "type": "AddBlock", "data": { "id": self.id, "type": self.type, "fields": self.fields, "x": self.position[0], "y": self.position[1] }})
 
+		if self.mutation != "":
+			events.append({ "type": "SetBlockMutation", "data": { "id": self.id, "mutation": self.mutation }})		
+
 		if self.disabled:
 			events.append({ "type": "SetBlockDisabled", "data": { "id": self.id, "value": True }})		
 
@@ -914,21 +924,13 @@ class SetBlockInputsInline (Event):
 		block = workspace.getBlock(self.values['id'])
 		block.inputsInline = bool(self.values['value'])
 
-class AddBlockInput (Event):
-	_fields = ("id", "input")
-	jsName = "block-add-input"
+class SetBlockMutation (Event):
+	_fields = ("id", "mutation")
+	jsName = "block-set-mutation"
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
-		block.addInput(self.values['input'])
-
-class RemoveBlockInput (Event):
-	_fields = ("id", "input")
-	jsName = "block-remove-input"
-
-	def apply (self, workspace):
-		block = workspace.getBlock(self.values['id'])
-		block.removeInput(self.values['input'])
+		block.mutation = self.values['mutation']
 
 # Not Implemented:
 # block-set-deletable (value)
@@ -938,6 +940,10 @@ class RemoveBlockInput (Event):
 # block-set-colour (value)
 # block-set-comment (value)
 # block-set-collapsed (value)
+
+# Not Required
+# block-add-input
+# block-remove-input
 # block-move-input
 
 class UnknownEventError (Exception):

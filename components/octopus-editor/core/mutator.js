@@ -274,8 +274,14 @@ Mutator.prototype.workspaceChanged_ = function() {
     // Switch off rendering while the source block is rebuilt.
     var savedRendered = this.block_.rendered;
     this.block_.rendered = false;
+    var oldMutatorJSON = this.block_.mutationToJSON && this.block_.mutationToJSON();
     // Allow the source block to rebuild itself.
     this.block_.compose(this.rootBlock_);
+    // Fire mutator changed event
+    var newMutatorJSON = this.block_.mutationToJSON && this.block_.mutationToJSON();
+    if (newMutatorJSON != oldMutatorJSON) {
+      this.block_.workspaceEmit("block-set-mutation", { id: this.block_.id, mutation: newMutatorJSON });
+    }
     // Restore rendering and show the changes.
     this.block_.rendered = savedRendered;
     if (this.block_.rendered) {

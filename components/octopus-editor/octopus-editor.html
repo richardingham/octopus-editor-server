@@ -273,6 +273,10 @@ Polymer('octopus-editor', {
 				var block = workspace.getBlockById(data.id);
 				block.setDisabled(data.value);
 
+			} else if (event.type === "SetBlockMutation") {
+				var block = workspace.getBlockById(data.id);
+				block.JSONToMutation(JSON.parse(data.mutation));
+
 			} else if (event.type === "ConnectBlock") {
 				var block = workspace.getBlockById(data.id);
 				var parent = workspace.getBlockById(data.parent);
@@ -298,7 +302,8 @@ Polymer('octopus-editor', {
 		var blockEvents = [
 			"created", "disposed", "connected", "disconnected",
 			"set-position", "set-field-value", "set-disabled", 
-			"set-inputs-inline", "add-input", "remove-input"
+			"set-inputs-inline", "add-input", "remove-input",
+			"set-mutation"
 		];
 		var editor = this;
 		blockEvents.forEach(function (type) {

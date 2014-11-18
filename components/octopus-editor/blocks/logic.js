@@ -59,6 +59,44 @@ Blockly.Blocks['controls_if'] = {
     this.elseCount_ = 0;
   },
   /**
+   * Create JSON to represent the number of else-if and else inputs.
+   * @return {String} JSON representation of mutation.
+   * @this Blockly.Block
+   */
+  mutationToJSON: function() {
+    if (!this.elseifCount_ && !this.elseCount_) {
+      return "{}";
+    }
+    var container = {};
+    if (this.elseifCount_) {
+      container['elseif'] = this.elseifCount_;
+    }
+    if (this.elseCount_) {
+      container['else'] = 1;
+    }
+    return JSON.stringify(container);
+  },
+  /**
+   * Parse JSON to restore the else-if and else inputs.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  JSONToMutation: function(obj) {
+    this.elseifCount_ = obj.elseif && parseInt(obj.elseif, 10) || 0;
+    this.elseCount_ = obj.else && parseInt(obj.else, 10) || 0;
+    for (var x = 1; x <= this.elseifCount_; x++) {
+      this.appendValueInput('IF' + x)
+          .setCheck('Boolean')
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
+      this.appendStatementInput('DO' + x)
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+    }
+    if (this.elseCount_) {
+      this.appendStatementInput('ELSE')
+          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
+    }
+  },
+  /**
    * Create XML to represent the number of else-if and else inputs.
    * @return {Element} XML storage element.
    * @this Blockly.Block
@@ -82,19 +120,10 @@ Blockly.Blocks['controls_if'] = {
    * @this Blockly.Block
    */
   domToMutation: function(xmlElement) {
-    this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif'), 10);
-    this.elseCount_ = parseInt(xmlElement.getAttribute('else'), 10);
-    for (var x = 1; x <= this.elseifCount_; x++) {
-      this.appendValueInput('IF' + x)
-          .setCheck('Boolean')
-          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
-      this.appendStatementInput('DO' + x)
-          .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
-    }
-    if (this.elseCount_) {
-      this.appendStatementInput('ELSE')
-          .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
-    }
+    this.JSONToMutation({
+      'elseif': parseInt(xmlElement.getAttribute('elseif'), 10),
+      'else': parseInt(xmlElement.getAttribute('else'), 10)
+    });
   },
   /**
    * Populate the mutator's dialog with this block's components.
