@@ -79,9 +79,9 @@ Blockly.Blocks['text_join'] = {
    * @this Blockly.Block
    */
   mutationToJSON: function() {
-    return {
+    return JSON.stringify({
       items: this.itemCount_
-    };
+    });
   },
   /**
    * Parse JSON to restore the text inputs.
