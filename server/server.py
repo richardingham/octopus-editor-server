@@ -126,6 +126,56 @@ class EditSketch (resource.Resource):
 		return server.NOT_DONE_YET
 
 
+def makeService (options):
+	"""
+	This will be called from twistd plugin system and we are supposed to
+	create and return an application service.
+	"""
+
+	application = service.IServiceCollection(
+		service.Application("octopus_editor_server", uid = 1, gid = 1)
+	)
+
+	# WebSocket Server
+	ws_host = "localhost"
+	factory = WebSocketServerFactory("ws://" + ws_host + ":" + str(options["wsport"]), debug = False)
+	factory.protocol = websocket.OctopusEditorProtocol
+	factory.runtime = websocket.WebSocketRuntime()
+
+	def accept (offers):
+		# Required for Chromium ~33 and newer
+		for offer in offers:
+			if isinstance(offer, PerMessageDeflateOffer):
+				return PerMessageDeflateOfferAccept(offer)
+
+	factory.setProtocolOptions(perMessageCompressionAccept = accept)
+
+	internet.TCPServer(
+		int(options["wsport"]),
+		factory
+	).setServiceParent(application)
+
+	# HTTP Server
+	resources_path = os.path.join(os.path.dirname(__file__), "resources")
+
+	root = resource.Resource()
+	root.putChild("", Root())
+	root.putChild("sketch", Sketch())
+	
+	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
+	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
+	root.putChild("components", static.File(rootDir.child("components").path))
+	root.putChild("resources", static.File(rootDir.child("resources").path))
+
+	site = server.Site(root)
+	internet.TCPServer(
+		int(options["port"]),
+		site
+	).setServiceParent(application)
+
+	return application
+
+
 def run_server ():
 	import sys
 	log.startLogging(sys.stdout)
@@ -163,6 +213,7 @@ def run_server ():
 	reactor.run()
 
 	log.msg("Server stopped")
+
 
 if __name__ == "__main__":
 	run_server()
