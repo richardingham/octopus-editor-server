@@ -1,4 +1,5 @@
 from ..workspace import Block, Disconnected, Cancelled
+from octopus.constants import State
 
 from twisted.internet import reactor, defer
 import twisted.internet.error
@@ -173,6 +174,13 @@ class controls_wait_until (Block):
 
 		@defer.inlineCallbacks
 		def runTest (data = None):
+			if self.state is State.PAUSED:
+				return
+			elif self.state in (State.CANCELLED, State.ERROR):
+				removeListeners()
+				complete.callback(None)
+				defer.returnValue(None)
+
 			try:
 				result = yield self.getInputValue("CONDITION")
 			except Disconnected:
