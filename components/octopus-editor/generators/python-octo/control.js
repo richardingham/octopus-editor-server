@@ -90,3 +90,11 @@ Blockly.PythonOcto['controls_dependents'] = function(block) {
       code.join(',\n') + '])';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
+
+Blockly.PythonOcto['controls_bind'] = function(block) {
+  var value = Blockly.PythonOcto.valueToCode(block, 'VALUE',
+      Blockly.PythonOcto.ORDER_NONE) || 'False';
+  var name = Blockly.PythonOcto.getVariableName_(block.getVariable());
+  var code = 'bind(' + name + ', ' + value + ')';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};

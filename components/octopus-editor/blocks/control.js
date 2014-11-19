@@ -142,7 +142,7 @@ Blockly.Blocks['controls_dependents'] = {
         throw 'Unknown block type.';
       }
 
-      connections['DEP' + newCount] = clauseBlock.valueConnection_
+      connections['DEP' + newCount] = clauseBlock.connection_
       newCount++;
 
       clauseBlock = clauseBlock.nextConnection &&
@@ -162,7 +162,7 @@ Blockly.Blocks['controls_dependents'] = {
       }
     } else {
       for (var x = this.dependentCount_; x > newCount; x--) {
-        this.removeInput('DEP' + x);
+        this.removeInput('DEP' + (x - 1));
       }
     }
     this.dependentCount_ = newCount;
@@ -251,3 +251,47 @@ Blockly.Blocks['controls_dependents_dep'] = {
   }
 };
 
+
+Blockly.Blocks['controls_bind'] = {
+  /**
+   * Block for a bind control.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setHelpUrl(Blockly.Msg.MATH_CHANGE_HELPURL);
+    this.setColour(230);
+    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ");
+    this.fieldVar_.setBlock(this);
+    this.setInputsInline(true);
+    this.appendValueInput('VALUE')
+      .appendField('bind')
+      .appendField(this.fieldVar_, 'VAR')
+      .appendField('to');
+    this.setOutput(true, 'Control');
+  },
+  /**
+   * Return all variables referenced by this block.
+   * @return {!Array.<string>} List of variable names.
+   * @this Blockly.Block
+   */
+  getVars: function() {
+    return [this.fieldVar_.getFullVariableName()];
+  },
+  getVariable: function () {
+	  var scope = this.getVariableScope();
+	  return scope && scope.getScopedVariable(this.fieldVar_.getFullVariableName());
+  },
+  /**
+   * Notification that a variable is renaming.
+   * If the name matches one of this block's variables, rename it.
+   * @param {string} oldName Previous name of variable.
+   * @param {string} newName Renamed variable.
+   * @param {Blockly.Variable} variable The variable in question.
+   * @this Blockly.Block
+   */
+  renameVar: function(oldName, newName, variable) {
+    if (Blockly.Names.equals(oldName, this.fieldVar_.getFullVariableName())) {
+      this.fieldVar_.setValue(variable);
+    }
+  }
+};
