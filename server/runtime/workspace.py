@@ -748,6 +748,13 @@ class Block (BaseStep, EventEmitter):
 
 			return defer.succeed(None)
 
+		# Nothing to do
+		else:
+			return defer.succeed(None)
+
+	def _cancel (self, abort = False):
+		pass
+
 	def reset (self):
 		# Entire stack must not be RUNNING or PAUSED
 		if anyOfStackIs(self, (State.RUNNING, State.PAUSED)):
