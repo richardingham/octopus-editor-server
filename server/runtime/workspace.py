@@ -535,21 +535,6 @@ class Block (BaseStep, EventEmitter):
 		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-added', block = childBlock)
 
-	# def addInput (self, inputName):
-		# if inputName not in self.inputs:
-			# self.inputs[inputName] = None
-			# self._addedInputs.append(inputName)
-
-	# def removeInput (self, inputName):
-		# if inputName not in self._addedInputs:
-			# raise Exception ("Cannot remove input %s" % inputName)
-
-		# if self.inputs[inputName] is not None:
-			# self.disconnectInput(inputName)
-
-		# self._addedInputs.remove(inputName)
-		# del self.inputs[inputName]
-
 	def getVariables (self):
 		variables = []
 
