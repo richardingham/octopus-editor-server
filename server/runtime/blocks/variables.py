@@ -103,7 +103,7 @@ class lexical_variable_get (lexical_variable, Block):
 
 
 class math_change (lexical_variable, Block):
-	def run (self):
+	def _run (self):
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1 
 		variable = self._getVariable()
 
