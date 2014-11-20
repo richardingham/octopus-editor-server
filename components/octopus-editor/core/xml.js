@@ -310,6 +310,12 @@ Xml.domToBlock = function(workspace, xmlBlock, opt_reuseBlock) {
         // Custom data for an advanced block.
         if (block.domToMutation) {
           block.domToMutation(xmlChild);
+          if (block.mutationToJSON) {
+            var mutation = block.mutationToJSON();
+            if (mutation != "{}") {
+              block.workspaceEmit("block-set-mutation", { id: block.id, mutation: mutation });
+            }
+          }
         }
         break;
       case 'comment':
