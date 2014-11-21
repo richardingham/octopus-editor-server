@@ -62,11 +62,11 @@ FieldLexicalVariable.prototype.setValue = function (variable) {
     if (i1 >= 0 && i2 >= 0 && i2 < i1) {
       this.value_ = variable.substring(2 + i2);
       this.setText(variable.substring(0, i2));
-      return;
+      return this.value_;
     }
     this.value_ = variable;
     this.setText(variable);
-    return;
+    return this.value_;
   }
   if (typeof variable === "string" && this.block_) {
     var i1 = variable.indexOf('::');
@@ -74,7 +74,7 @@ FieldLexicalVariable.prototype.setValue = function (variable) {
     if (i1 >= 0 && i2 >= 0 && i2 < i1) {
       this.value_ = variable.substring(2 + i2);
       this.setText(variable.substring(0, i2));
-      return;
+      return this.value_;
     } else {
       var scope = this.block_.getVariableScope();
       var scopedVariable = scope.getScopedVariable(variable);
@@ -86,13 +86,15 @@ FieldLexicalVariable.prototype.setValue = function (variable) {
   if (!variable || typeof variable === "string") {
     this.value_ = variable || "";
     this.setText(variable || "");
-    return;
+    return this.value_;
   }
   if (this.block_.setVarType_) {
     this.block_.setVarType_(variable.getType());
   }
   this.value_ = variable.getName();
   this.setText(variable.getDisplay());
+
+  return this.value_;
   // Blockly.WarningHandler.checkErrors.call(this.sourceBlock_);
 };
 

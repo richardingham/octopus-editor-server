@@ -338,7 +338,7 @@ Xml.domToBlock = function(workspace, xmlBlock, opt_reuseBlock) {
         // Titles were renamed to field in December 2013.
         // Fall through.
       case 'field':
-        block.setFieldValue(xmlChild.textContent, name);
+        block.setFieldValue(xmlChild.textContent, name, {emit: true});
         break;
       case 'value':
       case 'statement':

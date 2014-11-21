@@ -1355,10 +1355,15 @@ Block.prototype.getTitleValue = function(name) {
  * @param {string} newValue Value to be the new field.
  * @param {string} name The name of the field.
  */
-Block.prototype.setFieldValue = function(newValue, name) {
+Block.prototype.setFieldValue = function(newValue, name, options) {
   var field = this.getField_(name);
+  var options = options || {};
   assert(util.isObject(field), 'Field "' + name + '" not found.');
-  field.setValue(newValue);
+  var changed = field.setValue(newValue);
+  if (changed) newValue = changed;
+  if (options.emit) {
+    this.workspaceEmit("block-set-field-value", { id: this.id, field: name, value: newValue });
+  }
 };
 
 /**
