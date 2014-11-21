@@ -19,6 +19,9 @@ class machine_declaration (Block):
 			if not (data["block"] is self and data["field"] == 'NAME'):
 				return
 
+			if data["newValue"] == data["oldValue"]:
+				return
+
 			self.workspace.variables[self._varName(data["newValue"])] = \
 				self.workspace.variables[self._varName(data["oldValue"])]
 
