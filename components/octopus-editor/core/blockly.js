@@ -72,15 +72,20 @@ Blockly.SPRITE = {
 
 /**
  * Convert a hue (HSV model) into an RGB hex triplet.
- * @param {number} hue Hue on a colour wheel (0-360).
+ * @param {number|Object} hue Hue on a colour wheel (0-360),
+ *   or valid argument for tinycolor.
  * @return {string} RGB code, e.g. '#5ba65b'.
  */
 Blockly.makeColour = function(hue) {
-  return new tinycolor({ 
-    h: hue, 
-    s: Blockly.HSV_SATURATION,
-    v: Blockly.HSV_VALUE
-  });
+  if (typeof hue === "number") {
+    return new tinycolor({ 
+      h: hue, 
+      s: Blockly.HSV_SATURATION,
+      v: Blockly.HSV_VALUE
+    });
+  } else {
+    return new tinycolor(hue);
+  }
 };
 
 /**

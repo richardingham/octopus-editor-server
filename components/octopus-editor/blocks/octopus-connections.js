@@ -1,7 +1,7 @@
 Blockly.Blocks['connection_tcp'] = {
   init: function() {
     //this.setHelpUrl('http://www.example.com/');
-    this.setColour(60);
+    this.setColour(Blockly.CONNECTIONS_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField("TCP - ip")
         .appendField(new Blockly.FieldTextInput("192.168.15.100"), "HOST")
@@ -15,7 +15,7 @@ Blockly.Blocks['connection_tcp'] = {
 Blockly.Blocks['connection_serial'] = {
   init: function() {
     //this.setHelpUrl('http://www.example.com/');
-    this.setColour(60);
+    this.setColour(Blockly.CONNECTIONS_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField("Serial - port")
         .appendField(new Blockly.FieldTextInput("/dev/ttyS0"), "PORT")

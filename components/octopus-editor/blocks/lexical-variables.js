@@ -13,7 +13,7 @@ Blockly.Blocks['global_declaration'] = {
       this.rename_.bind(this)
     );
 
-    this.setColour(330);
+    this.setColour(Blockly.VARIABLES_CATEGORY_HUE);
     this.appendValueInput('VALUE')
         .appendField('initialise global') //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TITLE_INIT)
         .appendField(this.fieldName_, 'NAME')
@@ -70,7 +70,7 @@ Blockly.Blocks['lexical_variable_get'] = {
   category: 'Variables',
   //helpUrl: Blockly.Msg.LANG_VARIABLES_GET_HELPURL,
   init: function() {
-    this.setColour(330);
+    this.setColour(Blockly.VARIABLES_CATEGORY_HUE);
     this.fieldVar_ = new Blockly.FieldLexicalVariable(" ");
     this.fieldVar_.setBlock(this);
     this.appendDummyInput()
@@ -97,7 +97,7 @@ Blockly.Blocks['lexical_variable_set'] = {
   category: 'Variables',
   //helpUrl: Blockly.Msg.LANG_VARIABLES_SET_HELPURL, // *** [lyn, 11/10/12] Fix this
   init: function() {
-    this.setColour(330); //Blockly.VARIABLE_CATEGORY_HUE);
+    this.setColour(Blockly.VARIABLES_CATEGORY_HUE); //Blockly.VARIABLE_CATEGORY_HUE);
     this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", true);
     this.fieldVar_.setBlock(this);
     this.appendValueInput('VALUE')

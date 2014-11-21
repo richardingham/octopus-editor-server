@@ -32,7 +32,7 @@ Blockly.Blocks['controls_wait'] = {
    */
   init: function() {
     //this.setHelpUrl(Blockly.Msg.CONTROLS_WAIT_HELPURL);
-    this.setColour(5);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.appendValueInput('TIME')
         .setCheck('Number')
         .appendField('wait for'); //Blockly.Msg.CONTROLS_IF_MSG_IF);
@@ -49,7 +49,7 @@ Blockly.Blocks['controls_wait_until'] = {
    */
   init: function() {
     //this.setHelpUrl(Blockly.Msg.CONTROLS_WAIT_HELPURL);
-    this.setColour(5);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.appendValueInput('CONDITION')
         .setCheck('Boolean')
         .appendField('wait until'); //Blockly.Msg.CONTROLS_IF_MSG_IF);

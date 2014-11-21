@@ -99,7 +99,7 @@ var machineBlock = {
     var default_name = "reactor";
 
     //this.setHelpUrl('http://www.example.com/');
-    this.setColour(0);
+    this.setColour(Blockly.MACHINES_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField(this.machineTitle + " ")
         .appendField(new Blockly.FieldMachineFlydown(

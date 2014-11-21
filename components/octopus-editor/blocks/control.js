@@ -32,7 +32,7 @@ Blockly.Blocks['controls_run'] = {
    */
   init: function() {
     //this.setHelpUrl(Blockly.Msg.CONTROLS_WAIT_HELPURL);
-    this.setColour(5);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField('run')
 		.appendField(new Blockly.FieldDropdown([
@@ -52,7 +52,7 @@ Blockly.Blocks['controls_dependents'] = {
    */
   init: function() {
     //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENTS_HELPURL);
-    this.setColour(210);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField("run with controls"); //Blockly.Msg.CONTROLS_DEPENDENTS_STACK);
     this.appendStatementInput('STACK');
@@ -226,7 +226,7 @@ Blockly.Blocks['controls_dependents_deps'] = {
    * @this Blockly.Block
    */
   init: function() {
-    this.setColour(210);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField('controls'); //Blockly.Msg.CONTROLS_IF_IF_TITLE_IF);
     this.appendStatementInput('STACK');
@@ -241,7 +241,7 @@ Blockly.Blocks['controls_dependents_dep'] = {
    * @this Blockly.Block
    */
   init: function() {
-    this.setColour(210);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField('control'); //Blockly.Msg.CONTROLS_IF_ELSEIF_TITLE_ELSEIF);
     this.setPreviousStatement(true);
@@ -259,7 +259,7 @@ Blockly.Blocks['controls_bind'] = {
    */
   init: function() {
     this.setHelpUrl(Blockly.Msg.MATH_CHANGE_HELPURL);
-    this.setColour(230);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
     this.fieldVar_ = new Blockly.FieldLexicalVariable(" ");
     this.fieldVar_.setBlock(this);
     this.setInputsInline(true);
