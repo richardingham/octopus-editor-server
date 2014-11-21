@@ -30,11 +30,14 @@ Blockly.Blocks['math_number'] = {
    * @this Blockly.Block
    */
   init: function() {
+    this.fieldNumber_ = new Blockly.FieldTextInput(
+      '0',
+      Blockly.FieldTextInput.numberValidator
+    );
     this.setHelpUrl(Blockly.Msg.MATH_NUMBER_HELPURL);
     this.setColour(230);
     this.appendDummyInput()
-        .appendField(new Blockly.FieldTextInput('0',
-        Blockly.FieldTextInput.numberValidator), 'NUM');
+        .appendField(this.fieldNumber_, 'NUM');
     this.setOutput(true, 'Number');
     this.setTooltip(Blockly.Msg.MATH_NUMBER_TOOLTIP);
   }
@@ -101,7 +104,7 @@ Blockly.Blocks['math_single'] = {
     this.setInputsInline(true);
     // Assign 'this' to a variable for use in the tooltip closure below.
     var thisBlock = this;
-	this.setTooltip(function() {
+    this.setTooltip(function() {
       var mode = thisBlock.getFieldValue('OP');
       var TOOLTIPS = {
         'ROOT': Blockly.Msg.MATH_SINGLE_TOOLTIP_ROOT,
@@ -263,36 +266,13 @@ Blockly.Blocks['math_change'] = {
     // Assign 'this' to a variable for use in the tooltip closure below.
     var thisBlock = this;
     this.setTooltip(function() {
-      
-	  // TODO: new tooltips
-	  return Blockly.Msg.MATH_CHANGE_TOOLTIP.replace('%1',
+      // TODO: new tooltips
+      return Blockly.Msg.MATH_CHANGE_TOOLTIP.replace('%1',
           thisBlock.getFieldValue('VAR'));
     });
-  },
-  /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
-   */
-  getVars: function() {
-    return [this.fieldVar_.getFullVariableName()];
-  },
-  getVariable: function () {
-	  var scope = this.getVariableScope();
-	  return scope && scope.getScopedVariable(this.fieldVar_.getFullVariableName());
-  },
-  /**
-   * Notification that a variable is renaming.
-   * If the name matches one of this block's variables, rename it.
-   * @param {string} oldName Previous name of variable.
-   * @param {string} newName Renamed variable.
-   * @param {Blockly.Variable} variable The variable in question.
-   * @this Blockly.Block
-   */
-  renameVar: function(oldName, newName, variable) {
-    if (Blockly.Names.equals(oldName, this.fieldVar_.getFullVariableName())) {
-      this.fieldVar_.setValue(variable);
-    }
+
+    // TODO: need to filter only number variables in dropdown.
+    withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   }
 };
 

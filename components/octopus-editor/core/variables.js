@@ -53,6 +53,16 @@ Variable.variableRenamed_ = function (oldName, newName, variable) {
   }
 };
 
+Variable.announceRenamed = function (name, oldName) {
+  var block, blocks = Blockly.mainWorkspace.getAllBlocks();
+  for (var i = 0, max = blocks.length; i < max; i++) {
+    block = blocks[i];
+    if (block.announceRename) {
+      block.announceRename(name, oldName);
+    }
+  }
+};
+
 Variable.prototype.getScopeName_ = function () {
   return this.scope_.getName() + (this.subScope_ ? "." + this.subScope_ : "");
 };

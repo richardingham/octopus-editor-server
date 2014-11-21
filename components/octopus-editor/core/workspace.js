@@ -57,6 +57,9 @@ var Workspace = function(getMetrics, setMetrics) {
   /** @type {number} */
   this.maxBlocks = Infinity;
 
+  this.emitTransaction_ = [];
+  this.inEmitTransaction_ = 0;
+
   Blockly.ConnectionDB.init(this);
 
   EventEmitter.call(this);
@@ -431,6 +434,27 @@ Workspace.prototype.remainingCapacity = function() {
     return Infinity;
   }
   return this.maxBlocks - this.getAllBlocks().length;
+};
+
+
+
+Workspace.prototype.startEmitTransaction = function () {
+  this.inEmitTransaction_++;
+};
+Workspace.prototype.completeEmitTransaction = function () {
+  this.inEmitTransaction_--;
+  if (this.inEmitTransaction_ === 0) {
+    this.emit("block-transaction", { events: this.emitTransaction_ });
+    this.emitTransaction_ = [];
+  }
+};
+var _emit = Workspace.prototype.emit;
+Workspace.prototype.emit = function(event, data) {
+  if (this.inEmitTransaction_ > 0) {
+    this.emitTransaction_.push({ event: event, data: data });
+  } else {
+    _emit.call(this, event, data);
+  }
 };
 
 return Workspace;

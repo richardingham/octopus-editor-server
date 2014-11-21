@@ -92,7 +92,6 @@ FieldLexicalVariable.prototype.setValue = function (variable) {
     this.block_.setVarType_(variable.getType());
   }
   this.value_ = variable.getName();
-  this.emit("changed", this.value_);
   this.setText(variable.getDisplay());
   // Blockly.WarningHandler.checkErrors.call(this.sourceBlock_);
 };
@@ -210,6 +209,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
     }
     if (value !== null) {
       thisField.setValue(value);
+      thisField.emit("changed", value.getName());
     }
     Blockly.WidgetDiv.hideIfOwner(thisField);
   }

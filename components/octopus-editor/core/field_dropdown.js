@@ -103,6 +103,7 @@ FieldDropdown.prototype.showEditor_ = function() {
     }
     if (value !== null) {
       thisField.setValue(value);
+      thisField.emit("changed", value);
     }
     Blockly.WidgetDiv.hideIfOwner(thisField);
   }
@@ -185,7 +186,6 @@ FieldDropdown.prototype.getValue = function() {
  */
 FieldDropdown.prototype.setValue = function(newValue) {
   this.value_ = newValue;
-  this.emit("changed", newValue);
   // Look up and display the human-readable text.
   var options = this.getOptions_();
   for (var x = 0; x < options.length; x++) {

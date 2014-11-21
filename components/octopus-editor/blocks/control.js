@@ -268,30 +268,10 @@ Blockly.Blocks['controls_bind'] = {
       .appendField(this.fieldVar_, 'VAR')
       .appendField('to');
     this.setOutput(true, 'Control');
+
+    withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
-  /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
-   */
-  getVars: function() {
-    return [this.fieldVar_.getFullVariableName()];
-  },
-  getVariable: function () {
-	  var scope = this.getVariableScope();
-	  return scope && scope.getScopedVariable(this.fieldVar_.getFullVariableName());
-  },
-  /**
-   * Notification that a variable is renaming.
-   * If the name matches one of this block's variables, rename it.
-   * @param {string} oldName Previous name of variable.
-   * @param {string} newName Renamed variable.
-   * @param {Blockly.Variable} variable The variable in question.
-   * @this Blockly.Block
-   */
-  renameVar: function(oldName, newName, variable) {
-    if (Blockly.Names.equals(oldName, this.fieldVar_.getFullVariableName())) {
-      this.fieldVar_.setValue(variable);
-    }
+  setVarType_: function (type) {
+    this.getInput('VALUE').setCheck(type);
   }
 };

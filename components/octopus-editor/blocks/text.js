@@ -31,11 +31,12 @@ Blockly.Blocks['text'] = {
    * @this Blockly.Block
    */
   init: function() {
+    this.fieldText_ = new Blockly.FieldTextInput('');
     this.setHelpUrl(Blockly.Msg.TEXT_TEXT_HELPURL);
     this.setColour(160);
     this.appendDummyInput()
         .appendField(this.newQuote_(true))
-        .appendField(new Blockly.FieldTextInput(''), 'TEXT')
+        .appendField(this.fieldText_, 'TEXT')
         .appendField(this.newQuote_(false));
     this.setOutput(true, 'String');
     this.setTooltip(Blockly.Msg.TEXT_TEXT_TOOLTIP);
@@ -241,10 +242,11 @@ Blockly.Blocks['text_append'] = {
   init: function() {
     this.setHelpUrl(Blockly.Msg.TEXT_APPEND_HELPURL);
     this.setColour(160);
+    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ");
+    this.fieldVar_.setBlock(this);
     this.appendValueInput('TEXT')
         .appendField(Blockly.Msg.TEXT_APPEND_TO)
-        .appendField(new Blockly.FieldVariable(
-        Blockly.Msg.TEXT_APPEND_VARIABLE), 'VAR')
+        .appendField(this.fieldVar_, 'VAR')
         .appendField(Blockly.Msg.TEXT_APPEND_APPENDTEXT);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -254,27 +256,9 @@ Blockly.Blocks['text_append'] = {
       return Blockly.Msg.TEXT_APPEND_TOOLTIP.replace('%1',
           thisBlock.getFieldValue('VAR'));
     });
+
+    withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
-  /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
-   */
-  getVars: function() {
-    return [this.getFieldValue('VAR')];
-  },
-  /**
-   * Notification that a variable is renaming.
-   * If the name matches one of this block's variables, rename it.
-   * @param {string} oldName Previous name of variable.
-   * @param {string} newName Renamed variable.
-   * @this Blockly.Block
-   */
-  renameVar: function(oldName, newName) {
-    if (Blockly.Names.equals(oldName, this.getFieldValue('VAR'))) {
-      this.setFieldValue(newName, 'VAR');
-    }
-  }
 };
 
 Blockly.Blocks['text_length'] = {

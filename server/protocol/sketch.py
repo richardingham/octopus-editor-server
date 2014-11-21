@@ -22,10 +22,14 @@ class SketchProtocol (object):
 			# Find locally stored sketch by ID
 			sketch = self.resolveSketch(payload)
 
+			if topic == 'block-transaction':
+				for event in payload['events']:
+					event['data']['sketch'] = payload['sketch']
+					self.receive(event['event'], event['data'], context)
+
 			# Block commands
 			try:
 				event = Event.fromPayload(topic, payload)
-				print "Loaded event: " + event.toJSON()
 				return sketch.processEvent(event, context)
 
 			except UnknownEventError:

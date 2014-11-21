@@ -6,25 +6,34 @@ Blockly.Blocks['global_declaration'] = {
   category: 'Variables',
   //helpUrl: Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_HELPURL,
   init: function() {
+    var block = this;
+    this.fieldName_ = new Blockly.FieldGlobalFlydown( 
+      'name', //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
+      Blockly.FieldFlydown.DISPLAY_BELOW,
+      this.rename_.bind(this)
+    );
+
     this.setColour(330);
     this.appendValueInput('VALUE')
         .appendField('initialise global') //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TITLE_INIT)
-        .appendField(
-          new Blockly.FieldGlobalFlydown( 
-            'name', //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
-            Blockly.FieldFlydown.DISPLAY_BELOW,
-            this.rename_.bind(this)
-          ), 'NAME')
+        .appendField(this.fieldName_, 'NAME')
         .appendField('to'); //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TO);
     this.setTooltip('Declare a global variable'); //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TOOLTIP);
 
     if (!this.isInFlyout) {
       this.rename_('name');
-      this.getField_('NAME').setValue(this.variable_.getVarName());
+      this.fieldName_.setValue(this.variable_.getVarName());
+
+      this.fieldName_.on("changed", function (name) {
+        block.workspace.startEmitTransaction();
+        block.workspaceEmit("block-set-field-value", { id: block.id, field: 'NAME', value: name });
+        Blockly.Variable.announceRenamed(block.variable_.getName());
+        block.workspace.completeEmitTransaction();
+      });
     }
   },
   getVars: function() {
-    return [this.getFieldValue('NAME')];
+    return [this.fieldName_.getValue()];
   },
   // No external rename allowed??
   /*renameVar: function(oldName, newName, variable) {
@@ -33,7 +42,7 @@ Blockly.Blocks['global_declaration'] = {
     }
   },*/
   rename_: function (newName) {
-    var oldName = this.getFieldValue('NAME');
+    var oldName = this.fieldName_.getValue();
     if (oldName === newName && this.variable_) {
       return newName;
     }
@@ -51,6 +60,7 @@ Blockly.Blocks['global_declaration'] = {
   }
   //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TITLE_INIT }]
 };
+
 
 /**
  * Prototype bindings for a variable getter block
@@ -70,36 +80,14 @@ Blockly.Blocks['lexical_variable_get'] = {
     this.setTooltip(''); //Blockly.Msg.LANG_VARIABLES_GET_TOOLTIP);
     //this.errors = [{name:"checkIsInDefinition"},{name:"checkDropDownContainsValidValue",dropDowns:["VAR"]}];
 
-	this.on("parent-changed", this.changeParent_);
-  },
-  changeParent_: function () {
-		var val = this.fieldVar_.getFullVariableName();
-		var scope = this.getVariableScope();
-		var newVar = scope && scope.getScopedVariable(this.fieldVar_.getFullVariableName());
-		if (newVar) {
-			//console.log("Block " + this.id + ": Change var " + val + " to " + newVar.getName());
-			this.fieldVar_.setValue(newVar);
-		} else {
-			//console.log("Block " + this.id + ": No alternative var");
-		}
-	},
-  getVariable: function () {
-	var scope = this.getVariableScope();
-	return scope && scope.getScopedVariable(this.fieldVar_.getFullVariableName());
-  },
-  renameVar: function(oldName, newName, variable) {
-    if (Blockly.Names.equals(oldName, this.fieldVar_.getFullVariableName())) {
-      this.fieldVar_.setValue(variable);
-    }
+    withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
   setVarType_: function (type) {
     this.changeOutput(type);
-  },
-  getVars: function() {
-    return [this.fieldVar_.getFullVariableName()];
   }
   //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_GET_TITLE_GET + Blockly.Msg.LANG_VARIABLES_VARIABLE }]
 };
+
 
 /**
  * Prototype bindings for a variable setter block
@@ -121,23 +109,10 @@ Blockly.Blocks['lexical_variable_set'] = {
     this.setTooltip(''); //Blockly.Msg.LANG_VARIABLES_SET_TOOLTIP);
     //this.errors = [{name:"checkIsInDefinition"},{name:"checkDropDownContainsValidValue",dropDowns:["VAR"]}];
 
-	this.on("parent-changed", this.changeParent_);
-  },
-  changeParent_: Blockly.Blocks['lexical_variable_get'].changeParent_,
-  getVariable: function () {
-	var scope = this.getVariableScope();
-	return scope && scope.getScopedVariable(this.getField_('VAR').getFullVariableName());
-  },
-  renameVar: function(oldName, newName, variable) {
-    if (Blockly.Names.equals(oldName, this.getField_('VAR').getFullVariableName())) {
-      this.getField_('VAR').setValue(variable);
-    }
+	  withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
   setVarType_: function (type) {
     this.getInput('VALUE').setCheck(type);
-  },
-  getVars: function() {
-    return [this.getField_('VAR').getFullVariableName()];
   }
   //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_SET_TITLE_SET + Blockly.Msg.LANG_VARIABLES_VARIABLE }]
 };

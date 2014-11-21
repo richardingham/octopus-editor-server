@@ -258,7 +258,7 @@ Blockly.createDom_ = function(container) {
     "set-disabled", "set-deletable", "set-editable", "set-movable",
     "set-help-url", "set-colour", "set-comment", "set-collapsed",
     "set-field-value", "set-inputs-inline", "add-input", "remove-input",
-    "set-mutation"
+    "set-mutation", "transaction"
   ].forEach(function (e) {
     Blockly.mainWorkspace.on("block-" + e, function (data) {
       Blockly.emit("block-" + e, data);
