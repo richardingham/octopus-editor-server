@@ -185,6 +185,10 @@ Variable.prototype.getAttributes = function () {
   return this.attributeScope_ ? this.attributeScope_.getVariables() : [];
 };
 
+Variable.prototype.clearAttributes = function () {
+  this.attributeScope_ && this.attributeScope_.removeAllVariables();
+};
+
 Variable.prototype.getNamespacedName = function () {
   return this.splitName_().slice(0, 2).join('::');
 };
@@ -247,7 +251,6 @@ VariableScope.prototype.addVariable = function (name, subScope) {
 /**
  * Delete a variable from this scope.
  * @param {string} name  Name of variable.
- * @return {Variable}  New variable.
  */
 VariableScope.prototype.removeVariable = function (name) {
   var v = this.variables_;
@@ -257,6 +260,13 @@ VariableScope.prototype.removeVariable = function (name) {
       i--;
     }
   }
+};
+
+/**
+ * Delete all variables from this scope.
+ */
+VariableScope.prototype.removeAllVariables = function () {
+  this.variables_ = [];
 };
 
 /**

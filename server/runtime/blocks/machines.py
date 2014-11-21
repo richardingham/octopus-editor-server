@@ -41,7 +41,11 @@ class machine_declaration (Block):
 				raise Exception("Connection must be specified for machine {:s}".format(self.fields['NAME']))
 
 			cls = self.getMachineClass()
-			self.machine = cls(connection, alias = self.fields['NAME'])
+			self.machine = cls(
+				connection, 
+				alias = self.fields['NAME'], 
+				**self.getMachineParams()
+			)
 			self.workspace.variables[self._varName()] = self.machine
 
 			self.machine.ready.addCallbacks(_done, _error)
@@ -89,6 +93,9 @@ class machine_declaration (Block):
 	def getMachineClass (self):
 		raise NotImplementedException
 
+	def getMachineParams (self):
+		return {}
+
 	def getDeclarationNames (self):
 		return [ self._varName() ]
 
@@ -115,6 +122,21 @@ class machine_vici_multivalve (machine_declaration):
 	def getMachineClass (self):
 		from octopus.manufacturer import vici
 		return vici.MultiValve
+
+
+class machine_mt_icir (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import mt
+		return mt.iCIR
+
+	def getMachineParams (self):
+		import json
+		try:
+			return {
+				"stream_names": json.loads(self.mutation)['stream_names']
+			}
+		except (ValueError, KeyError):
+			return {}
 
 
 class connection_tcp (Block):
