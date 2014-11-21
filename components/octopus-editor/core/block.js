@@ -400,15 +400,14 @@ Block.prototype.dispose = function(healStack, animate,
   }
 
   if (this.workspace) {
+    this.workspace.startEmitTransaction();
     this.workspace.removeBlock(this);
-    this.workspaceEmit("block-disposed", { id: this.id });
-  }
 
-  // This block is now at the top of the workspace.
-  // Remove this block from the workspace's list of top-most blocks.
-  if (this.workspace && !opt_dontRemoveFromWorkspace) {
-    this.workspace.removeTopBlock(this);
-    this.workspace = null;
+    // This block is now at the top of the workspace.
+    // Remove this block from the workspace's list of top-most blocks.
+    if (!opt_dontRemoveFromWorkspace) {
+      this.workspace.removeTopBlock(this);
+    }
   }
 
   // Just deleting this block from the DOM would result in a memory leak as
@@ -462,6 +461,16 @@ Block.prototype.dispose = function(healStack, animate,
   // Call disposed function if defined
   if (util.isFunction(this.disposed)) {
     this.disposed();
+  }
+
+  if (this.workspace) {
+    if (!opt_dontRemoveFromWorkspace) {
+      this.workspaceEmit("block-disposed", { id: this.id });
+    }
+    this.workspace.completeEmitTransaction();
+    if (!opt_dontRemoveFromWorkspace) {
+      this.workspace = null;
+    }
   }
 };
 

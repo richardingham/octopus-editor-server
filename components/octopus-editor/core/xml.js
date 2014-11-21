@@ -239,6 +239,7 @@ Xml.domToWorkspace = function(workspace, xml) {
  * @return {!Blockly.Block} The root block created.
  */
 Xml.domToBlock = function(workspace, xmlBlock, opt_reuseBlock) {
+  workspace.startEmitTransaction();
   var block = null;
   var prototypeName = xmlBlock.getAttribute('type');
   if (!prototypeName) {
@@ -393,6 +394,7 @@ Xml.domToBlock = function(workspace, xmlBlock, opt_reuseBlock) {
   } else {
     block.render();
   }
+  workspace.completeEmitTransaction();
   return block;
 };
 

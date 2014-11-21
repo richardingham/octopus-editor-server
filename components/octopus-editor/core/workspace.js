@@ -282,9 +282,11 @@ Workspace.prototype.getAllBlocks = function() {
  */
 Workspace.prototype.clear = function() {
   Blockly.hideChaff();
+  this.startEmitTransaction();
   while (this.topBlocks_.length) {
     this.topBlocks_[0].dispose();
   }
+  this.completeEmitTransaction();
 };
 
 /**
