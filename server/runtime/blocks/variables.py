@@ -109,6 +109,6 @@ class math_change (lexical_variable, Block):
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1 
 		variable = self._getVariable()
 
-		variable.set(result.value + add)
+		variable.set(variable.value + add)
 
 		return defer.succeed(None)
