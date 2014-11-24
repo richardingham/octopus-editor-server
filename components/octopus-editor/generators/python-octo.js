@@ -73,30 +73,10 @@ Blockly.PythonOcto.init = function() {
     Blockly.PythonOcto.variableDB_.reset();
   }
 
-  //var defvars = [];
-  //var variables = Blockly.Variables.allVariables();
- // for (var x = 0; x < variables.length; x++) {
-  //  defvars[x] = Blockly.PythonOcto.variableDB_.getName(variables[x],
-  //      Blockly.Variables.NAME_TYPE) + ' = None';
-  //}
-  //Blockly.PythonOcto.definitions_['variables'] = defvars.join('\n');
+  Blockly.PythonOcto.definitions_['import_runtime'] = 'from octopus.runtime import *';
 };
 
-// Blockly.PythonOcto.generateMachines = function () {
-	// (Blockly.octopusMachines || []).forEach(function (machine) {
-		// var conn = '';
-		// if (!machine.connection || machine.connection.type == 'dummy') {
-			// conn = 'dummy()';
-		// } else if (machine.connection.type == 'tcp') {
-			// conn = 'tcp()';
-		// } else if (machine.connection.type == 'serial') {
-			// conn = 'serial()';
-		// }
-		// Blockly.PythonOcto.definitions_['machines'].push(
-			// machine.var_name + ' = ' + machine.type + '(' + conn + ')'
-		// );
-	// });
-// };
+
 
 /**
  * Prepend the generated code with the variable definitions.

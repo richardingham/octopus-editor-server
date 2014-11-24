@@ -93,14 +93,18 @@ Blockly.PythonOcto['controls_dependents'] = function(block) {
 };
 
 Blockly.PythonOcto['controls_bind'] = function(block) {
+  Blockly.PythonOcto.definitions_['import_sequence_control'] = 'from octopus.sequence import control';
+
   var value = Blockly.PythonOcto.valueToCode(block, 'VALUE',
       Blockly.PythonOcto.ORDER_NONE) || 'False';
   var name = Blockly.PythonOcto.getVariableName_(block.getVariable());
-  var code = 'controls.Bind(' + name + ', ' + value + ')';
+  var code = 'control.Bind(' + name + ', ' + value + ')';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
 
 Blockly.PythonOcto['controls_statemonitor'] = function(block) {
+  Blockly.PythonOcto.definitions_['import_sequence_control'] = 'from octopus.sequence import control';
+
   var code = [];
   var triggerBranch = Blockly.PythonOcto.statementToCode(block, 'TRIGGER') || 'sequence()';
   var resetBranch = Blockly.PythonOcto.statementToCode(block, 'RESET') || 'sequence()';
@@ -115,7 +119,7 @@ Blockly.PythonOcto['controls_statemonitor'] = function(block) {
   }
 
   var n = code.length ? '\n' : '';
-  code = 'controls.StateMonitor(\n' + 
+  code = 'control.StateMonitor(\n' + 
     indent('tests = [' + n + indent(code.join(',\n')) + n + '],\n' +
     'trigger_step = ' + triggerBranch + ',\n' + 
     'reset_step = ' + resetBranch) + 
