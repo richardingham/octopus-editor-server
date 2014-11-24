@@ -1,10 +1,10 @@
-function machineBlockGenerator (mod, cls) {
+function machineBlockGenerator (smod, mod, cls) {
   return function (block) {
     var name = Blockly.PythonOcto.getVariableName_(block.variable_);
     var alias = (block.variable_ ? block.variable_.getVarName() : "_");
     var conn = Blockly.PythonOcto.valueToCode(block, 'CONNECTION',
         Blockly.PythonOcto.ORDER_NONE) || 'dummy()';
-    Blockly.PythonOcto.definitions_['import_' + mod] = 'from octopus.manufacturer import ' + mod;
+    Blockly.PythonOcto.definitions_['import_' + smod + '_' + mod] = 'from ' + smod + ' import ' + mod;
 
     var attributes = []
     if (block.mutation) {
@@ -18,6 +18,7 @@ function machineBlockGenerator (mod, cls) {
         }
       }
     }
+
     return [
       name, ' = ', mod, '.', cls, '(', conn, 
       attributes.length ? ', ' : '', attributes.join(', '), 
@@ -26,8 +27,10 @@ function machineBlockGenerator (mod, cls) {
   };
 };
 
-Blockly.PythonOcto['machine_vapourtec_R2R4'] = machineBlockGenerator('vapourtec', 'R2R4');
-Blockly.PythonOcto['machine_knauer_K120'] = machineBlockGenerator('knauer', 'K120');
-Blockly.PythonOcto['machine_knauer_S100'] = machineBlockGenerator('knauer', 'S100');
-Blockly.PythonOcto['machine_vici_multivalve'] = machineBlockGenerator('vici', 'MultiValve');
-Blockly.PythonOcto['machine_mt_icir'] = machineBlockGenerator('mt', 'iCIR');
+Blockly.PythonOcto['machine_vapourtec_R2R4'] = machineBlockGenerator('octopus.manufacturer', 'vapourtec', 'R2R4');
+Blockly.PythonOcto['machine_knauer_K120'] = machineBlockGenerator('octopus.manufacturer', 'knauer', 'K120');
+Blockly.PythonOcto['machine_knauer_S100'] = machineBlockGenerator('octopus.manufacturer', 'knauer', 'S100');
+Blockly.PythonOcto['machine_vici_multivalve'] = machineBlockGenerator('octopus.manufacturer', 'vici', 'MultiValve');
+Blockly.PythonOcto['machine_mt_icir'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'iCIR');
+Blockly.PythonOcto['machine_singletracker'] = machineBlockGenerator('octopus.image', 'tracker', 'SingleBlobTracker');
+Blockly.PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.image', 'tracker', 'MultiBlobTracker');

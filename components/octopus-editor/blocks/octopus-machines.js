@@ -85,6 +85,13 @@ var _iCIR_options = [
   { name: "stream_names", title: "Data Streams", type: "String", multi: true, createAttributes: { type: "Number", readonly: true } }
 ];
 
+var _SingleTracker_vars = [];
+
+var _MultiTracker_vars = [];
+var _MultiTracker_options = [
+  { name: "count", title: "Number to track", type: "Number", createAttributes: { name: "height%", title: "Height #%", type: "Number", readonly: true } }
+];
+
 var _ARROW_CHAR = /*goog.userAgent.ANDROID ? ' \u25B6 ' :*/ ' \u25B8 ';
 
 var machineBlock = {
@@ -102,7 +109,7 @@ var machineBlock = {
             this.rename_.bind(this)), 
         'NAME');
     this.appendValueInput("CONNECTION")
-        .setCheck("machine-connection")
+        .setCheck(this.machineConnectionType || "MachineConnection")
         .setAlign(Blockly.ALIGN_RIGHT)
         .appendField("connection");
     this.setTooltip('');
@@ -178,7 +185,7 @@ var machineBlock = {
                 containerBlock.appendDummyInput()
                   .appendField(opt.title + ": ")
                   .appendField(new Blockly.FieldTextInput(
-                    mutation[opt.name].toString() || '0',
+                    (mutation[opt.name] && mutation[opt.name].toString && mutation[opt.name].toString()) || '0',
                     Blockly.FieldTextInput.numberValidator
                   ), opt.name);
               } else if (opt.type == "String") {
@@ -253,13 +260,23 @@ var machineBlock = {
           var opt, attributes = [];
           for (var i = 0, max = options.length; i < max; i++) {
             opt = options[i];
-            if (opt.multi && opt.createAttributes) {
-              thisBlock.mutation[opt.name].forEach(function (value) {
-                attributes.push(extend(opt.createAttributes, {
-                  name: value,
-                  title: value
-                }));
-              });
+            if (opt.createAttributes) {
+              if (opt.multi) {
+                thisBlock.mutation[opt.name].forEach(function (value) {
+                  attributes.push(extend(opt.createAttributes, {
+                    name: value,
+                    title: value
+                  }));
+                });
+              } else {
+                var count = thisBlock.mutation[opt.name];
+                for (var j = 0; j < count; j++) {
+                  attributes.push(extend(opt.createAttributes, {
+                    name: opt.createAttributes.name.replace('%', j + 1),
+                    title: opt.createAttributes.title.replace('%', j + 1)
+                  }));
+                };
+              }
             }
           }
           thisBlock.variable_.clearAttributes();
@@ -338,4 +355,17 @@ Blockly.Blocks['machine_mt_icir'] = extend(machineBlock, {
   machineTitle: "MT FlowIR",
   machineVars: _iCIR_vars,
   machineOptions: _iCIR_options,
+});
+
+Blockly.Blocks['machine_singletracker'] = extend(machineBlock, {
+  machineTitle: "Single Tracker",
+  machineVars: _SingleTracker_vars,
+  machineConnectionType: "CameraConnection"
+});
+
+Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
+  machineTitle: "Multi Tracker",
+  machineVars: _MultiTracker_vars,
+  machineOptions: _MultiTracker_options,
+  machineConnectionType: "CameraConnection"
 });
