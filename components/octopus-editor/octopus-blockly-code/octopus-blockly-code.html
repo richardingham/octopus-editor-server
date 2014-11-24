@@ -4,6 +4,15 @@
   
 <polymer-element name="octopus-blockly-code" attributes="code">
 <template>
+<style>
+
+:host #blocklyCode {
+	padding: 20px;
+	margin: 0;
+	overflow: scroll;
+}
+
+</style>
 
 <link rel="stylesheet" href="prettify.css">
 <pre id="blocklyCode"></pre>
