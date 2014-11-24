@@ -89,7 +89,7 @@ Blockly.PythonOcto['controls_dependents'] = function(block) {
   var n = code.length ? '\n' : '';
   code = 'with_dependents(' + branch + ', [' + n +
       indent(code.join(',\n')) + n + '])';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return code;
 };
 
 Blockly.PythonOcto['controls_bind'] = function(block) {
