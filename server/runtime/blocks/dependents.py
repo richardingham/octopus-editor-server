@@ -133,7 +133,6 @@ class controls_statemonitor (Block):
 			# Cancel reset_step
 			try:
 				if self.cancel_on_trigger:
-					print "Try to cancel reset"
 					self.inputs['RESET'].cancel(propagate = True)
 			except (KeyError, AttributeError, NotRunning) as e:
 				print e.__class__.__name__
@@ -141,11 +140,9 @@ class controls_statemonitor (Block):
 
 			# Run trigger_step
 			try:
-				print "Try to reset/run trigger"
 				self.inputs['TRIGGER'].reset()
 				self.inputs['TRIGGER'].run()
-			except (KeyError, AttributeError, AlreadyRunning) as e:
-				print e.__class__.__name__
+			except (KeyError, AttributeError, AlreadyRunning):
 				return
 
 			self._triggered = True
@@ -155,19 +152,15 @@ class controls_statemonitor (Block):
 
 		if self.cancel_on_reset:
 			try:
-				print "Try to cancel trigger"
 				self.inputs['TRIGGER'].cancel(propagate = True)
-			except (KeyError, AttributeError, NotRunning) as e:
-				print e.__class__.__name__
+			except (KeyError, AttributeError, NotRunning):
 				pass
 
 		if run_reset_step:
 			try:
-				print "Try to reset/run reset"
 				self.inputs['RESET'].reset()
 				self.inputs['RESET'].run()
-			except (KeyError, AttributeError, AlreadyRunning) as e:
-				print e.__class__.__name__
+			except (KeyError, AttributeError, AlreadyRunning):
 				return
 
 	def setListeners (self, data):
