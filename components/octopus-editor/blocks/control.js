@@ -56,59 +56,22 @@ Blockly.Blocks['controls_dependents'] = {
     this.appendDummyInput()
         .appendField("run with controls"); //Blockly.Msg.CONTROLS_DEPENDENTS_STACK);
     this.appendStatementInput('STACK');
+    this.appendValueInput('DEP0')
+        .setCheck('Control')
+        .setAlign(Blockly.ALIGN_RIGHT)
+        .appendField('with'); //Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     this.setMutator(new Blockly.Mutator(['controls_dependents_dep']));
 
-    this.dependentCount_ = 0;
-  },
-  /**
-   * Create JSON to represent the number of dependents inputs.
-   * @return {String} JSON representation of mutation.
-   * @this Blockly.Block
-   */
-  mutationToJSON: function() {
-    if (!this.dependentCount_) {
-      return "{}";
-    }
-    return JSON.stringify({
-      dependents: this.dependentCount_
+    this.mutation_ = {
+      dependents: 1
+    };
+    withMutation.call(this, function () {
+      return this.mutation_.dependents === 1;
     });
   },
-  /**
-   * Parse JSON to restore the dependents inputs.
-   * @param {!String} JSON representation of mutation.
-   * @this Blockly.Block
-   */
-  JSONToMutation: function(obj) {
-    var count = obj.dependents && parseInt(obj.dependents, 10) || 0;
-    this.update(count);
-  },
-  /**
-   * Create XML to represent the number of dependents inputs.
-   * @return {Element} XML storage element.
-   * @this Blockly.Block
-   */
-  mutationToDom: function() {
-    if (!this.dependentCount_) {
-      return null;
-    }
-    var container = document.createElement('mutation');
-    if (this.dependentCount_) {
-      container.setAttribute('dependents', this.dependentCount_);
-    }
-    return container;
-  },
-  /**
-   * Parse XML to restore the dependents inputs.
-   * @param {!Element} xmlElement XML storage element.
-   * @this Blockly.Block
-   */
-  domToMutation: function(xmlElement) {
-    this.JSONToMutation({
-      'dependents': parseInt(xmlElement.getAttribute('dependents'), 10)
-    });
-  },
+
   /**
    * Populate the mutator's dialog with this block's components.
    * @param {!Blockly.Workspace} workspace Mutator's workspace.
@@ -119,7 +82,7 @@ Blockly.Blocks['controls_dependents'] = {
     var containerBlock = Blockly.Block.obtain(workspace, 'controls_dependents_deps');
     containerBlock.initSvg();
     var connection = containerBlock.getInput('STACK').connection;
-    for (var x = 1; x <= this.dependentCount_; x++) {
+    for (var x = 1; x <= this.mutation_.dependents; x++) {
       var depBlock = Blockly.Block.obtain(workspace, 'controls_dependents_dep');
       depBlock.initSvg();
       connection.connect(depBlock.previousConnection);
@@ -149,23 +112,26 @@ Blockly.Blocks['controls_dependents'] = {
           clauseBlock.nextConnection.targetBlock();
     }
 
-    this.update(newCount, connections);
+    this.update({ dependents: newCount }, connections);
   },
 
-  update: function (newCount, newConnections) {    
+  update: function (mutation, newConnections) {
+    var newCount = mutation.dependents;
+
     // Add / remove else if inputs as necessary
-    if (newCount > this.dependentCount_) {
-      for (var x = this.dependentCount_; x < newCount; x++) {
+    if (newCount > this.mutation_.dependents) {
+      for (var x = this.mutation_.dependents; x < newCount; x++) {
         this.appendValueInput('DEP' + x)
           .setCheck('Control')
+          .setAlign(Blockly.ALIGN_RIGHT)
           .appendField('with'); //Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
       }
     } else {
-      for (var x = this.dependentCount_; x > newCount; x--) {
+      for (var x = this.mutation_.dependents; x > newCount; x--) {
         this.removeInput('DEP' + (x - 1));
       }
     }
-    this.dependentCount_ = newCount;
+    this.mutation_ = mutation;
 
     if (newConnections) {
       var input, inputName, connect = {};
