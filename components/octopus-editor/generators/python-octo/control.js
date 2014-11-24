@@ -78,7 +78,7 @@ Blockly.PythonOcto['controls_dependents'] = function(block) {
   var branch = Blockly.PythonOcto.statementToCode(block, 'STACK') || 'sequence()';
 
   var depCode;
-  for (var n = 0; n < block.dependentCount_; n++) {
+  for (var n = 0; n < block.mutation_.dependents; n++) {
     depCode = Blockly.PythonOcto.valueToCode(block, 'DEP' + n,
         Blockly.PythonOcto.ORDER_NONE);
     if (depCode) {
