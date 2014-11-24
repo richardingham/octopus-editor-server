@@ -674,10 +674,11 @@ class Block (BaseStep, EventEmitter):
 		else:
 			raise NotPaused
 
-	def cancel (self, abort = False):
+	def cancel (self, abort = False, propagate = False):
 		if self.state in (State.RUNNING, State.PAUSED):
 			if abort:
 				self.state = State.ERROR
+				propagate = True
 			else:
 				self.state = State.CANCELLED
 
@@ -691,43 +692,37 @@ class Block (BaseStep, EventEmitter):
 			except AttributeError:
 				pass
 
+			results = []
+
+			# Propagate cancel call if required
+			if propagate:
+				try:
+					results.append(self.nextBlock.cancel(abort, propagate))
+				except (AttributeError, NotRunning):
+					pass
+
 			# Cancel the block execution
-			results = [defer.maybeDeferred(self._cancel, abort)]
+			results.append(defer.maybeDeferred(self._cancel, abort))
 
 			# Cancel any inputs
-			# NB. only abort will propagate down. 
-			# Cancel is limited to one block and its inputs.
+			# (cancel without propagate affects only one block + inputs.)
 			for block in self.inputs.itervalues():
 				# Cancel all input children
 				try:
-					results.append(block.cancel(abort))
+					results.append(block.cancel(abort, propagate))
 				except (AttributeError, NotRunning):
 					pass
-
-			# Propagate abort call
-			if abort:
-				try:
-					results.append(block.nextBlock.cancel(abort))
-				except (AttributeError, NotRunning):
-					pass
-
 			return defer.DeferredList(results)
 
-		# Pass on abort call to next block.
-		elif abort and self.nextBlock is not None:
+		# Pass on call to next block.
+		elif propagate and self.nextBlock is not None:
 			if self.state is State.READY:
 				self.state = State.CANCELLED
 
-			return self.nextBlock.cancel(abort)
+			return self.nextBlock.cancel(abort, propagate)
 
 		# Bottom of stack, nothing was running
-		elif abort:
-			if self.state is State.READY:
-				self.state = State.CANCELLED
-
-			return defer.succeed(None)
-
-		# This step is not running yet. Stop it from running.
+		# Or, this step is not running yet. Stop it from running.
 		elif self.state is State.READY:
 			self.state = State.CANCELLED
 
@@ -757,7 +752,7 @@ class Block (BaseStep, EventEmitter):
 					# Something has gone wrong as the this block's state
 					# should reflect those of its (input) children.
 					# Try to cancel the child.
-					results.append(block.abort().addCallback(block.reset))
+					results.append(block.cancel(propagate = True).addCallback(block.reset))
 
 			return defer.DeferredList(results)
 

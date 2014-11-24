@@ -4,27 +4,27 @@
  */
 'use strict';
 
+function stringFill (x, n) { 
+  var s = ''; 
+  for (;;) { 
+    if (n & 1) s += x; 
+    n >>= 1; 
+    if (n) x += x; 
+    else break; 
+  } 
+  return s; 
+}
+
+function indent (code, times) {
+  var i = Blockly.PythonOcto.INDENT;
+  if (times !== undefined) {
+    if (times < 1) return code;
+    i = stringFill(i, times);
+  }
+  return Blockly.PythonOcto.prefixLines(code, i)
+}
+
 Blockly.PythonOcto['controls_if'] = function(block) {
-  function stringFill (x, n) { 
-    var s = ''; 
-    for (;;) { 
-      if (n & 1) s += x; 
-      n >>= 1; 
-      if (n) x += x; 
-      else break; 
-    } 
-    return s; 
-  }
-
-  function indent (code, times) {
-    var i = Blockly.PythonOcto.INDENT;
-    if (times !== undefined) {
-      if (times < 1) return code;
-      i = stringFill(i, times);
-    }
-    return Blockly.PythonOcto.prefixLines(code, i)
-  }
-
   // If/elseif/else condition.
   var n = 0;
   var argument = Blockly.PythonOcto.valueToCode(block, 'IF' + n,
@@ -86,8 +86,9 @@ Blockly.PythonOcto['controls_dependents'] = function(block) {
     }
   }
 
-  code = 'with_dependents(' + branch + ', [' +
-      code.join(',\n') + '])';
+  var n = code.length ? '\n' : '';
+  code = 'with_dependents(' + branch + ', [' + n +
+      indent(code.join(',\n')) + n + '])';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
 
@@ -95,6 +96,29 @@ Blockly.PythonOcto['controls_bind'] = function(block) {
   var value = Blockly.PythonOcto.valueToCode(block, 'VALUE',
       Blockly.PythonOcto.ORDER_NONE) || 'False';
   var name = Blockly.PythonOcto.getVariableName_(block.getVariable());
-  var code = 'bind(' + name + ', ' + value + ')';
+  var code = 'controls.Bind(' + name + ', ' + value + ')';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};
+
+Blockly.PythonOcto['controls_statemonitor'] = function(block) {
+  var code = [];
+  var triggerBranch = Blockly.PythonOcto.statementToCode(block, 'TRIGGER') || 'sequence()';
+  var resetBranch = Blockly.PythonOcto.statementToCode(block, 'RESET') || 'sequence()';
+
+  var testCode;
+  for (var n = 0; n < block.mutation_.tests; n++) {
+    testCode = Blockly.PythonOcto.valueToCode(block, 'TEST' + n,
+        Blockly.PythonOcto.ORDER_NONE);
+    if (testCode) {
+      code.push(testCode);
+    }
+  }
+
+  var n = code.length ? '\n' : '';
+  code = 'controls.StateMonitor(\n' + 
+    indent('tests = [' + n + indent(code.join(',\n')) + n + '],\n' +
+    'trigger_step = ' + triggerBranch + ',\n' + 
+    'reset_step = ' + resetBranch) + 
+    '\n)';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };

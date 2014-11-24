@@ -275,3 +275,181 @@ Blockly.Blocks['controls_bind'] = {
     this.getInput('VALUE').setCheck(type);
   }
 };
+
+
+Blockly.Blocks['controls_statemonitor'] = {
+  /**
+   * Block for statemonitor control
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENTS_HELPURL);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.appendValueInput('TEST0')
+        .appendField("test")
+        .setAlign(Blockly.ALIGN_RIGHT)
+        .setCheck('Boolean');
+    this.appendDummyInput('TRIGGER_MSG')
+        .appendField("if any false:"); //Blockly.Msg.CONTROLS_STATEMONITOR_TRIGGER);
+    this.appendStatementInput('TRIGGER');
+    this.appendDummyInput()
+        .appendField("if all true:"); //Blockly.Msg.CONTROLS_STATEMONITOR_TRIGGER);
+    this.appendStatementInput('RESET');
+    this.setOutput(true, 'Control');
+    this.setMutator(new Blockly.Mutator(['controls_statemonitor_test']));
+
+    this.mutation_ = {
+      tests: 1
+    };
+    withMutation.call(this, function () {
+      return this.mutation_.tests === 1;
+    });
+  },
+
+  /**
+   * Populate the mutator's dialog with this block's components.
+   * @param {!Blockly.Workspace} workspace Mutator's workspace.
+   * @return {!Blockly.Block} Root block in mutator.
+   * @this Blockly.Block
+   */
+  decompose: function(workspace) {
+    var containerBlock = Blockly.Block.obtain(workspace, 'controls_statemonitor_tests');
+    containerBlock.initSvg();
+    var connection = containerBlock.getInput('STACK').connection;
+    for (var x = 1; x <= this.mutation_.tests; x++) {
+      var depBlock = Blockly.Block.obtain(workspace, 'controls_statemonitor_test');
+      depBlock.initSvg();
+      connection.connect(depBlock.previousConnection);
+      connection = depBlock.nextConnection;
+    }
+    return containerBlock;
+  },
+
+  /**
+   * Reconfigure this block based on the mutator dialog's components.
+   * @param {!Blockly.Block} containerBlock Root block in mutator.
+   * @this Blockly.Block
+   */
+  compose: function(containerBlock) {
+    var clauseBlock = containerBlock.getInputTargetBlock('STACK');
+    var newCount = 0, connections = {};
+
+    // Calculate changes
+    while (clauseBlock) {
+      if (clauseBlock.type != 'controls_statemonitor_test') {
+        throw 'Unknown block type.';
+      }
+
+      connections['TEST' + newCount] = clauseBlock.connection_;
+      newCount++;
+
+      clauseBlock = clauseBlock.nextConnection &&
+          clauseBlock.nextConnection.targetBlock();
+    }
+
+    this.update({ tests: newCount }, connections);
+  },
+
+  update: function (mutation, newConnections) {
+    var newCount = mutation.tests || 0;
+
+    // Add / remove else if inputs as necessary
+    if (newCount > this.mutation_.tests) {
+      for (var x = this.mutation_.tests; x < newCount; x++) {
+        this.appendValueInput('TEST' + x)
+          .appendField("test")
+          .setAlign(Blockly.ALIGN_RIGHT)
+          .setCheck('Boolean');
+        this.moveInputBefore('TEST' + x, 'TRIGGER_MSG');
+      }
+    } else {
+      for (var x = this.mutation_.tests; x > newCount; x--) {
+        this.removeInput('TEST' + (x - 1));
+      }
+    }
+    this.mutation_.tests = newCount;
+
+    if (newConnections) {
+      var input, inputName, connect = {};
+
+      // Disconnections
+      for (var x = 0; x < newCount; x++) {
+        inputName = 'TEST' + x;
+        if (newConnections[inputName] != this.connections_[inputName]) {
+          input = this.getInput(inputName);
+          if (input && input.connection.targetConnection) {
+            input.connection.targetBlock().setParent();
+          }
+          connect[inputName] = newConnections[inputName];
+        }
+      }
+
+      // Connections.
+      var targetConnection;
+      for (var inputName in connect) {
+        targetConnection = connect[inputName];
+        input = this.getInput(inputName);
+        input && targetConnection && input.connection.connect(targetConnection);
+      }
+    }
+  },
+
+  /**
+   * Store pointers to any connected child blocks.
+   * @param {!Blockly.Block} containerBlock Root block in mutator.
+   * @this Blockly.Block
+   */
+  saveConnections: function(containerBlock) {
+    var clauseBlock = containerBlock.getInputTargetBlock('STACK');
+    var input, x = 0;
+
+    this.connections_ = {};
+
+    while (clauseBlock) {
+      if (clauseBlock.type != 'controls_statemonitor_test') {
+        throw 'Unknown block type.';
+      }
+
+      input = this.getInput('TEST' + x);
+      clauseBlock.connection_ =
+          input && input.connection.targetConnection;
+      this.connections_['TEST' + x] = clauseBlock.connection_;
+
+      x++;
+
+      clauseBlock = clauseBlock.nextConnection &&
+          clauseBlock.nextConnection.targetBlock();
+    }
+  }
+};
+
+Blockly.Blocks['controls_statemonitor_tests'] = {
+  /**
+   * Mutator block for statemonitor tests container.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.appendDummyInput()
+        .appendField('tests'); //Blockly.Msg.CONTROLS_IF_IF_TITLE_IF);
+    this.appendStatementInput('STACK');
+    //this.setTooltip(Blockly.Msg.CONTROLS_IF_IF_TOOLTIP);
+    this.contextMenu = false;
+  }
+};
+
+Blockly.Blocks['controls_statemonitor_test'] = {
+  /**
+   * Mutator block for test.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.appendDummyInput()
+        .appendField('test'); //Blockly.Msg.CONTROLS_IF_ELSEIF_TITLE_ELSEIF);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    //this.setTooltip(Blockly.Msg.CONTROLS_IF_ELSEIF_TOOLTIP);
+    this.contextMenu = false;
+  }
+};

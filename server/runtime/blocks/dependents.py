@@ -1,6 +1,8 @@
 from ..workspace import Block, Disconnected, Cancelled
-from octopus.constants import State
 from variables import lexical_variable
+
+from octopus.constants import State
+from octopus.sequence.error import NotRunning, AlreadyRunning
 
 from twisted.internet import reactor, defer
 import twisted.internet.error
@@ -79,3 +81,122 @@ class controls_bind (lexical_variable, Block):
 		runUpdate(None)
 
 		return complete
+
+
+class controls_statemonitor (Block):
+	_triggered = False
+	cancel_on_trigger = True
+	cancel_on_reset = True
+	auto_reset = True
+
+	def _run (self):
+		self._run_complete = defer.Deferred()
+		self._variables = []
+
+		self.on("connectivity-changed", self.setListeners)
+		self.on("value-changed", self.runUpdate)
+		self.setListeners(None)
+		self.runUpdate(None)
+
+		return self._run_complete
+
+	@defer.inlineCallbacks
+	def runUpdate (self, data = None):
+		if self.state is State.PAUSED:
+			self._onResume = self.runUpdate
+			defer.returnValue(None)
+		elif self.state is not State.RUNNING:
+			defer.returnValue(None)
+
+		inputValues = [
+			input.eval() 
+			for name, input in self.inputs.iteritems() 
+			if input is not None and name[:4] == "TEST"
+		]
+		results = yield defer.DeferredList(inputValues, consumeErrors = True)
+
+		ok = True
+		for success, result in results:
+			if success:
+				ok &= bool(result)
+			else:
+				# Ignore if Disconnected or Cancelled.
+				# TODO: log a warning if an exception.
+				pass
+
+		# If the monitor is already triggered, check if we need to reset.
+		if self._triggered and self.auto_reset and ok:
+			self.resetTrigger()
+
+		# Check if the monitor should be triggered.
+		elif not ok:
+			# Cancel reset_step
+			try:
+				if self.cancel_on_trigger:
+					print "Try to cancel reset"
+					self.inputs['RESET'].cancel(propagate = True)
+			except (KeyError, AttributeError, NotRunning) as e:
+				print e.__class__.__name__
+				pass
+
+			# Run trigger_step
+			try:
+				print "Try to reset/run trigger"
+				self.inputs['TRIGGER'].reset()
+				self.inputs['TRIGGER'].run()
+			except (KeyError, AttributeError, AlreadyRunning) as e:
+				print e.__class__.__name__
+				return
+
+			self._triggered = True
+
+	def resetTrigger (self, run_reset_step = True):
+		self._triggered = False
+
+		if self.cancel_on_reset:
+			try:
+				print "Try to cancel trigger"
+				self.inputs['TRIGGER'].cancel(propagate = True)
+			except (KeyError, AttributeError, NotRunning) as e:
+				print e.__class__.__name__
+				pass
+
+		if run_reset_step:
+			try:
+				print "Try to reset/run reset"
+				self.inputs['RESET'].reset()
+				self.inputs['RESET'].run()
+			except (KeyError, AttributeError, AlreadyRunning) as e:
+				print e.__class__.__name__
+				return
+
+	def setListeners (self, data):
+		for v in self._variables:	
+			v.off('change', self.runUpdate)
+
+		self._variables = []
+		inputs = [
+			input 
+			for name, input in self.inputs.iteritems() 
+			if input is not None and name[:4] == "TEST"
+		]
+		for input in inputs:
+			try:
+				self._variables.extend(input.getVariables())
+			except AttributeError:
+				pass
+
+		for v in self._variables:	
+			v.on('change', self.runUpdate)
+
+	def removeListeners (self):
+		self.off("connectivity-changed", self.setListeners)
+		self.off("value-changed", self.runUpdate)
+
+		for v in self._variables:	
+			v.off('change', self.runUpdate)
+
+	def _cancel (self, abort = False):
+		self.removeListeners()
+		self._run_complete.callback(None)
+

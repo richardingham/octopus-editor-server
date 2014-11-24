@@ -73,3 +73,67 @@ function withVariableDropdown (field, fieldName) {
     return [field.getFullVariableName()];
   };
 }
+
+function withMutation (mutationDefault) {
+  mutationDefault = mutationDefault.bind(this);
+
+  /**
+   * Create JSON to represent the number of test inputs.
+   * @return {String} JSON representation of mutation.
+   * @this Blockly.Block
+   */
+  this.mutationToJSON = function mutationToJSON () {
+    return JSON.stringify(this.mutation_);
+  };
+
+  /**
+   * Parse JSON to restore the dependents inputs.
+   * @param {!String} JSON representation of mutation.
+   * @this Blockly.Block
+   */
+  this.JSONToMutation = function JSONToMutation (obj) {
+    var mutation = {};
+    for (var key in this.mutation_) {
+      if (typeof this.mutation_[key] === "number") {
+        mutation[key] = obj[key] && parseInt(obj[key], 10) || 0;
+      } else {
+        mutation[key] = obj[key] || "";
+      }
+    }
+    this.update(mutation);
+  };
+
+  /**
+   * Create XML to represent the number of dependents inputs.
+   * @return {Element} XML storage element.
+   * @this Blockly.Block
+   */
+  this.mutationToDom = function mutationToDom () {
+    if (mutationDefault()) {
+      return null;
+    }
+    var container = document.createElement('mutation');
+    for (var key in this.mutation_) {
+      container.setAttribute(key, this.mutation_[key]);
+    }
+    return container;
+  };
+
+  /**
+   * Parse XML to restore the dependents inputs.
+   * @param {!Element} xmlElement XML storage element.
+   * @this Blockly.Block
+   */
+  this.domToMutation = function domToMutation (xmlElement) {
+    var mutation = {};
+    for (var key in this.mutation_) {
+      if (typeof this.mutation_[key] === "number") {
+        mutation[key] = parseInt(xmlElement.getAttribute(key), 10) || 0;
+      } else {
+        mutation[key] = xmlElement.getAttribute(key) || "";
+      }
+    }
+    this.update(mutation);
+  };
+}
+
