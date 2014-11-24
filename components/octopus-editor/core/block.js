@@ -500,7 +500,7 @@ Block.prototype.unplug = function(healStack, bump) {
       // Disconnect the next statement.
       var nextTarget = this.nextConnection.targetConnection;
       nextBlock.setParent(null);
-      if (previousTarget) {
+      if (previousTarget && previousTarget.checkType_(nextTarget)) {
         // Attach the next statement to the previous statement.
         previousTarget.connect(nextTarget);
       }
