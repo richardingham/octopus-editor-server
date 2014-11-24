@@ -226,7 +226,7 @@ Blockly.Blocks['controls_bind'] = {
   init: function() {
     this.setHelpUrl(Blockly.Msg.MATH_CHANGE_HELPURL);
     this.setColour(Blockly.CONTROL_CATEGORY_HUE);
-    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ");
+    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", { readonly: false });
     this.fieldVar_.setBlock(this);
     this.setInputsInline(true);
     this.appendValueInput('VALUE')

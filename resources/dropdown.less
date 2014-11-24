@@ -255,16 +255,13 @@
   #gradient > .vertical(@dropdownLinkBackgroundHover, darken(@dropdownLinkBackgroundHover, 5%));
 }
 
-// Active state
-// ------------
-.dropdown-menu > .active > a,
-.dropdown-menu > .active > a:hover,
-.dropdown-menu > .active > a:focus {
-  color: @dropdownLinkColorActive;
+// Disabled items should look enabled if submenu items are hovered.
+.dropdown-submenu.disabled:hover > a {
   text-decoration: none;
-  outline: 0;
-  #gradient > .vertical(@dropdownLinkBackgroundActive, darken(@dropdownLinkBackgroundActive, 5%));
+  color: @dropdownLinkColorHover;
+  #gradient > .vertical(@dropdownLinkBackgroundHover, darken(@dropdownLinkBackgroundHover, 5%));
 }
+
 
 // Disabled state
 // --------------
@@ -274,13 +271,13 @@
 .dropdown-menu > .disabled > a:focus {
   color: @grayLight;
 }
-// Nuke hover/focus effects
+
 .dropdown-menu > .disabled > a:hover,
 .dropdown-menu > .disabled > a:focus {
   text-decoration: none;
-  background-color: transparent;
-  background-image: none; // Remove CSS gradient
-  .reset-filter();
+  color: @dropdownLinkColorActive;
+  //background-image: none; // Remove CSS gradient
+  #gradient > .vertical(lighten(@grayLight, 20%), lighten(@grayLight, 15%));
   cursor: default;
 }
 

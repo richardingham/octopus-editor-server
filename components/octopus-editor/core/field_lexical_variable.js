@@ -21,7 +21,7 @@ module.exports = (function (Blockly) {
  * @extends Blockly.FieldDropdown
  * @constructor
  */
-var FieldLexicalVariable = function(varname, forSetter) {
+var FieldLexicalVariable = function(varname, filter) {
   this.menuGenerator_ = FieldLexicalVariable.dropdownCreate;
   this.arrow_ = Blockly.createSvgElement("tspan", {}, null);
   this.arrow_.appendChild(document.createTextNode(Blockly.RTL ? Blockly.FieldDropdown.ARROW_CHAR + " " : " " + Blockly.FieldDropdown.ARROW_CHAR));
@@ -34,7 +34,7 @@ var FieldLexicalVariable = function(varname, forSetter) {
     this.setText(Blockly.Variables.generateUniqueName());
   }
 
-  this.forSetter_ = !!forSetter;
+  this.filter_ = filter || {};
 };
 util.inherits(FieldLexicalVariable, Blockly.FieldDropdown);
 
@@ -199,7 +199,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
   Blockly.WidgetDiv.show(this, null);
   var thisField = this;
   var selected = this.value_;
-  var forWrite = this.forSetter_;
+  var filter = this.filter_;
 
   function callback(value) {
     if (thisField.changeHandler_) {
@@ -214,6 +214,29 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
       thisField.emit("changed", value.getName());
     }
     Blockly.WidgetDiv.hideIfOwner(thisField);
+  }
+
+  function contains (a, o) {
+    for (var i = 0, m = a.length; i < m; i++) {
+        if (a[i] === o) {
+            return true;
+        }
+    }
+    return false;
+  }
+
+  function enabled (variable) {
+    if (typeof filter.readonly !== "undefined" && !filter.readonly && variable.readonly) {
+      return false;
+    }
+    if (typeof filter.type !== "undefined" && variable.getType()) {
+      if (util.isArray(filter.type) && !contains(variable.getType())) {
+        return false;
+      } else if (filter.type !== variable.getType()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // Build a menu or submenu
@@ -245,7 +268,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
         menuItem = {
           text: option.getMenu(),  // Human-readable text.
           value: option, // Language-neutral value.
-          enabled: !(forWrite && option.readonly)
+          enabled: enabled(option)
         };
         var attributes = option.getAttributes();
 
@@ -254,10 +277,10 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
           //menuItem.enabled = true;
           menuItem.children = build(attributes, true);
           var subChecked = menuItem.children.isChecked;
-        
+
           // Unless the parent menu item is disabled, add an entry 
           // to allow the parent to be selected.
-          if (menuItem.enabled) {
+          /*if (menuItem.enabled) {
             var same = (option.getName() === selected);
             menuItem.children = [{
                 text: menuItem.text,
@@ -267,14 +290,8 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
                 divider: true
               }].concat(menuItem.children);
             subChecked |= same;
-          }
-         
-          // If the parent item is "disabled" it should still be
-          // added to the menu to allow child items to be selected.
-          //if (menuItem.children.length > 0) {
-          //  disabled = false;
-          //}
-         
+          }*/
+
           // If one of the child items is checked, the parent is checked.
           if (subChecked) {
             menuItem.selected = true;
@@ -291,7 +308,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
         }
 
         // "disabled" items are not added to the menu.
-        if (menuItem.enabled || menuItem.children) {
+        if (menuItem.enabled || (menuItem.children && menuItem.children.length)) {
           menu.push(menuItem);
         }
       }

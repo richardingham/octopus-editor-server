@@ -253,7 +253,7 @@ Blockly.Blocks['math_change'] = {
   init: function() {
     this.setHelpUrl(Blockly.Msg.MATH_CHANGE_HELPURL);
     this.setColour(Blockly.MATH_CATEGORY_HUE);
-    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ");
+    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", { readonly: false, type: "Number" });
     this.fieldVar_.setBlock(this);
     this.appendDummyInput()
 		.appendField(new Blockly.FieldDropdown([

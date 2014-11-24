@@ -98,7 +98,7 @@ Blockly.Blocks['lexical_variable_set'] = {
   //helpUrl: Blockly.Msg.LANG_VARIABLES_SET_HELPURL, // *** [lyn, 11/10/12] Fix this
   init: function() {
     this.setColour(Blockly.VARIABLES_CATEGORY_HUE); //Blockly.VARIABLE_CATEGORY_HUE);
-    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", true);
+    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", { readonly: false });
     this.fieldVar_.setBlock(this);
     this.appendValueInput('VALUE')
         .appendField('set') //Blockly.Msg.LANG_VARIABLES_SET_TITLE_SET)
