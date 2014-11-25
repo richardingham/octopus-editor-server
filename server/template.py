@@ -16,8 +16,26 @@ class Root (Element):
 		self.saved_sketches = saved_sketches
 
 	@renderer
+	def running_experiment (self, request, tag):
+		for expt in self.running_experiments:
+			yield tag.clone().fillSlots(
+				url = "/experiment/{:s}".format(expt.id),
+				title = expt.sketch.title
+			)
+
+	@renderer
 	def past_experiment (self, request, tag):
-		return tag
+		def _done (expts):
+			def _render ():
+				for expt in expts:
+					yield tag.clone().fillSlots(
+						url = "/experiment/{:s}".format(expt['guid']),
+						title = expt['sketch_title']
+					)
+			
+			return _render()
+
+		return self.past_experiments.addCallback(_done)
 
 	@renderer
 	def saved_sketch (self, request, tag):
@@ -47,4 +65,32 @@ class SketchEdit (Element):
 			sketch_id = self.sketch_id
 		)
 
+
+class ExperimentResult (Element):
+	loader = XMLFile(templatesDir.child('experiment-result.xml'))
+
+	def __init__ (self, expt_id):
+		Element.__init__(self)
+		self.expt_id = expt_id
+
+	@renderer
+	def editor_body (self, request, tag):
+		return tag.fillSlots(
+			experiment_id = self.expt_id
+		)
+
+
+class ExperimentRunning (Element):
+	loader = XMLFile(templatesDir.child('experiment-running.xml'))
+
+	def __init__ (self, experiment):
+		Element.__init__(self)
+		self.experiment = experiment
+
+	@renderer
+	def editor_body (self, request, tag):
+		return tag.fillSlots(
+			sketch_id = self.experiment.sketch.id,
+			experiment_id = self.experiment.id
+		)
 

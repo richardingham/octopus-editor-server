@@ -20,6 +20,32 @@ class Experiment (EventEmitter):
 	db = None
 	dataDir = None
 
+	@classmethod
+	def exists (cls, id):
+		d = cls.db.runQuery("SELECT guid FROM experiments WHERE guid = ?", (id,))
+		d.addCallback(lambda r: len(r) > 0)
+
+		return d
+
+	@classmethod
+	def list (cls, limit = 10):
+		def _done (rows):
+			return [{
+				"guid": str(row[0]),
+				"sketch_guid": str(row[1]),
+				"user_id": int(row[2]),
+				"started_date": int(row[3]),
+				"sketch_title": str(row[4])
+			} for row in rows]
+
+		return cls.db.runQuery("""
+			SELECT e.guid, e.sketch_guid, e.user_id, e.started_date, s.title
+			FROM experiments AS e 
+			LEFT JOIN sketches AS s ON (s.guid = e.sketch_guid)
+			ORDER BY e.started_date DESC
+			LIMIT ?
+		""", (limit, )).addCallback(_done)
+
 	def __init__ (self, sketch):
 		id = str(uuid.uuid4())
 
@@ -87,13 +113,13 @@ class Experiment (EventEmitter):
 		def onBlockStateChange (data):
 			data['sketch'] = sketch_id
 			data['experiment'] = id
-			sketch.notifySubscribers("block-state", data, self)
+			sketch.notifySubscribers("block", "state", data, self)
 
 		@workspace.on("log-message")
 		def onLogMessage (data):
 			data['sketch'] = sketch_id
 			data['experiment'] = id
-			sketch.notifySubscribers("experiment-log", data, self)
+			sketch.notifySubscribers("experiment", "log", data, self)
 
 			# Store message in log file
 
@@ -117,3 +143,20 @@ class Experiment (EventEmitter):
 	def stop (self):
 		return self.sketch.workspace.abort()
 
+	#
+	# Subscribers
+	#
+
+	def variables (self):
+		from octopus.machine import Component
+		from octopus.data.data import BaseVariable
+
+		variables = {}
+
+		for name, var in self.sketch.workspace.variables.iteritems():
+			if isinstance(var, Component):
+				variables.update(var.variables)
+			elif isinstance(var, BaseVariable):
+				variables[name] = var
+
+		return variables

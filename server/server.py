@@ -47,6 +47,20 @@ sketch.Sketch.db = dbpool
 sketch.Sketch.dataDir = os.path.join(data_path, "sketches")
 
 ##
+## Sketch / Experiment Runtime
+##
+
+websocket_runtime = websocket.WebSocketRuntime()
+loaded_sketches = websocket_runtime.sketches
+
+def running_experiments ():
+	return [
+		sketch.experiment 
+		for sketch in loaded_sketches.itervalues() 
+		if sketch.experiment is not None
+	]
+
+##
 ## HTTP Server - Home Page
 ##
 
@@ -57,10 +71,9 @@ class Root (resource.Resource):
 			request.finish()
 
 		saved_sketches = sketch.Sketch.list()
-		past_experiments = []
-		running_experiments = []
-		
-		tpl = template.Root(running_experiments, past_experiments, saved_sketches)
+		past_experiments = experiment.Experiment.list()
+
+		tpl = template.Root(running_experiments(), past_experiments, saved_sketches)
 		request.write("<!DOCTYPE html>\n")
 		d = flatten(request, tpl, request.write)
 		d.addCallbacks(lambda _: request.finish())
@@ -119,8 +132,47 @@ class EditSketch (resource.Resource):
 			request.write("There was an error: " + str(failure))
 			request.finish()
 
-		print "Fetch for sketch id " + str(self._id)
 		d = sketch.Sketch.exists(self._id)
+		d.addCallbacks(_done, _error)
+
+		return server.NOT_DONE_YET
+
+
+class Experiment (resource.Resource):
+	def getChild (self, id, request):
+		return ShowExperiment(id)
+
+
+class ShowExperiment (resource.Resource):
+	
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_GET (self, request):
+		def _done (exists):
+			if not exists:
+				request.write("Experiment %s not found." % self._id)
+				request.finish()
+				return
+
+			expt = next((expt for expt in running_experiments() if expt.id == self._id), None)
+
+			request.write("<!DOCTYPE html>\n")
+			if expt is not None:
+				tpl = template.ExperimentRunning(expt)
+			else:
+				tpl = template.ExperimentResult(self._id)
+
+			d = flatten(request, tpl, request.write)
+			d.addCallbacks(lambda _: request.finish())
+
+		def _error (failure):
+			request.write("There was an error: " + str(failure))
+			request.finish()
+
+		print "Fetch for experiment id " + str(self._id)
+		d = experiment.Experiment.exists(self._id)
 		d.addCallbacks(_done, _error)
 
 		return server.NOT_DONE_YET
@@ -140,7 +192,7 @@ def makeService (options):
 	ws_host = "localhost"
 	factory = WebSocketServerFactory("ws://" + ws_host + ":" + str(options["wsport"]), debug = False)
 	factory.protocol = websocket.OctopusEditorProtocol
-	factory.runtime = websocket.WebSocketRuntime()
+	factory.runtime = websocket_runtime
 
 	def accept (offers):
 		# Required for Chromium ~33 and newer
@@ -161,6 +213,7 @@ def makeService (options):
 	root = resource.Resource()
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
+	root.putChild("experiment", Experiment())
 	
 	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
 	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
@@ -184,7 +237,7 @@ def run_server ():
 	ws_port = 9000
 	factory = WebSocketServerFactory("ws://" + ws_host + ":" + str(ws_port), debug = False)
 	factory.protocol = websocket.OctopusEditorProtocol
-	factory.runtime = websocket.WebSocketRuntime()
+	factory.runtime = websocket_runtime
 
 	# Required for Chromium ~33 and newer
 	def accept (offers):
@@ -200,6 +253,7 @@ def run_server ():
 	root = resource.Resource()
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
+	root.putChild("experiment", Experiment())
 	
 	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
 	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))

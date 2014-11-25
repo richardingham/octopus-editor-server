@@ -30,39 +30,43 @@ Polymer('octopus-runtime', {
 			var payload = data.payload;
 
 			if (protocol === "sketch" && payload.sketch == self.sketch) {
-				if (command === "sketch-load") {
-					self.fire("sketch-loaded", payload);
+				if (command === "load") {
+					return self.fire("sketch-loaded", payload);
 				} 
 
-				else if (command === "sketch-renamed") {
-					self.fire("title-renamed", payload.title);
+				if (command === "renamed") {
+					return self.fire("title-renamed", payload.title);
 				} 
-
-				else if (command === "block-state") {
-					self.fire("block-state", payload);
+			}
+			
+			if (protocol === "block" && payload.sketch == self.sketch) {
+				if (command === "state") {
 					console.log("Block", payload.block, "state", payload.state);
-				} 
+					return self.fire("block-state", payload);
+				}
+			}
 
-				else if (command === "experiment-started") {
+			if (protocol === "experiment" && payload.sketch == self.sketch) {
+				if (command === "state-started") {
 					self.experiment.id = payload.experiment;
 					self.experiment.state = "running";
 					self._fireLogMessage(payload.experiment, "status", "Experiment running", new Date());
-				} else if (command === "experiment-stopped") {
+				} else if (command === "state-stopped") {
 					self.experiment.id = null;
 					self.experiment.state = "ready";
 					self._fireLogMessage(payload.experiment, "status", "Experiment complete", new Date());
-				} else if (command === "experiment-paused") {
+				} else if (command === "state-paused") {
 					self.experiment.state = "paused";
 					self._fireLogMessage(payload.experiment, "status", "Experiment paused", new Date());
-				} else if (command === "experiment-resumed") {
+				} else if (command === "state-resumed") {
 					self.experiment.state = "running";
 					self._fireLogMessage(payload.experiment, "status", "Experiment resumed", new Date());
-				} else if (command === "experiment-error") {
+				} else if (command === "state-error") {
 					self.experiment.state = "error";
 					self._fireLogMessage(payload.experiment, "error", "Experiment error", new Date());
 				} 
 
-				else if (command === "experiment-log" && payload.experiment == self.experiment.id) {
+				else if (command === "log" && payload.experiment == self.experiment.id) {
 					self._fireLogMessage(payload.experiment, payload.level, payload.message, new Date());
 				}
 			}
@@ -98,24 +102,35 @@ Polymer('octopus-runtime', {
 
 	blockEvent: function (event) {
 		event.data.sketch = this.sketch;
-		this._socketSend("sketch", "block-" + event.eventType, event.data);
+
+		// Remove "block-" from each event in a transaction.
+		if (event.eventType === "transaction") {
+			event.data.events = event.data.events.map(function (event) {
+				if (event.event.substring(0, 6) === "block-") {
+					event.event = event.event.substring(6);
+				}
+				return event;
+			});
+		}
+
+		this._socketSend("block", event.eventType, event.data);
 	},
 
 	changeTitle: function (title) {
-		this._socketSend("sketch", "sketch-rename", { 
+		this._socketSend("sketch", "rename", { 
 			sketch: this.sketch, 
 			title: title 
 		});
 	},
 
 	experimentAction: function (action) {
-		this._socketSend("sketch", "experiment-" + action, {
+		this._socketSend("experiment", action, {
 			sketch: this.sketch
 		});
 	},
 
 	load: function (id) {
-		this._socketSend("sketch", "sketch-load", {
+		this._socketSend("sketch", "load", {
 			sketch: id
 		});
 	}

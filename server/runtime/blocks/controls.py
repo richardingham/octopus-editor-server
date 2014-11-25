@@ -1,4 +1,5 @@
 from ..workspace import Block, Disconnected, Cancelled
+
 from octopus.constants import State
 
 from twisted.internet import reactor, defer

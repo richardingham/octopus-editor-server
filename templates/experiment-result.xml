@@ -1,0 +1,10 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
+	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
+</head>
+<body unresolved="" t:render="editor_body">
+	Experiment <t:slot name="experiment_id" /> is not running.
+</body>
+</html>

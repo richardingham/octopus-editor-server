@@ -1,0 +1,223 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
+	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
+
+	<link rel="import" href="/components/octopus-experiment-runtime/octopus-experiment-runtime.html" />
+	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
+	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
+	<link rel="import" href="/bower_components/core-splitter/core-splitter.html" />
+	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
+	<link rel="import" href="/bower_components/core-icons/av-icons.html" />
+  
+	<style>
+	/* <![CDATA[ */
+	
+	html, body {
+		margin: 0;
+		padding: 0;
+		display: flex;
+		height: 100vh;
+		flex-direction: column;
+	}
+
+	body {
+		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		color: #333;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+	}
+	
+	#container {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+	}
+
+	core-toolbar {
+		background-color: #526E9C;
+		color: #FFF;
+	}
+
+	core-toolbar span {
+		color: #fff;
+		padding-bottom: 3px;
+		font-size: 24px;
+		margin-left: 15px;
+	}
+
+	#variables-list {
+		overflow-y: scroll;
+	}
+
+	#variables-list ol {
+		list-style-type: none;
+		margin: 13px 0;
+		padding: 0;
+	}
+
+	#variables-list ol li {
+		padding: 2px 15px;
+		cursor: pointer;
+	}
+
+	#experiment-data .property {
+		background-color: #526E9C;
+		color: #FFF;
+		border-radius: 2px;
+		display: inline;
+		margin: 5px;
+		padding: 5px;
+		float: left;
+		position: relative;
+	}
+
+	/* ]]> */
+	</style>
+</head>
+<body unresolved="" t:render="editor_body">
+<template id="application" is="auto-binding">
+	<div id="container">
+		<core-toolbar>
+			<core-icon-button icon="cancel">Back / Cancel</core-icon-button>
+			<span id="experiment-title">{{ experimentTitle }}</span>
+		</core-toolbar>
+		<div flex="" horizontal="" layout="">
+			<div id="variables-list" on-click="{{ variableClicked }}">
+				<ol>
+				<template repeat="{{ experimentVariables as v }}">
+					<li data-id="{{ v.name }}">{{ v.name }}</li>
+				</template>
+				</ol>
+			</div>
+			<core-splitter direction="left"></core-splitter>
+			<div flex="" id="experiment-data">
+				<template repeat="{{ g in experimentGraphs }}">
+				<div class="graph">
+					Graph of <template repeat="{{ s in g.streams }}">{{ s.name }}</template>
+				</div>
+				</template>
+
+				<template repeat="{{ p in experimentProperties }}">
+				<div class="property">
+					<span class="close" on-click="{{ propertyRemove }}">X</span>
+					<template if="{{ p.type === 'int' || p.type === 'float' }}">
+						<span class="graph" on-click="{{ propertyGraph }}">G</span>
+					</template>
+					<template if="{{ p.edit }}">
+						<span class="edit" on-click="{{ propertyEdit }}">E</span>
+					</template>
+					{{ p.name }} = {{ p.value }}
+				</div>
+				</template>
+			</div>
+		</div>
+	</div>
+	<octopus-experiment-runtime 
+		id="runtime" url="ws://127.0.0.1:9000" 
+		on-experiment-load="{{ experimentLoaded }}"
+		on-properties="{{ onPropertiesData }}"
+	>
+		<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
+		<t:attr name="experiment"><t:slot name="experiment_id" /></t:attr>
+	</octopus-experiment-runtime>
+</template>
+<script>
+// <![CDATA[
+
+var template = document.getElementById('application');
+template.experimentTitle = "";
+template.experimentVariables = [];
+template.experimentProperties = [];
+template.experimentGraphs = [];
+template.propertyUpdateFrequency = 1000;
+template.streamUpdateFrequency = 1000;
+template._propertyUpdateTimer = null;
+template._streamUpdateTimer = null;
+template.experimentLoaded = function (e) {
+	this.experimentVariables = e.detail.variables.sort(function (a, b) {
+		if (a.name < b.name) return -1;
+		if (a.name > b.name) return 1;
+		return 0;
+	});
+	this.experimentTitle = e.detail.title;
+};
+template.variableClicked = function (e) {
+	if (e.srcElement.dataset.id) {
+		var id = e.srcElement.dataset.id;
+
+		// Check not already in properties.
+		for (var i = 0, m = this.experimentProperties.length; i < m; i++) {
+			if (this.experimentProperties[i].name === id) {
+				return;
+			}
+		}
+
+		// Find id in experimentVariables.
+		for (var i = 0, m = this.experimentVariables.length; i < m; i++) {
+			if (this.experimentVariables[i].name === id) {
+				var variable = this.experimentVariables[i];
+				variable.value = null;
+				this.experimentProperties.push(variable);
+				this.$.runtime.properties.push(id);
+				return;
+			}
+		}
+	}
+};
+template.onPropertiesData = function (e) {
+	var data = e.detail.data;
+
+	this.experimentProperties.forEach(function (property) {
+		if (typeof data[property.name] !== "undefined") {
+			property.value = data[property.name];
+		}
+	});
+
+	window.clearTimeout(this._propertyUpdateTimer);
+	this._propertyUpdateTimer = window.setTimeout(
+		this.$.runtime.requestProperties.bind(this.$.runtime),
+		this.propertyUpdateFrequency
+	);
+};
+template.propertyRemove = function (e) {
+	var id = e.srcElement.parentElement.templateInstance.model.p.name;
+
+	// Remove id from runtime properties.
+	for (var i = 0, m = this.$.runtime.properties.length; i < m; i++) {
+		if (this.$.runtime.properties[i] === id) {
+			this.$.runtime.properties.splice(i, 1);
+			break;
+		}
+	}
+
+	// Remove id from experimentProperties.
+	for (var i = 0, m = this.experimentProperties.length; i < m; i++) {
+		if (this.experimentProperties[i].name === id) {
+			return this.experimentProperties.splice(i, 1);
+		}
+	}
+};
+template.propertyGraph = function (e) {
+	var property = this.propertyRemove(e);
+
+	if (property) {
+		this.experimentGraphs.push({
+			streams: property,
+			unit: property[0].unit
+		});
+
+		this.$.runtime.streams.push(property[0].name);
+	}
+};
+
+// ]]>
+</script>
+</body>
+</html>
