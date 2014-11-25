@@ -715,7 +715,7 @@ class Block (BaseStep, EventEmitter):
 			return defer.DeferredList(results)
 
 		# Pass on call to next block.
-		elif propagate and self.nextBlock is not None:
+		elif (abort or propagate) and self.nextBlock is not None:
 			if self.state is State.READY:
 				self.state = State.CANCELLED
 
