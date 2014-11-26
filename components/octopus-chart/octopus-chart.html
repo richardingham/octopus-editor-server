@@ -1,0 +1,188 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<script src="jquery.flot.min.js"></script>
+<script src="jintervals-0.7-min.js"></script>
+
+<polymer-element name="octopus-chart" attributes="streams width height time timezero">
+<template>
+	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
+</template>
+<script>
+
+Polymer('octopus-chart', {
+	width: 400, // Of the chart, in pixels
+	height: 200, // Of the chart, in pixels
+	time: 60, // In seconds
+	timezero: 0,
+	streams: [],
+
+	_data: {},
+	_series: [],
+
+	streamsChanged: function (oldStreams) {
+		this.streams.sort();
+		var _this = this;
+		var newStreams = this.streams;
+
+		// Find streams that have been removed, discard data.
+		oldStreams.filter(function(obj) {
+			return !newStreams.some(function(obj2) {
+				return obj.value === obj2.value;
+			});
+		}).forEach(function (name) {
+			delete _this._data[name];
+		});
+
+		// Find streams that have been added
+		var addedStreams = newStreams.filter(function(obj) {
+			return !oldStreams.some(function(obj2) {
+				return obj.value === obj2.value;
+			});
+		});
+
+		// Request data for added streams.
+		if (addedStreams.length) {
+			this.fire("request-data" {
+				streams: addedStreams,
+				start: (+(new Date()) / 1000) - this.time
+			});
+		}
+
+		// Set up this._series
+		var zero, stream, series = [];
+
+		for (i = 0, m = newStreams.length; i < m; i++) {
+			stream = newStreams[i];
+			series[i] = {
+				color: stream.colour,
+				data: this._data[stream.name],
+				label: stream.name
+			};
+		}
+
+		this._series = series;
+
+		// Draw the new chart
+		var _this = this;
+
+		var options = {
+			yaxis: {
+				//min: 0,
+				//max: 10
+			},
+			xaxis: {
+				//min: trace_zero,
+				//max: x_max,
+				transform: function (v) { return v - _this.timezero; },
+				inverseTransform: function (v) { return v + _this.timezero; },
+				//tickFormatter: relative_time
+				tickFormatter: function (d) {
+					if (_this.timezero === 0) {
+						return (new Date(d * 1000)).toTimeString().substr(0, 8);
+					} else {
+						d -= _this.timezero;
+						return (d >= 0 ? "" : "-") + jintervals(Math.round(Math.abs(d)), "{HH?:}{mm}:{ss}");
+					}
+				}
+			},
+			legend: {
+				show: true
+			}			
+		};
+
+		this._plot = $.plot(this.$.chart, this._series, options);
+	},
+
+	addData: function (data, zero) {
+		var name, newData, newDataZero;
+		var streamData;
+		var i, j, m, n;
+		var maxTime = 0;
+
+		// For each stream in this chart
+		for (i = 0, m = this.streams.length; i < m; i++) {
+			name = this.streams[i].name;
+			newData = data[name].map(function (p) {
+				p[0] += zero;
+				return p;
+			});
+			maxTime = Math.max(maxTime, newData[newData.length - 1][0]);
+
+			// Check if there is new data for this stream
+			if (typeof newData === "undefined" || !newData.length) {
+				continue;
+			}
+
+			// Figure out if any of the data points are repeated.
+			// Remove repeats.
+			streamData = this._data[name];
+			newDataZero = newData[0][0];
+
+			for (j = 0, n = streamData.length; j < n; j++) {
+				if (streamData[j][0] >= newDataZero) {
+					streamData.splice(j, n - j);
+					break;
+				}
+			}
+
+			// Append new data.
+			streamData = streamData.concat(newData);
+		}
+
+		var desiredDataZero = maxTime - this.time;
+		var p0, p1, p2;
+
+		// Trim data off start of stream.
+		for (i = 0, m = this.streams.length; i < m; i++) {
+			streamData = this._data[this.streams[i].name];
+
+			for (j = 0, n = streamData.length; j < n; j++) {
+				// Interpolate point at desiredDataZero
+				if (streamData[j][0] >= desiredDataZero) {
+					// Exact point
+					if (streamData[j][0] === desiredDataZero) {
+						streamData.splice(0, j);
+						break;
+					}
+
+					p0 = streamData[j - 1];
+					p1 = streamData[j];
+
+					if (p0[0] == p1[0]) {
+						p2 = p1[1];
+					} else {
+						p2 = p0[1] + (p1[1] - p0[1]) * (desiredDataZero - p0[0]) / (p1[0] - p0[0]);
+					}
+
+					streamData.splice(0, j, [desiredDataZero, p2]);
+					break;
+				}
+			}
+
+			this._series[i].data = streamData;
+		}
+
+		// plot_start = Math.max(earliest_desired_time, first_point);
+
+		// plot.getOptions().xaxes[0].min = first_point;
+		// plot.getOptions().xaxes[0].max = Math.max(data_max_time, first_point + min_display_time);
+
+		this.redraw();
+	},
+
+	widthChanged: function () {
+		this.redraw();
+	},
+
+	heightChanged: function () {
+		this.redraw();
+	},
+
+	redraw: function () {
+		this._plot.setData(this._data);
+		this._plot.setupGrid();
+		this._plot.draw();
+	}
+});
+
+</script>
+</polymer-element>

@@ -97,6 +97,10 @@ Polymer('octopus-experiment-runtime', {
 		}
 	},
 
+	requestOneOffStreamData: function (streams, start) {
+		this._socketSend("experiment", "get-streams", { start: start, streams: streams, oneoff: true });
+	},
+
 	_socketSend: function (protocol, command, payload) {
 		if (!this.open) {
 			return;

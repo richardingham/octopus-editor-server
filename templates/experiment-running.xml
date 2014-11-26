@@ -5,6 +5,8 @@
 	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
 
 	<link rel="import" href="/components/octopus-experiment-runtime/octopus-experiment-runtime.html" />
+	<link rel="import" href="/components/octopus-chart/octopus-chart.html" />
+
 	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
 	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
 	<link rel="import" href="/bower_components/core-splitter/core-splitter.html" />
@@ -99,9 +101,7 @@
 			<core-splitter direction="left"></core-splitter>
 			<div flex="" id="experiment-data">
 				<template repeat="{{ g in experimentGraphs }}">
-				<div class="graph">
-					Graph of <template repeat="{{ s in g.streams }}">{{ s.name }}</template>
-				</div>
+				<octopus-chart streams="{{ g.streams }}" timezero="{{ experimentTimeZero }}" on-request-data="{{ requestStreamData }}"></octopus-chart>
 				</template>
 
 				<template repeat="{{ p in experimentProperties }}">
@@ -123,6 +123,7 @@
 		id="runtime" url="ws://127.0.0.1:9000" 
 		on-experiment-load="{{ experimentLoaded }}"
 		on-properties="{{ onPropertiesData }}"
+		on-streams="{{ onStreamData }}"
 	>
 		<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
 		<t:attr name="experiment"><t:slot name="experiment_id" /></t:attr>
@@ -133,6 +134,7 @@
 
 var template = document.getElementById('application');
 template.experimentTitle = "";
+template.experimentTimeZero = "";
 template.experimentVariables = [];
 template.experimentProperties = [];
 template.experimentGraphs = [];
@@ -214,6 +216,25 @@ template.propertyGraph = function (e) {
 		});
 
 		this.$.runtime.streams.push(property[0].name);
+	}
+};
+template.requestStreamData = function (e, detail) {
+	this.$.runtime.requestOneOffStreamData(detail.streams, detail.start);
+};
+template.onStreamData = function (e, detail) {
+	var zero = detail.zero;
+	var data = detail.data;
+
+	this.$['experiment-data'].getElementsByTagName('octopus-chart').forEach(function (chart) {
+		chart.addData(data, zero);
+	});
+
+	if (!detail.oneoff) {
+		window.clearTimeout(this._streamUpdateTimer);
+		this._streamUpdateTimer = window.setTimeout(
+			this.$.runtime.requestStreams.bind(this.$.runtime),
+			this.streamUpdateFrequency
+		);
 	}
 };
 
