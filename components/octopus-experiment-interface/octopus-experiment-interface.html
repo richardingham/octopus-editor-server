@@ -1,0 +1,190 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/core-drag-drop/core-drag-drop.html">
+<link rel="import" href="../../bower_components/core-splitter/core-splitter.html">
+
+<link rel="import" href="../../components/octopus-chart/octopus-chart.html">
+
+<polymer-element name="octopus-experiment-interface" attributes="variables runtimeProperties runtimeStreams">
+<template>
+<style>
+
+:host {
+	display: flex;
+	flex-direction: row;
+	flex: 1;
+}
+
+variables-list {
+	overflow-y: scroll;
+}
+
+variables-list ol {
+	list-style-type: none;
+	margin: 13px 0;
+	padding: 0;
+}
+
+variables-list ol li {
+	padding: 2px 15px;
+	cursor: pointer;
+}
+
+experiment-data .property {
+	flex: 1;
+	background-color: #526E9C;
+	color: #FFF;
+	border-radius: 2px;
+	display: inline;
+	margin: 5px;
+	padding: 5px;
+	float: left;
+	position: relative;
+}
+
+</style>
+
+<variables-list on-click="{{ variableClicked }}">
+	<ol>
+	<template repeat="{{ variables as v }}">
+		<li data-id="{{ v.name }}">{{ v.name }}</li>
+	</template>
+	</ol>
+</variables-list>
+
+<core-splitter direction="left" allowOverflow="true"></core-splitter>
+
+<experiment-data id="displayarea">
+	<core-drag-drop on-drag-start="{{ dragStart }}"></core-drag-drop>
+
+	<template repeat="{{ g in graphs }}">
+	<octopus-chart streams="{{ g.streams }}" timezero="{{ timeZero }}"></octopus-chart>
+	</template>
+
+	<template repeat="{{ p in properties }}">
+	<div class="property" data-name="{{ p.name }}">
+		<span class="close" on-click="{{ propertyRemove }}">X</span>
+		<template if="{{ p.type === 'int' || p.type === 'float' }}">
+			<span class="graph" on-click="{{ propertyGraph }}">G</span>
+		</template>
+		<template if="{{ p.edit }}">
+			<span class="edit" on-click="{{ propertyEdit }}">E</span>
+		</template>
+		<span class="name">{{ p.name }}</span>
+		<span class="value">{{ p.value }}</span>
+	</div>
+	</template>
+</experiment-data>
+
+</template>
+<script>
+
+Polymer('octopus-experiment-interface', {
+
+	timeZero: 0,
+	variables: [],
+	runtimeProperties: [],
+	runtimeStreams: [],
+
+	properties: [],
+	graphs: [],
+
+	variableClicked: function (e) {
+		if (e.srcElement.dataset.id) {
+			var id = e.srcElement.dataset.id;
+
+			// Check not already in properties.
+			for (var i = 0, m = this.properties.length; i < m; i++) {
+				if (this.properties[i].name === id) {
+					return;
+				}
+			}
+
+			// Find id in variables.
+			for (var i = 0, m = this.variables.length; i < m; i++) {
+				if (this.variables[i].name === id) {
+					var variable = this.variables[i];
+					variable.value = null;
+					this.properties.push(variable);
+					this.runtimeProperties.push(id);
+					return;
+				}
+			}
+		}
+	},
+
+	onPropertiesData: function (data) {
+		this.properties.forEach(function (property) {
+			if (typeof data[property.name] !== "undefined") {
+				property.value = data[property.name];
+			}
+		});
+	},
+
+	propertyRemove: function (e) {
+		var id = e.srcElement.parentElement.dataset.name;
+
+		// Remove id from runtime properties.
+		for (var i = 0, m = this.runtimeProperties.length; i < m; i++) {
+			if (this.runtimeProperties[i] === id) {
+				this.runtimeProperties.splice(i, 1);
+				break;
+			}
+		}
+
+		// Remove id from properties.
+		for (var i = 0, m = this.properties.length; i < m; i++) {
+			if (this.properties[i].name === id) {
+				return this.properties.splice(i, 1);
+			}
+		}
+	},
+
+	propertyGraph: function (e) {
+		var property = this.propertyRemove(e);
+
+		if (property) {
+			this.graphs.push({
+				streams: property,
+				unit: property[0].unit
+			});
+
+			this.runtimeStreams.push(property[0].name);
+		}
+	},
+
+	onStreamData: function (data, zero) {
+		var charts = this.$.displayarea.getElementsByTagName('octopus-chart');
+		for (var i = 0, m = charts.length; i < m; i++) {
+			charts[i].addData(data, zero);
+		};
+	},
+
+	dragStart: function (e, dragInfo) {
+		console.log(e);
+		var target = dragInfo.event.target;
+		var avatar = dragInfo.avatar;
+		while (target.tagName !== "DIV") {
+			target = target.parentElement;
+		}
+		while (avatar.firstChild) {
+			avatar.removeChild(avatar.firstChild);
+		}
+		avatar.appendChild(document.createTextNode(target.dataset.name));
+		dragInfo.drag = function() {};
+		dragInfo.drop = function drop(dragInfo) {
+		  var dropTarget = dragInfo.event.relatedTarget;
+		  console.log("drop", dropTarget);
+		};
+		dragInfo.over = function over(dragInfo) {
+		  var dropTarget = dragInfo.event.relatedTarget;
+		  console.log("over", dropTarget);
+		};
+		dragInfo.out = function over(dragInfo) {
+		  var dropTarget = dragInfo.event.relatedTarget;
+		  console.log("out", dropTarget);
+		};
+	}
+});
+
+</script>
+</polymer-element>

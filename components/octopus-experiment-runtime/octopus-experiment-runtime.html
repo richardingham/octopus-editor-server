@@ -98,7 +98,11 @@ Polymer('octopus-experiment-runtime', {
 	},
 
 	requestOneOffStreamData: function (streams, start) {
-		this._socketSend("experiment", "get-streams", { start: start, streams: streams, oneoff: true });
+		this._socketSend("experiment", "get-streams", { 
+			start: start, 
+			streams: streams, 
+			oneoff: true 
+		});
 	},
 
 	_socketSend: function (protocol, command, payload) {
@@ -111,7 +115,7 @@ Polymer('octopus-experiment-runtime', {
 
 		var data = { protocol: protocol, command: command, payload: payload };
 
-		console.log("Socket send", data);
+		//console.log("Socket send", data);
 		this.socket.send(JSON.stringify(data));
 	},
 

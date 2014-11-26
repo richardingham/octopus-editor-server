@@ -30,7 +30,7 @@ class WebSocketRuntime (BaseTransport):
 			"payload": payload,
 		}
 
-		log.msg("Response", response)
+		# log.msg("Response", response)
 
 		context.sendMessage(json.dumps(response))
 
@@ -53,7 +53,7 @@ class OctopusEditorProtocol (WebSocketServerProtocol):
 
 		cmd = json.loads(payload)
 
-		log.msg("Command", cmd)
+		# log.msg("Command", cmd)
 
 		self.factory.runtime.receive(
 			cmd['protocol'], 

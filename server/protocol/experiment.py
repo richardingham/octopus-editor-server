@@ -35,7 +35,14 @@ class ExperimentProtocol (object):
 			if topic == 'get-properties':
 				return self.sendProperties(sketch, experiment, context.getExperimentProperties(experiment), context)
 			if topic == 'get-streams':
-				return self.sendStreams(sketch, experiment, context.getExperimentStreams(experiment), payload['start'], context)
+				oneoff = 'oneoff' in payload and payload['oneoff']
+		
+				if 'streams' in payload:
+					streams = payload['streams']
+				else:
+					streams = context.getExperimentStreams(experiment)
+				
+				return self.sendStreams(sketch, experiment, streams, payload['start'], context, oneoff)
 
 		except Error as e:
 			self.send('error', e, context)
@@ -52,7 +59,7 @@ class ExperimentProtocol (object):
 				"edit":  hasattr(p, "_setter")
 			}
 
-			for key in ("min", "max", "options"):
+			for key in ("min", "max", "options", "colour"):
 				try:
 					attr = getattr(p, key)
 
@@ -94,7 +101,7 @@ class ExperimentProtocol (object):
 			context
 		)
 
-	def sendStreams (self, sketch, experiment, streams, start, context):
+	def sendStreams (self, sketch, experiment, streams, start, context, oneoff = False):
 		variables = experiment.variables()
 
 		interval = now() - start
@@ -104,19 +111,24 @@ class ExperimentProtocol (object):
 				return (round(point[0] - start, 1), round(point[1], 2))
 			except TypeError:
 				return 0
+				
+		payload = {
+			"sketch": sketch.id,
+			"experiment": experiment.id,
+			"zero": round(start, 1),
+			"max": round(start + interval, 1),
+			"data": { 
+				name: map(_compress, variables[name].get(start, interval)) 
+				for name in streams 
+			}
+		}
+
+		if oneoff:
+			payload['oneoff'] = True
 
 		return self.send(
 			'streams', 
-			{
-				"sketch": sketch.id,
-				"experiment": experiment.id,
-				"zero": round(start, 1),
-				"max": round(start + interval, 1),
-				"data": { 
-					name: map(_compress, variables[name].get(start, interval)) 
-					for name in streams 
-				}
-			},
+			payload,
 			context
 		)
 

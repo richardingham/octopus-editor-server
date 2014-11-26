@@ -9,8 +9,8 @@
 <script>
 
 Polymer('octopus-chart', {
-	width: 400, // Of the chart, in pixels
-	height: 200, // Of the chart, in pixels
+	width: 600, // Of the chart, in pixels
+	height: 400, // Of the chart, in pixels
 	time: 60, // In seconds
 	timezero: 0,
 	streams: [],
@@ -18,15 +18,13 @@ Polymer('octopus-chart', {
 	_data: {},
 	_series: [],
 
-	streamsChanged: function (oldStreams) {
-		this.streams.sort();
+	streamsChanged: function (oldStreams, newStreams) {
 		var _this = this;
-		var newStreams = this.streams;
 
 		// Find streams that have been removed, discard data.
 		oldStreams.filter(function(obj) {
 			return !newStreams.some(function(obj2) {
-				return obj.value === obj2.value;
+				return obj.name === obj2.name;
 			});
 		}).forEach(function (name) {
 			delete _this._data[name];
@@ -35,14 +33,14 @@ Polymer('octopus-chart', {
 		// Find streams that have been added
 		var addedStreams = newStreams.filter(function(obj) {
 			return !oldStreams.some(function(obj2) {
-				return obj.value === obj2.value;
+				return obj.name === obj2.name;
 			});
 		});
 
 		// Request data for added streams.
 		if (addedStreams.length) {
-			this.fire("request-data" {
-				streams: addedStreams,
+			this.fire("request-data", {
+				streams: addedStreams.map(function (s) { return s.name; }),
 				start: (+(new Date()) / 1000) - this.time
 			});
 		}
@@ -85,6 +83,7 @@ Polymer('octopus-chart', {
 				}
 			},
 			legend: {
+				position: "nw",
 				show: true
 			}			
 		};
@@ -101,20 +100,23 @@ Polymer('octopus-chart', {
 		// For each stream in this chart
 		for (i = 0, m = this.streams.length; i < m; i++) {
 			name = this.streams[i].name;
-			newData = data[name].map(function (p) {
-				p[0] += zero;
-				return p;
-			});
-			maxTime = Math.max(maxTime, newData[newData.length - 1][0]);
+			newData = data[name];
 
 			// Check if there is new data for this stream
 			if (typeof newData === "undefined" || !newData.length) {
 				continue;
 			}
 
+			// Fix the time in the data
+			newData = newData.map(function (p) {
+				p[0] = (p[0] + zero) / 1000;
+				return p;
+			});
+			maxTime = Math.max(maxTime, newData[newData.length - 1][0]);
+
 			// Figure out if any of the data points are repeated.
 			// Remove repeats.
-			streamData = this._data[name];
+			streamData = this._data[name] || [];
 			newDataZero = newData[0][0];
 
 			for (j = 0, n = streamData.length; j < n; j++) {
@@ -125,7 +127,7 @@ Polymer('octopus-chart', {
 			}
 
 			// Append new data.
-			streamData = streamData.concat(newData);
+			this._data[name] = streamData.concat(newData);
 		}
 
 		var desiredDataZero = maxTime - this.time;
@@ -135,7 +137,7 @@ Polymer('octopus-chart', {
 		for (i = 0, m = this.streams.length; i < m; i++) {
 			streamData = this._data[this.streams[i].name];
 
-			for (j = 0, n = streamData.length; j < n; j++) {
+			for (j = 1, n = streamData.length; j < n; j++) {
 				// Interpolate point at desiredDataZero
 				if (streamData[j][0] >= desiredDataZero) {
 					// Exact point
@@ -158,6 +160,7 @@ Polymer('octopus-chart', {
 				}
 			}
 
+			//this._data[name] = streamData;
 			this._series[i].data = streamData;
 		}
 
@@ -178,7 +181,7 @@ Polymer('octopus-chart', {
 	},
 
 	redraw: function () {
-		this._plot.setData(this._data);
+		this._plot.setData(this._series);
 		this._plot.setupGrid();
 		this._plot.draw();
 	}
