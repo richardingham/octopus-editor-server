@@ -5,6 +5,9 @@
 <polymer-element name="octopus-chart" attributes="streams width height time timezero">
 <template>
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
+	<div>
+		Scale: <input type="text" value="{{ time }}" style="width: 50px;"> seconds
+	</div>
 </template>
 <script>
 
@@ -178,6 +181,14 @@ Polymer('octopus-chart', {
 
 	heightChanged: function () {
 		this.redraw();
+	},
+
+	timeChanged:  function () {
+		// Request data for added streams.
+		this.fire("request-data", {
+			streams: self.streams.map(function (s) { return s.name; }),
+			start: (+(new Date()) / 1000) - this.time
+		});
 	},
 
 	redraw: function () {

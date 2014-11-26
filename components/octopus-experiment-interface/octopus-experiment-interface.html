@@ -1,5 +1,4 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/core-drag-drop/core-drag-drop.html">
 <link rel="import" href="../../bower_components/core-splitter/core-splitter.html">
 
 <link rel="import" href="../../components/octopus-chart/octopus-chart.html">
@@ -41,6 +40,10 @@ experiment-data .property {
 	position: relative;
 }
 
+experiment-data .over {
+	border: 2px solid black;
+}
+
 </style>
 
 <variables-list on-click="{{ variableClicked }}">
@@ -53,15 +56,28 @@ experiment-data .property {
 
 <core-splitter direction="left" allowOverflow="true"></core-splitter>
 
-<experiment-data id="displayarea">
-	<core-drag-drop on-drag-start="{{ dragStart }}"></core-drag-drop>
-
+<experiment-data id="displayarea" on-dragstart="{{ dragStart }}">
 	<template repeat="{{ g in graphs }}">
-	<octopus-chart streams="{{ g.streams }}" timezero="{{ timeZero }}"></octopus-chart>
+	<octopus-chart 
+		streams="{{ g.streams }}"
+		timezero="{{ timeZero }}"
+		draggable="true"
+		on-dragover="{{ dragOver }}"
+		on-dragenter="{{ dragEnter }}"
+		on-dragleave="{{ dragLeave }}"
+		on-drop="{{ drop }}"
+	>
+	</octopus-chart>
 	</template>
 
 	<template repeat="{{ p in properties }}">
-	<div class="property" data-name="{{ p.name }}">
+	<div class="property" data-name="{{ p.name }}" 
+		draggable="true"
+		on-dragover="{{ dragOver }}" 
+		on-dragenter="{{ dragEnter }}" 
+		on-dragleave="{{ dragLeave }}"
+		on-drop="{{ drop }}"
+	>
 		<span class="close" on-click="{{ propertyRemove }}">X</span>
 		<template if="{{ p.type === 'int' || p.type === 'float' }}">
 			<span class="graph" on-click="{{ propertyGraph }}">G</span>
@@ -87,6 +103,11 @@ Polymer('octopus-experiment-interface', {
 
 	properties: [],
 	graphs: [],
+
+	_dragEnterCount: 0,
+	_dragSourceName: null,
+	_dragSourceType: null,
+	_dragSourceIndex: null,
 
 	variableClicked: function (e) {
 		if (e.srcElement.dataset.id) {
@@ -159,30 +180,84 @@ Polymer('octopus-experiment-interface', {
 		};
 	},
 
-	dragStart: function (e, dragInfo) {
-		console.log(e);
-		var target = dragInfo.event.target;
-		var avatar = dragInfo.avatar;
-		while (target.tagName !== "DIV") {
-			target = target.parentElement;
+	dragStart: function (e) {
+		//console.log("start", e, e.target);
+
+		this._dragSourceType = e.target.tagName === "DIV" ? "property" : "graph";
+		
+		var id = e.target.dataset.name;
+		this._dragSourceName = id;
+		for (var i = 0, m = this.properties.length; i < m; i++) {
+			if (this.properties[i].name === id) {
+				this._dragSourceIndex = i;
+				break;
+			}
 		}
-		while (avatar.firstChild) {
-			avatar.removeChild(avatar.firstChild);
+	},
+	
+	dragOver: function (e) {
+		//console.log("over", e.target);
+		var id = e.target.dataset.name;
+
+		if (this._dragEnterCount > 0 || (id && id !== this._dragSourceName)) {
+			e.dataTransfer.dropEffect = 'move'; 
+			//console.log("over:", id, this._dragSourceName);
+			e.preventDefault();
+			return false;
 		}
-		avatar.appendChild(document.createTextNode(target.dataset.name));
-		dragInfo.drag = function() {};
-		dragInfo.drop = function drop(dragInfo) {
-		  var dropTarget = dragInfo.event.relatedTarget;
-		  console.log("drop", dropTarget);
-		};
-		dragInfo.over = function over(dragInfo) {
-		  var dropTarget = dragInfo.event.relatedTarget;
-		  console.log("over", dropTarget);
-		};
-		dragInfo.out = function over(dragInfo) {
-		  var dropTarget = dragInfo.event.relatedTarget;
-		  console.log("out", dropTarget);
-		};
+	},
+	
+	dragEnter: function (e) {
+		//console.log("enter");
+
+		var id = e.target.dataset.name;
+
+		if (this._dragEnterCount === 0) {
+			if (!(id && id !== this._dragSourceName)) {
+				return;
+			}
+			$(e.target).addClass("over");
+		}
+		this._dragEnterCount++;
+	},
+	
+	dragLeave: function (e) {
+		//console.log("leave", e, element);
+
+		var id = e.target.dataset.name;
+		
+		//if (!(id && id !== this._dragSourceName)) {
+		//	return;
+		//}
+
+		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
+			
+			$(e.target).removeClass("over");
+		}
+	},
+	
+	drop: function (e) {
+		console.log("drop");
+		this._dragEnterCount = 0;
+		$(e.currentTarget).removeClass("over");
+
+		if (this._dragSourceType === "property") {
+			var i, m, name = e.currentTarget.dataset.name;
+
+			for (i = 0, m = this.properties.length; i < m; i++) {
+				if (this.properties[i].name === name) {
+					break;
+				}
+			}
+			if (i < m) {
+				var sourceProp = this.properties.splice(this._dragSourceIndex, 1)[0];
+				this.properties.splice(i, 0, sourceProp);
+			}
+		}
+
+		this._dragSourceType = null;
+		this._dragSourceName = null;
+		this._dragSourceIndex = null;
 	}
 });
 
