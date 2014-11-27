@@ -85,7 +85,7 @@
 		right: 10px;
 		top: 10px;
 		width: 500px;
-		-webkit-user-selct: text;
+		-webkit-user-select: text;
 		-moz-user-select: text;
 		-ms-user-select: element;
 	}
@@ -96,6 +96,17 @@
 		margin-top: 10px;
 		padding: 5px;
 		position: relative;
+	}
+
+	#experiments-log .experiment .experiment-link {
+		margin-bottom: 5px;
+		font-weight: bold;
+		font-size: 12px;
+	}
+
+	#experiments-log .experiment .experiment-link a {
+		text-decoration: none;
+		color: #223388;
 	}
 
 	#experiments-log .experiment core-icon {
@@ -137,6 +148,7 @@
 	<div id="experiments-log">
 		<template repeat="{{ logMessages as experiment }}">
 		<div class="experiment">
+			<div class="experiment-link"><a href="/experiment/{{ experiment.id }}" target="_blank">Show Experiment</a></div>
 			<core-icon icon="cancel" on-click="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
 			<ul>
 				<template repeat="{{ experiment.messages as item }}">
