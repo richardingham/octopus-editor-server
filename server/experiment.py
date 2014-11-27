@@ -91,8 +91,8 @@ class Experiment (EventEmitter):
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
 
-		def writeSketchEvent (eventType, data):
-			if eventType == "block-state":
+		def writeSketchEvent (protocol, topic, data):
+			if protocol == "block" and topic == "state":
 				return
 
 			time = now()
@@ -100,7 +100,8 @@ class Experiment (EventEmitter):
 			event = {
 				"time": time,
 				"relative": time - self.startTime,
-				"type": eventType,
+				"protocol": protocol,
+				"topic": topic,
 				"data": data
 			}
 

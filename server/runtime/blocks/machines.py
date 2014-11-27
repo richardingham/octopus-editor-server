@@ -60,7 +60,11 @@ class machine_declaration (Block):
 			# Short delay to allow the machine to get its first data
 			# TODO - machines should only return ready when they
 			# have received their first data.
-			return task.deferLater(reactor, 2, lambda: result)
+			# TODO - make reset configurable.
+			return defer.gatherResults([
+				task.deferLater(reactor, 2, lambda: result),
+				self.machine.reset()
+			])
 
 		def _error (failure):
 			print "Machine connection error: " + str(failure)
@@ -77,8 +81,16 @@ class machine_declaration (Block):
 
 		self.machine.stop()
 
+		def _disconnect (machine):
+			try:
+				machine.protocol.transport.loseConnection()
+			except AttributeError:
+				pass
+			except:
+				log.err()
+
 		# Allow some time for any remaining messages to be received.
-		reactor.callLater(2, self.machine.protocol.transport.loseConnection)
+		reactor.callLater(2, _disconnect, self.machine)
 		self.machine = None
 
 	def _onWorkspacePaused (self, data):
