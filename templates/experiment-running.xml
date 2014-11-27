@@ -67,13 +67,14 @@
 </octopus-experiment-interface>
 
 <octopus-experiment-runtime 
-	id="runtime" url="ws://127.0.0.1:9000" 
+	id="runtime"
 	properties="{{ runtimeProperties }}"
 	streams="{{ runtimeStreams }}"
 	on-experiment-load="{{ experimentLoaded }}"
 	on-properties="{{ onPropertiesData }}"
 	on-streams="{{ onStreamData }}"
 >
+	<t:attr name="url"><t:slot name="websocket_url" /></t:attr>
 	<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
 	<t:attr name="experiment"><t:slot name="experiment_id" /></t:attr>
 </octopus-experiment-runtime>

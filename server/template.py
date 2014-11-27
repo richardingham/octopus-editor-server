@@ -5,6 +5,7 @@ import os
 
 templatesDir = FilePath(os.path.join(os.path.basename(__file__), "..", "templates"))
 
+websocketUrl = "ws://localhost:9000"
 
 class Root (Element):
 	loader = XMLFile(templatesDir.child('root.xml'))
@@ -62,6 +63,7 @@ class SketchEdit (Element):
 	@renderer
 	def editor_body (self, request, tag):
 		return tag.fillSlots(
+			websocket_url = websocketUrl,
 			sketch_id = self.sketch_id
 		)
 
@@ -90,6 +92,7 @@ class ExperimentRunning (Element):
 	@renderer
 	def editor_body (self, request, tag):
 		return tag.fillSlots(
+			websocket_url = websocketUrl,
 			sketch_id = self.experiment.sketch.id,
 			experiment_id = self.experiment.id
 		)

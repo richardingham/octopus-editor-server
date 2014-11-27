@@ -148,13 +148,14 @@
 	</div>
 	<div id="menu-container"></div>
 	<octopus-runtime 
-		id="runtime" url="ws://127.0.0.1:9000" 
+		id="runtime" 
 		experiment="{{experiment}}" 
 		on-sketch-loaded="{{onRuntimeSketchLoaded}}" 
 		on-sketch-renamed="{{onRuntimeSketchRenamed}}"
 		on-block-state="{{onRuntimeBlockStateChanged}}"
 		on-experiment-log="{{onRuntimeLogMessage}}"
 	>
+		<t:attr name="url"><t:slot name="websocket_url" /></t:attr>
 		<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
 	</octopus-runtime>
 </template>

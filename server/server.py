@@ -189,8 +189,9 @@ def makeService (options):
 	)
 
 	# WebSocket Server
-	ws_host = "localhost"
-	factory = WebSocketServerFactory("ws://" + ws_host + ":" + str(options["wsport"]), debug = False)
+	websocketUrl = "ws://" + str(options["wshost"]) + ":" + str(options["wsport"])
+	template.websocketUrl = websocketUrl
+	factory = WebSocketServerFactory(websocketUrl, debug = False)
 	factory.protocol = websocket.OctopusEditorProtocol
 	factory.runtime = websocket_runtime
 
@@ -233,9 +234,10 @@ def run_server ():
 	import sys
 	log.startLogging(sys.stdout)
 
-	ws_host = "localhost"
 	ws_port = 9000
-	factory = WebSocketServerFactory("ws://" + ws_host + ":" + str(ws_port), debug = False)
+	websocketUrl = "ws://localhost:" + str(ws_port)
+	template.websocketUrl = websocketUrl
+	factory = WebSocketServerFactory(websocketUrl, debug = False)
 	factory.protocol = websocket.OctopusEditorProtocol
 	factory.runtime = websocket_runtime
 
