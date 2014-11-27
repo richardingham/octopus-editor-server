@@ -3,6 +3,13 @@
 <script src="jintervals-0.7-min.js"></script>
 
 <polymer-element name="octopus-chart" attributes="streams width height time timezero">
+<style>
+
+:host {
+	display: block;
+}
+
+</style>
 <template>
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
 	<div>
@@ -20,9 +27,11 @@ Polymer('octopus-chart', {
 
 	_data: {},
 	_series: [],
+	unit: null,
 
-	streamsChanged: function (oldStreams, newStreams) {
+	streamsChanged: function (oldStreams) {
 		var _this = this;
+		var newStreams = this.streams;
 
 		// Find streams that have been removed, discard data.
 		oldStreams.filter(function(obj) {
@@ -40,19 +49,18 @@ Polymer('octopus-chart', {
 			});
 		});
 
-		// Request data for added streams.
-		if (addedStreams.length) {
-			this.fire("request-data", {
-				streams: addedStreams.map(function (s) { return s.name; }),
-				start: (+(new Date()) / 1000) - this.time
-			});
-		}
-
 		// Set up this._series
 		var zero, stream, series = [];
 
 		for (i = 0, m = newStreams.length; i < m; i++) {
 			stream = newStreams[i];
+
+			if (this.unit === null) {
+				this.unit = stream.unit;
+			} else if (this.unit !== stream.unit) {
+				console.log("mismatched units: ", this.unit, stream);
+			}
+
 			series[i] = {
 				color: stream.colour,
 				data: this._data[stream.name],
@@ -61,6 +69,14 @@ Polymer('octopus-chart', {
 		}
 
 		this._series = series;
+
+		// Request data for added streams.
+		if (addedStreams.length) {
+			this.fire("request-data", {
+				streams: addedStreams.map(function (s) { return s.name; }),
+				start: (+(new Date()) / 1000) - this.time
+			});
+		}
 
 		// Draw the new chart
 		var _this = this;
