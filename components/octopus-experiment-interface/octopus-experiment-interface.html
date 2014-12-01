@@ -61,6 +61,7 @@ experiment-data .over {
 <experiment-data id="displayarea" on-dragstart="{{ dragStart }}">
 	<template repeat="{{ g in graphs }}">
 	<octopus-chart 
+		data-index="{{ g.index }}"
 		streams="{{ g.streams }}"
 		timezero="{{ timeZero }}"
 		draggable="true"
@@ -105,6 +106,8 @@ Polymer('octopus-experiment-interface', {
 
 	properties: [],
 	graphs: [],
+
+	_itemIndex: 0,
 
 	_dragEnterCount: 0,
 	_dragSourceName: null,
@@ -167,6 +170,7 @@ Polymer('octopus-experiment-interface', {
 
 		if (property) {
 			this.graphs.push({
+				index: this._itemIndex++,
 				streams: property,
 				unit: property[0].unit
 			});
@@ -183,20 +187,38 @@ Polymer('octopus-experiment-interface', {
 	},
 
 	dragStart: function (e) {
-		//console.log("start", e, e.target);
+		var id, arr, propName;
 
-		this._dragSourceType = e.target.tagName === "OCTOPUS-PROPERTY" ? "property" : "chart";
-		
-		var id = e.target.dataset.name;
-		this._dragSourceName = id;
-		for (var i = 0, m = this.properties.length; i < m; i++) {
-			if (this.properties[i].name === id) {
+		if (e.target.tagName === "OCTOPUS-PROPERTY") {
+			id = e.target.dataset.name;
+			arr = this.properties;
+			propName = "name";
+
+			this._dragSourceType = "property";
+			this._dragSourceName = id;
+
+		} else if (e.target.tagName === "OCTOPUS-CHART") {
+			id = parseInt(e.target.dataset.index, 10);
+			arr = this.graphs;
+			propName = "index";
+
+			this._dragSourceType = "chart";
+			this._dragSourceName = e.target.streams.map(function (o) { return o.name; });
+
+		} else {
+			return;
+		}
+
+		$(e.target).addClass("dragging");
+
+		for (var i = 0, m = arr.length; i < m; i++) {
+			if (arr[i][propName] === id) {
 				this._dragSourceIndex = i;
 				break;
 			}
 		}
 	},
-	
+
 	dragOverProperty: function (e) {
 		//console.log("over", e.target);
 		var id = e.target.dataset.name;
@@ -206,30 +228,30 @@ Polymer('octopus-experiment-interface', {
 			return;
 		}
 
-		if (this._dragEnterCount > 0 || (id && id !== this._dragSourceName)) {
+		if (this._dragEnterCount > 0 && !$(e.target).hasClass("dragging")) {
 			e.dataTransfer.dropEffect = 'move'; 
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
 			return false;
 		}
 	},
-	
-	dragEnterProperty: function (e) {
-		//console.log("enter");
 
+	_targetAncestor: function (target, tag) {
+		if (target.tagName.toLowerCase() === tag) {
+			return $(target);
+		} else {
+			return $(target).parents(tag);
+		}
+	},
+
+	dragEnterProperty: function (e) {
 		if (this._dragSourceType === "chart") {
 			return;
 		}
 
-		var target;
-		if (e.target.tagName === "OCTOPUS-PROPERTY") {
-			target = $(e.target);
-		} else {
-			target = $(e.target).parents("octopus-property");
-		}
-		var id = target.data('name');
+		var target = this._targetAncestor(e.target, "octopus-property");
 
-		if (!(id && id !== this._dragSourceName)) {
+		if (target.hasClass("dragging")) {
 			return;
 		}
 
@@ -238,40 +260,21 @@ Polymer('octopus-experiment-interface', {
 			target.addClass("over");
 		}
 		this._dragEnterCount++;
-		console.log("Enter property", this._dragEnterCount);
 	},
 
 	dragLeaveProperty: function (e) {
-		//console.log("leave", e, element);
-
 		if (this._dragSourceType === "chart") {
 			return;
 		}
 
-		var target;
-		if (e.target.tagName === "OCTOPUS-PROPERTY") {
-			target = $(e.target);
-		} else {
-			target = $(e.target).parents("octopus-property");
-		}
-		var id = target.data('name');
-		
-		//if (!(id && id !== this._dragSourceName)) {
-		//	return;
-		//}
+		var target = this._targetAncestor(e.target, "octopus-property");
 
 		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
 			$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
 		}
-
-		console.log("Leave property", this._dragEnterCount);
 	},
 
 	dropOnProperty: function (e) {
-		console.log("drop");
-		this._dragEnterCount = 0;
-		$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
-
 		if (this._dragSourceType === "property") {
 			var i, m, name = e.currentTarget.dataset.name;
 
@@ -280,35 +283,50 @@ Polymer('octopus-experiment-interface', {
 					break;
 				}
 			}
+
 			if (i < m) {
 				var sourceProp = this.properties.splice(this._dragSourceIndex, 1)[0];
 				this.properties.splice(i, 0, sourceProp);
 			}
 		}
 
+		this._completeDrag();
+	},
+
+	_completeDrag: function () {
+		console.log("drop");
+		this._dragEnterCount = 0;
+		$(".dragging", this.$.displayarea).removeClass("dragging");
+		$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
+
 		this._dragSourceType = null;
 		this._dragSourceName = null;
 		this._dragSourceIndex = null;
 	},
 
-	dragOverChart: function (e) {
-		//console.log("over", e.target);
-		//var id = e.target.dataset.name;
-
+	_validOverChart: function (target) {
+		if (!target) {
+			return false;
+		}
 		if (this._dragSourceType === "property") {
-			if (this.properties[this._dragSourceIndex].unit === e.target.unit) {
-				e.dataTransfer.dropEffect = 'move'; 
-				e.preventDefault();
-				return;
-			}
+			return this.properties[this._dragSourceIndex].unit === target.unit;
+		}
+		if (this._dragSourceType === "chart") {
+			return this.graphs[this._dragSourceIndex].unit === target.unit && !$(target).hasClass("dragging");
+		}
+		return false;
+	},
+
+	dragOverChart: function (e) {
+		var target = this._targetAncestor(e.target, "octopus-chart");
+
+		if (this._validOverChart(target[0])) {
+			e.dataTransfer.dropEffect = 'move'; 
+			e.preventDefault();
+			return;
 		}
 
-		//if (this._dragSourceType === "chart") {
-		//	e.dataTransfer.dropEffect = 'none'; 
-			return;
-		//}
-
-		if (this._dragEnterCount > 0 || (id && id !== this._dragSourceName)) {
+		if (this._dragEnterCount > 0  && !$(e.target).hasClass("dragging")) {
 			e.dataTransfer.dropEffect = 'move'; 
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
@@ -317,68 +335,40 @@ Polymer('octopus-experiment-interface', {
 	},
 	
 	dragEnterChart: function (e) {
-		//console.log("enter");
+		var target = this._targetAncestor(e.target, "octopus-chart");
 
-		if (this._dragSourceType === "property") {
-			if (this.properties[this._dragSourceIndex].unit !== e.target.unit) {
-				return;
-			}
-		}
-
-		if (this._dragSourceType === "chart") {
-			//if (this.properties[this._dragSourceIndex].unit !== e.target.unit) {
-				return;
-			//}
+		if (!this._validOverChart(target[0])) {
+			return;
 		}
 
 		if (this._dragEnterCount === 0) {
-			$(e.target).addClass("over");
+			$(target).addClass("over");
 		}
 		this._dragEnterCount++;
 	},
 	
 	dragLeaveChart: function (e) {
-		//console.log("leave", e, element);
-
-		if (this._dragSourceType === "property") {
-			if (this.properties[this._dragSourceIndex].unit !== e.target.unit) {
-				return;
-			}
-		}
-
-		if (this._dragSourceType === "chart") {
-			//if (this.properties[this._dragSourceIndex].unit !== e.target.unit) {
-				return;
-			//}
-		}
-		
-		//if (!(id && id !== this._dragSourceName)) {
-		//	return;
-		//}
-
 		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
-			$(e.target).removeClass("over");
+			var target = this._targetAncestor(e.target, "octopus-chart");
+			$(target).removeClass("over");
 		}
 	},
 	
 	dropOnChart: function (e) {
-		console.log("drop on ", e.currentTarget);
-		this._dragEnterCount = 0;
-		$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
-
 		if (this._dragSourceType === "chart") {
-		
+			var chart = this.graphs[this._dragSourceIndex];
+			Array.prototype.push.apply(e.target.streams, chart.streams);
+			this.graphs.splice(this._dragSourceIndex, 1);
 		}
+
 		if (this._dragSourceType === "property") {
-			var property = this.properties[this._dragSourceIndex]
+			var property = this.properties[this._dragSourceIndex];
 			this.runtimeStreams.push(property.name);
 			e.target.streams.push(property);
 			this.properties.splice(this._dragSourceIndex, 1);
 		}
 
-		this._dragSourceType = null;
-		this._dragSourceName = null;
-		this._dragSourceIndex = null;
+		this._completeDrag();
 	}
 });
 
