@@ -3,18 +3,52 @@
 <script src="jintervals-0.7-min.js"></script>
 
 <polymer-element name="octopus-chart" attributes="streams width height time timezero">
+<template>
 <style>
 
 :host {
 	display: block;
+	margin: 5px;
+}
+
+div#box {
+	background-color: #D5DEED;
+	border-radius: 2px;
+	padding: 5px;
+}
+
+div#options {
+	display: none;
+	padding: 5px;
+}
+
+div#options.show {
+	display: block;
 }
 
 </style>
-<template>
+
+<div id="box" style="width: {{ width + 10 }}px;">
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
-	<div>
-		Scale: <input type="text" value="{{ time }}" style="width: 50px;"> seconds
+	<div style="text-align: right">
+		<button on-click="{{ toggleOptions }}">Options</button>
 	</div>
+	<div id="options">
+		<div>
+			Scale: <input type="text" value="{{ time }}" style="width: 50px;"> seconds
+		</div>
+		<div><strong>Variables:</strong></div>
+		<ul style="list-style-type: none;">
+		<template repeat="{{ s in streams }}">
+			<li>{{ s.name }} <button on-click="{{ removeStream }}" data-name="{{ s.key }}">Remove</button></li>
+		</template>
+		</ul>
+		<div style="text-align: right">
+			<button on-click="{{ removeChart }}">Remove Chart</button>
+		</div>
+	</div>
+</div>
+
 </template>
 <script>
 
@@ -29,6 +63,25 @@ Polymer('octopus-chart', {
 		this._data = {};
 		this._series = [];
 		this.unit = null;
+	},
+
+	toggleOptions: function (e) {
+		$(this.$.options).toggleClass("show");
+	},
+
+	removeStream: function (e) {
+		var key = $(e.target).data("name");
+
+		for (i = 0, m = this.streams.length; i < m; i++) {
+			if (this.streams[i].key === key) {
+				this.streams.splice(i, 1);
+				break;
+			}
+		}
+	},
+
+	removeChart: function (e) {
+		this.fire("remove-chart");
 	},
 
 	streamsChanged: function (oldStreams) {

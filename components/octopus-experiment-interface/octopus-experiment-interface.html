@@ -100,6 +100,7 @@ experiment-data.dragging .slot {
 		on-dragenter="{{ dragEnterChart }}"
 		on-dragleave="{{ dragLeaveChart }}"
 		on-drop="{{ dropOnChart }}"
+		on-remove-chart="{{ removeChart }}"
 	>
 	</octopus-chart>
 	</template>
@@ -460,7 +461,18 @@ Polymer('octopus-experiment-interface', {
 			var chart = this.graphs.splice(this._dragSourceIndex, 1);
 			this.graphs.splice(i, 0, chart[0]);
 		}
-	}
+	},
+
+	removeChart: function (e) {
+		var index = $(e.target).data("index");
+
+		for (i = 0, m = this.graphs.length; i < m; i++) {
+			if (this.graphs[i].index === index) {
+				this.graphs.splice(i, 1);
+				break;
+			}
+		}
+	},
 });
 
 </script>
