@@ -49,8 +49,9 @@ class ExperimentProtocol (object):
 			return
 
 	def loadExperiment (self, experiment, context):
-		def _prop (p):
+		def _prop (k, p):
 			result = {
+				"key":   k,
 				"name":  p.alias,
 				"title": p.title if hasattr(p, "title") else "",
 				"unit":  p.unit if hasattr(p, "unit") else "",
@@ -76,7 +77,7 @@ class ExperimentProtocol (object):
 			"sketch": experiment.sketch.id,
 			"experiment": experiment.id,
 			"title": experiment.sketch.title,
-			"variables": [_prop(v) for v in experiment.variables().itervalues()]
+			"variables": [_prop(k, v) for k, v in experiment.variables().iteritems()]
 		}, context)
 
 	def sendProperties (self, sketch, experiment, properties, context):

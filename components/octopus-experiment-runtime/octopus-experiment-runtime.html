@@ -41,6 +41,14 @@ Polymer('octopus-experiment-runtime', {
 			}
 
 			if (command === "streams") {
+				var a, p, z = payload.zero;
+				for (var key in payload.data) {
+					a = payload.data[key];
+					for (var i = 0, m = a.length; i < m; i++) {
+						p = a[i];
+						p[0] = (p[0] + z) * 1000;
+					};
+				}
 				return self.fire("streams", payload);
 			}
 
@@ -85,7 +93,7 @@ Polymer('octopus-experiment-runtime', {
 		var start;
 
 		if (!this._lastStreamRequest) {
-			start = +(new Date()) - 60;
+			start = +(new Date()) - 60 * 1000;
 			this._lastStreamRequest = start;
 		} else {
 			start = this._lastStreamRequest;
@@ -93,13 +101,13 @@ Polymer('octopus-experiment-runtime', {
 		}
 
 		if (this.streams.length > 0) {
-			this._socketSend("experiment", "get-streams", { start: start });
+			this._socketSend("experiment", "get-streams", { start: start / 1000 });
 		}
 	},
 
 	requestOneOffStreamData: function (streams, start) {
 		this._socketSend("experiment", "get-streams", { 
-			start: start, 
+			start: start / 1000, 
 			streams: streams, 
 			oneoff: true 
 		});

@@ -30,6 +30,7 @@ variables-list ol li {
 
 experiment-data {
 	flex: 1;
+	overflow-y: scroll;
 }
 
 experiment-data octopus-chart {
@@ -73,7 +74,7 @@ experiment-data.dragging .slot {
 <variables-list on-click="{{ variableClicked }}">
 	<ol>
 	<template repeat="{{ variables as v }}">
-		<li data-id="{{ v.name }}">{{ v.name }}</li>
+		<li data-id="{{ v.key }}">{{ v.name }}</li>
 	</template>
 	</ol>
 </variables-list>
@@ -104,7 +105,7 @@ experiment-data.dragging .slot {
 	</template>
 
 	<template repeat="{{ p in properties }}">
-	<octopus-property data-name="{{ p.name }}" 
+	<octopus-property data-name="{{ p.key }}" 
 		draggable="true"
 		on-dragover="{{ dragOverProperty }}" 
 		on-dragenter="{{ dragEnterProperty }}" 
@@ -150,14 +151,14 @@ Polymer('octopus-experiment-interface', {
 
 			// Check not already in properties.
 			for (var i = 0, m = this.properties.length; i < m; i++) {
-				if (this.properties[i].name === id) {
+				if (this.properties[i].key === id) {
 					return;
 				}
 			}
 
 			// Find id in variables.
 			for (var i = 0, m = this.variables.length; i < m; i++) {
-				if (this.variables[i].name === id) {
+				if (this.variables[i].key === id) {
 					var variable = this.variables[i];
 					variable.value = null;
 					this.properties.push(variable);
@@ -170,8 +171,8 @@ Polymer('octopus-experiment-interface', {
 
 	onPropertiesData: function (data) {
 		this.properties.forEach(function (property) {
-			if (typeof data[property.name] !== "undefined") {
-				property.value = data[property.name];
+			if (typeof data[property.key] !== "undefined") {
+				property.value = data[property.key];
 			}
 		});
 	},
@@ -189,7 +190,7 @@ Polymer('octopus-experiment-interface', {
 
 		// Remove id from properties.
 		for (var i = 0, m = this.properties.length; i < m; i++) {
-			if (this.properties[i].name === id) {
+			if (this.properties[i].key === id) {
 				return this.properties.splice(i, 1);
 			}
 		}
@@ -205,14 +206,14 @@ Polymer('octopus-experiment-interface', {
 				unit: property[0].unit
 			});
 
-			this.runtimeStreams.push(property[0].name);
+			this.runtimeStreams.push(property[0].key);
 		}
 	},
 
-	onStreamData: function (data, zero) {
+	onStreamData: function (data) {
 		var charts = this.$.displayarea.getElementsByTagName('octopus-chart');
 		for (var i = 0, m = charts.length; i < m; i++) {
-			charts[i].addData(data, zero);
+			charts[i].addData(data);
 		};
 	},
 	
@@ -222,7 +223,7 @@ Polymer('octopus-experiment-interface', {
 		if (e.target.tagName === "OCTOPUS-PROPERTY") {
 			id = e.target.dataset.name;
 			arr = this.properties;
-			propName = "name";
+			propName = "key";
 
 			this._dragSourceType = "property";
 			this._dragSourceName = id;
@@ -267,7 +268,7 @@ Polymer('octopus-experiment-interface', {
 
 		var target = this._targetAncestor(e.target, "octopus-property");
 
-		if (this._dragEnterCount > 0 && $(target).data("name") !== this.properties[this._dragSourceIndex].name) {
+		if (this._dragEnterCount > 0 && $(target).data("name") !== this.properties[this._dragSourceIndex].key) {
 			e.dataTransfer.dropEffect = 'move'; 
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
@@ -290,7 +291,7 @@ Polymer('octopus-experiment-interface', {
 
 		var target = this._targetAncestor(e.target, "octopus-property");
 
-		if (target.hasClass("dragging") || $(target).data("name") === this.properties[this._dragSourceIndex].name) {
+		if (target.hasClass("dragging") || $(target).data("name") === this.properties[this._dragSourceIndex].key) {
 			return;
 		}
 
@@ -318,7 +319,7 @@ Polymer('octopus-experiment-interface', {
 			var i, m, name = e.currentTarget.dataset.name;
 
 			for (i = 0, m = this.properties.length; i < m; i++) {
-				if (this.properties[i].name === name) {
+				if (this.properties[i].key === name) {
 					break;
 				}
 			}
@@ -410,7 +411,7 @@ Polymer('octopus-experiment-interface', {
 		// Add source property to target chart.
 		if (this._dragSourceType === "property") {
 			var property = this.properties[this._dragSourceIndex];
-			this.runtimeStreams.push(property.name);
+			this.runtimeStreams.push(property.key);
 			target[0].streams.push(property);
 			this.properties.splice(this._dragSourceIndex, 1);
 		}

@@ -122,7 +122,7 @@ template.requestStreamData = function (e, detail) {
 };
 
 template.onStreamData = function (e, detail) {
-	this.$.interface.onStreamData(detail.data, detail.zero);
+	this.$.interface.onStreamData(detail.data);
 
 	if (!detail.oneoff) {
 		window.clearTimeout(this._streamUpdateTimer);
