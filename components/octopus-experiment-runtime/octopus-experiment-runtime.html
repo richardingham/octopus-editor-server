@@ -81,6 +81,10 @@ Polymer('octopus-experiment-runtime', {
 		}
 	},
 
+	propertySetValue: function (variable, value) {
+		console.log("Set ", variable, "to", value);
+	},
+
 	streamsChanged: function () {
 		this._socketSend("experiment", "choose-streams", {
 			streams: this.streams

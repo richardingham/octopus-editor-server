@@ -60,6 +60,7 @@
 <octopus-experiment-interface 
 	id="interface" 
 	on-request-data="{{ requestStreamData }}" 
+	on-set-value="{{ propertySetValue }}"
 	variables="{{ experimentVariables }}"
 	runtimeProperties="{{ runtimeProperties }}"
 	runtimeStreams="{{ runtimeStreams }}"
@@ -119,6 +120,10 @@ template.onPropertiesData = function (e) {
 
 template.requestStreamData = function (e, detail) {
 	this.$.runtime.requestOneOffStreamData(detail.streams, detail.start);
+};
+
+template.propertySetValue = function (e, detail) {
+	this.$.runtime.propertySetValue(detail.variable, detail.value);
 };
 
 template.onStreamData = function (e, detail) {

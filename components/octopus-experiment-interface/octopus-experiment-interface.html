@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/core-splitter/core-splitter.html">
 
+<link rel="import" href="../../components/octopus-property/octopus-property.html">
 <link rel="import" href="../../components/octopus-chart/octopus-chart.html">
 
 <polymer-element name="octopus-experiment-interface" attributes="variables runtimeProperties runtimeStreams">
@@ -35,16 +36,6 @@ experiment-data {
 
 experiment-data octopus-chart {
 	display: block;
-}
-
-experiment-data octopus-property {
-	background-color: #526E9C;
-	color: #FFF;
-	border-radius: 2px;
-	display: inline;
-	margin: 5px;
-	padding: 5px;
-	float: left;
 }
 
 experiment-data .over {
@@ -107,21 +98,15 @@ experiment-data.dragging .slot {
 
 	<template repeat="{{ p in properties }}">
 	<octopus-property data-name="{{ p.key }}" 
+		variable="{{ p }}"
 		draggable="true"
 		on-dragover="{{ dragOverProperty }}" 
 		on-dragenter="{{ dragEnterProperty }}" 
 		on-dragleave="{{ dragLeaveProperty }}"
 		on-drop="{{ dropOnProperty }}"
+		on-remove-property="{{ propertyRemove }}"
+		on-convert-graph="{{ propertyGraph }}"
 	>
-		<span class="close" on-click="{{ propertyRemove }}">X</span>
-		<template if="{{ p.type === 'int' || p.type === 'float' }}">
-			<span class="graph" on-click="{{ propertyGraph }}">G</span>
-		</template>
-		<template if="{{ p.edit }}">
-			<span class="edit" on-click="{{ propertyEdit }}">E</span>
-		</template>
-		<span class="name">{{ p.name }}</span>
-		<span class="value">{{ p.value }}</span>
 	</octopus-property>
 	</template>
 </experiment-data>
@@ -179,7 +164,7 @@ Polymer('octopus-experiment-interface', {
 	},
 
 	propertyRemove: function (e) {
-		var id = e.srcElement.parentElement.dataset.name;
+		var id = e.srcElement.dataset.name;
 
 		// Remove id from runtime properties.
 		for (var i = 0, m = this.runtimeProperties.length; i < m; i++) {

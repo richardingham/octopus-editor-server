@@ -1,0 +1,85 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<polymer-element name="octopus-property" attributes="variable">
+<template>
+<style>
+
+:host {
+	background-color: #526E9C;
+	color: #FFF;
+	border-radius: 2px;
+	display: block;
+	margin: 5px;
+	padding: 5px;
+	float: left;
+}
+
+#editor {
+	display: none;
+}
+
+#editor.show {
+	display: block;
+}
+
+</style>
+
+<div>
+	<span class="close" on-click="{{ propertyRemove }}">X</span>
+	<template if="{{ variable.type === 'int' || variable.type === 'float' }}">
+		<span class="graph" on-click="{{ propertyGraph }}">G</span>
+	</template>
+	<template if="{{ variable.edit }}">
+		<span class="edit" on-click="{{ toggleEditor }}">E</span>
+	</template>
+</div>
+
+<div>
+	<span class="name">{{ variable.name }}</span>
+	<span class="value">{{ variable.value }}</span>
+</div>
+
+<template if="{{ variable.edit }}">
+<div id="editor">
+
+<template if="{{ variable.options }}">
+	<select on-change="{{ updateValue }}">
+		<option template repeat="{{ option in variable.options }}" value="{{ option }}" selected?="{{ variable.value == option }}">
+			{{ option }}
+		</option>
+	</select>
+</template>
+<template if="{{ !variable.options && variable.type === 'int' || variable.type === 'float' }}">
+	<input type="text" on-change="{{ updateValue }}"> {{ variable.unit }}
+</template>
+<template if="{{ !variable.options && variable.type === 'str' }}">
+	<input type="text" on-change="{{ updateValue }}">
+</template>
+
+</div>
+</template>
+
+</template>
+<script>
+
+Polymer('octopus-property', {
+	propertyRemove: function (e) {
+		this.fire("remove-property");
+	},
+
+	propertyGraph: function (e) {
+		this.fire("convert-graph");
+	},
+
+	toggleEditor: function (e) {
+		$(this.$.editor).toggleClass("show");
+		$("input", this.$.editor).val(this.variable.value);
+	},
+	
+	updateValue: function (e) {
+		this.fire("set-value", { variable: this.variable.key, value: e.srcElement.value });
+	}
+});
+
+</script>
+</polymer-element>
