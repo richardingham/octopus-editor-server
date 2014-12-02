@@ -33,6 +33,12 @@ Polymer('octopus-chart', {
 		var _this = this;
 		var newStreams = this.streams;
 
+		// Make sure newStreams contains only unique items
+		for (var i = 0; i < newStreams.length; i++)
+			for (var j = i + 1; j < newStreams.length; j++)
+				if (newStreams[i] === newStreams[j])
+					newStreams.splice(j--, 1);
+
 		// Find streams that have been removed, discard data.
 		oldStreams.filter(function(obj) {
 			return !newStreams.some(function(obj2) {

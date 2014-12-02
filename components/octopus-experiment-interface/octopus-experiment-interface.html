@@ -28,6 +28,10 @@ variables-list ol li {
 	cursor: pointer;
 }
 
+experiment-data {
+	flex: 1;
+}
+
 experiment-data octopus-chart {
 	display: block;
 }
@@ -46,6 +50,24 @@ experiment-data .over {
 	border: 2px solid black;
 }
 
+experiment-data .slot {
+	display: none;
+	background: #none;
+	border: 2px dashed #555;
+	width: 90%;
+	margin: 10px;
+	height: 15px;
+}
+
+experiment-data .slot.over {
+	border: 2px dashed #000;
+	background-color: #DFDFDF;
+}
+
+experiment-data.dragging .slot {
+	display: block;
+}
+
 </style>
 
 <variables-list on-click="{{ variableClicked }}">
@@ -58,8 +80,16 @@ experiment-data .over {
 
 <core-splitter direction="left" allowOverflow="true"></core-splitter>
 
-<experiment-data id="displayarea" on-dragstart="{{ dragStart }}">
+<experiment-data id="displayarea" on-dragstart="{{ dragStart }}" on-dragend="{{ dragEnd }}">
 	<template repeat="{{ g in graphs }}">
+
+	<div class="slot" data-before="{{ g.index }}"
+		on-dragover="{{ dragOverSlot }}"
+		on-dragenter="{{ dragEnterSlot }}"
+		on-dragleave="{{ dragLeaveSlot }}"
+		on-drop="{{ dropOnSlot }}"
+	></div>
+
 	<octopus-chart 
 		data-index="{{ g.index }}"
 		streams="{{ g.streams }}"
@@ -185,7 +215,7 @@ Polymer('octopus-experiment-interface', {
 			charts[i].addData(data, zero);
 		};
 	},
-
+	
 	dragStart: function (e) {
 		var id, arr, propName;
 
@@ -203,13 +233,11 @@ Polymer('octopus-experiment-interface', {
 			propName = "index";
 
 			this._dragSourceType = "chart";
-			this._dragSourceName = e.target.streams.map(function (o) { return o.name; });
+			this._dragSourceName = id;
 
 		} else {
 			return;
 		}
-
-		$(e.target).addClass("dragging");
 
 		for (var i = 0, m = arr.length; i < m; i++) {
 			if (arr[i][propName] === id) {
@@ -217,6 +245,15 @@ Polymer('octopus-experiment-interface', {
 				break;
 			}
 		}
+
+		// Set Dragging classes - NB due to chrome bug DOM modification
+		// cannot be performed directly in dragStart.
+		var target = e.target;
+		var area = this.$.displayarea;
+		window.setTimeout(function () {
+			$(target).addClass("dragging");
+			$(area).addClass("dragging");
+		}, 0);
 	},
 
 	dragOverProperty: function (e) {
@@ -228,7 +265,9 @@ Polymer('octopus-experiment-interface', {
 			return;
 		}
 
-		if (this._dragEnterCount > 0 && !$(e.target).hasClass("dragging")) {
+		var target = this._targetAncestor(e.target, "octopus-property");
+
+		if (this._dragEnterCount > 0 && $(target).data("name") !== this.properties[this._dragSourceIndex].name) {
 			e.dataTransfer.dropEffect = 'move'; 
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
@@ -251,7 +290,7 @@ Polymer('octopus-experiment-interface', {
 
 		var target = this._targetAncestor(e.target, "octopus-property");
 
-		if (target.hasClass("dragging")) {
+		if (target.hasClass("dragging") || $(target).data("name") === this.properties[this._dragSourceIndex].name) {
 			return;
 		}
 
@@ -289,14 +328,12 @@ Polymer('octopus-experiment-interface', {
 				this.properties.splice(i, 0, sourceProp);
 			}
 		}
-
-		this._completeDrag();
 	},
 
-	_completeDrag: function () {
-		console.log("drop");
+	dragEnd: function () {
 		this._dragEnterCount = 0;
 		$(".dragging", this.$.displayarea).removeClass("dragging");
+		$(this.$.displayarea).removeClass("dragging");
 		$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
 
 		this._dragSourceType = null;
@@ -312,7 +349,7 @@ Polymer('octopus-experiment-interface', {
 			return this.properties[this._dragSourceIndex].unit === target.unit;
 		}
 		if (this._dragSourceType === "chart") {
-			return this.graphs[this._dragSourceIndex].unit === target.unit && !$(target).hasClass("dragging");
+			return this.graphs[this._dragSourceIndex].unit === target.unit && $(target).data("index") !== this._dragSourceName;
 		}
 		return false;
 	},
@@ -326,7 +363,7 @@ Polymer('octopus-experiment-interface', {
 			return;
 		}
 
-		if (this._dragEnterCount > 0  && !$(e.target).hasClass("dragging")) {
+		if (this._dragEnterCount > 0) {
 			e.dataTransfer.dropEffect = 'move'; 
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
@@ -346,29 +383,82 @@ Polymer('octopus-experiment-interface', {
 		}
 		this._dragEnterCount++;
 	},
-	
+
 	dragLeaveChart: function (e) {
 		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
 			var target = this._targetAncestor(e.target, "octopus-chart");
 			$(target).removeClass("over");
 		}
 	},
-	
+
 	dropOnChart: function (e) {
+		var target = this._targetAncestor(e.target, "octopus-chart");
+
+		// Combine streams of source chart with target chart
 		if (this._dragSourceType === "chart") {
+			var index = parseInt(target.data("index"), 10);
+
+			if (index === this._dragSourceName) {
+				return;
+			}
+
 			var chart = this.graphs[this._dragSourceIndex];
-			Array.prototype.push.apply(e.target.streams, chart.streams);
+			Array.prototype.push.apply(target[0].streams, chart.streams);
 			this.graphs.splice(this._dragSourceIndex, 1);
 		}
 
+		// Add source property to target chart.
 		if (this._dragSourceType === "property") {
 			var property = this.properties[this._dragSourceIndex];
 			this.runtimeStreams.push(property.name);
-			e.target.streams.push(property);
+			target[0].streams.push(property);
 			this.properties.splice(this._dragSourceIndex, 1);
 		}
+	},
 
-		this._completeDrag();
+	dragOverSlot: function (e) {
+		var target = this._targetAncestor(e.target, "div");
+
+		if (this._dragSourceType === "chart") {
+			e.dataTransfer.dropEffect = 'move'; 
+			e.preventDefault();
+			return;
+		}
+	},
+
+	dragEnterSlot: function (e) {
+		var target = this._targetAncestor(e.target, "div");
+
+		if (this._dragSourceType !== "chart") {
+			return;
+		}
+
+		if (this._dragEnterCount === 0) {
+			$(target).addClass("over");
+		}
+		this._dragEnterCount++;
+	},
+
+	dragLeaveSlot: function (e) {
+		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
+			var target = this._targetAncestor(e.target, "div");
+			$(target).removeClass("over");
+		}
+	},
+
+	dropOnSlot: function (e) {
+		var i, m, index = parseInt(this._targetAncestor(e.target, "div").data("before"), 10);
+
+		for (i = 0, m = this.graphs.length; i < m; i++) {
+			if (this.graphs[i].index === index) {
+				break;
+			}
+		}
+
+		if (this._dragSourceType === "chart") {
+			var chart = this.graphs.splice(this._dragSourceIndex, 1);
+			this.graphs.splice(i, 0, chart[0]);
+		}
 	}
 });
 
