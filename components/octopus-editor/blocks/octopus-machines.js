@@ -85,7 +85,9 @@ var _iCIR_options = [
   { name: "stream_names", title: "Data Streams", type: "String", multi: true, createAttributes: { type: "Number", readonly: true } }
 ];
 
-var _SingleTracker_vars = [];
+var _SingleTracker_vars = [
+  { name: "height", title: "Height", type: "Number", readonly: true }
+];
 
 var _MultiTracker_vars = [];
 var _MultiTracker_options = [
