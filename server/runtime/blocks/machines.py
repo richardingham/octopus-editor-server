@@ -48,9 +48,12 @@ class machine_declaration (Block):
 			)
 			self.workspace.variables[self._varName()] = self.machine
 
-			self.machine.ready.addCallbacks(_done, _error)
+			try:
+				result = yield self.machine.ready
+			except Exception as e:
+				print "Machine connection error: " + str(e)
+				raise e
 
-		def _done (result):
 			print "Machine block: connection complete to " + str(self.machine)
 
 			self.workspace.on("workspace-stopped", self._onWorkspaceStopped)
@@ -61,16 +64,12 @@ class machine_declaration (Block):
 			# TODO - machines should only return ready when they
 			# have received their first data.
 			# TODO - make reset configurable.
-			return defer.gatherResults([
+			yield defer.gatherResults([
 				task.deferLater(reactor, 2, lambda: result),
 				self.machine.reset()
 			])
 
-		def _error (failure):
-			print "Machine connection error: " + str(failure)
-			return failure
-
-		return _connect().addCallbacks(_done, _error)
+		return _connect()
 
 	def _onWorkspaceStopped (self, data):
 		print "Machine block: terminating connection to " + str(self.machine)
