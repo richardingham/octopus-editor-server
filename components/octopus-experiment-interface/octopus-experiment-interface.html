@@ -405,6 +405,8 @@ Polymer('octopus-experiment-interface', {
 			target[0].streams.push(property);
 			this.properties.splice(this._dragSourceIndex, 1);
 		}
+
+		this.dragEnd();
 	},
 
 	dragOverSlot: function (e) {
@@ -450,6 +452,8 @@ Polymer('octopus-experiment-interface', {
 			var chart = this.graphs.splice(this._dragSourceIndex, 1);
 			this.graphs.splice(i, 0, chart[0]);
 		}
+
+		this.dragEnd();
 	},
 
 	removeChart: function (e) {
