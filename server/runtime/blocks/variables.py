@@ -52,7 +52,9 @@ class global_declaration (Block):
 		if result is None:
 			raise Exception("Global declared value cannot be None")
 
-		self.workspace.variables[self._varName()] = data.Variable(type(result), result)
+		variable = data.Variable(type(result), result)
+		variable.alias = self.fields['NAME']
+		self.workspace.variables[self._varName()] = variable
 
 	def disposed (self):
 		del self.workspace.variables[ self._varName() ]
