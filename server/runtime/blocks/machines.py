@@ -48,9 +48,12 @@ class machine_declaration (Block):
 			)
 			self.workspace.variables[self._varName()] = self.machine
 
-			self.machine.ready.addCallbacks(_done, _error)
+			try:
+				result = yield self.machine.ready
+			except Exception as e:
+				print "Machine connection error: " + str(e)
+				raise e
 
-		def _done (result):
 			print "Machine block: connection complete to " + str(self.machine)
 
 			self.workspace.on("workspace-stopped", self._onWorkspaceStopped)
@@ -60,13 +63,13 @@ class machine_declaration (Block):
 			# Short delay to allow the machine to get its first data
 			# TODO - machines should only return ready when they
 			# have received their first data.
-			return task.deferLater(reactor, 2, lambda: result)
+			# TODO - make reset configurable.
+			yield defer.gatherResults([
+				task.deferLater(reactor, 2, lambda: result),
+				self.machine.reset()
+			])
 
-		def _error (failure):
-			print "Machine connection error: " + str(failure)
-			return failure
-
-		return _connect().addCallbacks(_done, _error)
+		return _connect()
 
 	def _onWorkspaceStopped (self, data):
 		print "Machine block: terminating connection to " + str(self.machine)
@@ -77,8 +80,16 @@ class machine_declaration (Block):
 
 		self.machine.stop()
 
+		def _disconnect (machine):
+			try:
+				machine.protocol.transport.loseConnection()
+			except AttributeError:
+				pass
+			except:
+				log.err()
+
 		# Allow some time for any remaining messages to be received.
-		reactor.callLater(2, self.machine.protocol.transport.loseConnection)
+		reactor.callLater(2, _disconnect, self.machine)
 		self.machine = None
 
 	def _onWorkspacePaused (self, data):
