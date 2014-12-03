@@ -82,7 +82,10 @@ Polymer('octopus-experiment-runtime', {
 	},
 
 	propertySetValue: function (variable, value) {
-		console.log("Set ", variable, "to", value);
+		this._socketSend("experiment", "set-property", {
+			variable: variable,
+			value: value
+		});
 	},
 
 	streamsChanged: function () {

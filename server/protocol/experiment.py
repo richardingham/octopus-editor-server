@@ -1,4 +1,5 @@
 from time import time as now
+from octopus.data import Variable
 
 class ExperimentProtocol (object):
 	def __init__ (self, transport):
@@ -36,13 +37,16 @@ class ExperimentProtocol (object):
 				return self.sendProperties(sketch, experiment, context.getExperimentProperties(experiment), context)
 			if topic == 'get-streams':
 				oneoff = 'oneoff' in payload and payload['oneoff']
-		
+
 				if 'streams' in payload:
 					streams = payload['streams']
 				else:
 					streams = context.getExperimentStreams(experiment)
-				
+
 				return self.sendStreams(sketch, experiment, streams, payload['start'], context, oneoff)
+
+			if topic == 'set-property':
+				return self.setProperty(sketch, experiment, payload['variable'], payload['value'], context)
 
 		except Error as e:
 			self.send('error', e, context)
@@ -57,7 +61,7 @@ class ExperimentProtocol (object):
 				"unit":  p.unit if hasattr(p, "unit") else "",
 				"type":  p.type.__name__ if type(p.type) is not str else p.type,
 				"value": p.value,
-				"edit":  hasattr(p, "_setter")
+				"edit":  hasattr(p, "_setter") or type(p) is Variable
 			}
 
 			for key in ("min", "max", "options", "colour"):
@@ -79,6 +83,24 @@ class ExperimentProtocol (object):
 			"title": experiment.sketch.title,
 			"variables": [_prop(k, v) for k, v in experiment.variables().iteritems()]
 		}, context)
+
+	def setProperty (self, sketch, experiment, property, value, context):
+		variables = experiment.variables()
+
+		def _sendError (message, e = None):
+			self.send("error", {
+				"sketch": sketch.id,
+				"experiment": experiment.id,
+				"message": message + (" (" + str(e) + ")" if e is not None else "")
+			}, context)
+
+		try:
+			variable = variables[property]
+			variable.set(value).addErrback(lambda f: _sendError("Error setting property " + property, f))
+		except KeyError:
+			_sendError("Property " + property + " does not exist")
+		except Exception as e:
+			_sendError("Could not set property " + property , e)
 
 	def sendProperties (self, sketch, experiment, properties, context):
 		variables = experiment.variables()
