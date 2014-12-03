@@ -1,4 +1,6 @@
 from ..protocol.sketch import SketchProtocol
+from ..protocol.experiment import ExperimentProtocol
+from ..protocol.block import BlockProtocol
 from ..protocol.runtime import RuntimeProtocol
 
 # This is the class all runtime implementations can extend to easily wrap
@@ -7,9 +9,12 @@ class BaseTransport (object):
 	def __init__ (self, options = None):
 		self.options = options or {}
 		self.version = '0.1'
-		self.runtime = RuntimeProtocol(self)
-		self.sketch = SketchProtocol(self)
-		self.context = None
+		self.runtimeProtocol = RuntimeProtocol(self)
+		self.sketchProtocol = SketchProtocol(self)
+		self.experimentProtocol = ExperimentProtocol(self)
+		self.blockProtocol = BlockProtocol(self)
+
+		self.sketches = {}
 
 	def send (self, protocol, topic, payload, context):
 		"""Send a message back to the user via the transport protocol.
@@ -39,16 +44,38 @@ class BaseTransport (object):
 		@param [Object] Message context, dependent on the transport
 		"""
 
-		self.context = context
+		# Find locally stored sketch by ID
+		try:
+			sketch = self.sketches[payload['sketch']]
+		except KeyError:
+			sketch = None
 
-		if protocol == 'runtime':
-			return self.runtime.receive(topic, payload, context)
+		# Block actions
+		if protocol == 'block':
+			return self.blockProtocol.receive(topic, payload, sketch, context)
+
+		# Experiment actions
+		if protocol == 'experiment':
+			try:
+				if sketch.experiment.id == payload['experiment']:
+					experiment = sketch.experiment
+				else:
+					experiment = None
+			except (AttributeError, KeyError):
+				experiment = None
+
+			return self.experimentProtocol.receive(topic, payload, sketch, experiment, context)
+
+		# Sketch actions
 		if protocol == 'sketch':
-			return self.sketch.receive(topic, payload, context)
+			return self.sketchProtocol.receive(topic, payload, sketch, context)
 
 	def disconnected (self, context):
 		"""Handle client disconnection
 		@param [Object] Message context, dependent on the transport
 		"""
 
-		self.sketch.disconnected(context)
+		for id, sketch in self.sketches.iteritems():
+			sketch.unsubscribe(context)
+
+

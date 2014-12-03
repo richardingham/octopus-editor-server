@@ -11,7 +11,9 @@ class WebSocketRuntime (BaseTransport):
 	def __init__ (self):
 		BaseTransport.__init__(self, options = {
 			"capabilities": [
-				'protocol:workspace'
+				'protocol:sketch',
+				'protocol:block',
+				'protocol:experiment',
 			]
 		})
 
@@ -28,7 +30,7 @@ class WebSocketRuntime (BaseTransport):
 			"payload": payload,
 		}
 
-		log.msg("Response", response)
+		# log.msg("Response", response)
 
 		context.sendMessage(json.dumps(response))
 
@@ -38,7 +40,7 @@ class OctopusEditorProtocol (WebSocketServerProtocol):
 		return 'octopus'
 
 	def onOpen (self):
-		self.selectedEdges = []
+		self.subscribedExperiments = {}
 		self.sendPing()
 		pass
 
@@ -51,7 +53,7 @@ class OctopusEditorProtocol (WebSocketServerProtocol):
 
 		cmd = json.loads(payload)
 
-		log.msg("Command", cmd)
+		# log.msg("Command", cmd)
 
 		self.factory.runtime.receive(
 			cmd['protocol'], 
@@ -59,3 +61,28 @@ class OctopusEditorProtocol (WebSocketServerProtocol):
 			cmd["payload"], 
 			self
 		)
+
+	def subscribeExperiment (self, experiment):
+		self.subscribedExperiments[experiment.id] = {
+			"experiment": experiment,
+			"streams": [],
+			"properties": []
+		}
+
+	def chooseExperimentProperties (self, experiment, properties):
+		self.subscribedExperiments[experiment.id]['properties'] = properties
+
+	def chooseExperimentStreams (self, experiment, streams):
+		self.subscribedExperiments[experiment.id]['streams'] = streams
+
+	def getExperimentProperties (self, experiment):
+		try:
+			return self.subscribedExperiments[experiment.id]['properties']
+		except KeyError:
+			return []
+
+	def getExperimentStreams (self, experiment):
+		try:
+			return self.subscribedExperiments[experiment.id]['streams']
+		except KeyError:
+			return []

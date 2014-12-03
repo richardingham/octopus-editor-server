@@ -1,0 +1,144 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
+	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
+
+	<link rel="import" href="/components/octopus-experiment-interface/octopus-experiment-interface.html" />
+	<link rel="import" href="/components/octopus-experiment-runtime/octopus-experiment-runtime.html" />
+
+	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
+	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
+	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
+
+	<style>
+	/* <![CDATA[ */
+	
+	html, body {
+		margin: 0;
+		padding: 0;
+		display: flex;
+		height: 100vh;
+		flex-direction: column;
+		flex: 1;
+	}
+
+	body {
+		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		color: #333;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+	}
+
+	core-toolbar {
+		background-color: #526E9C;
+		color: #FFF;
+	}
+
+	core-toolbar span {
+		color: #fff;
+		padding-bottom: 3px;
+		font-size: 24px;
+		margin-left: 15px;
+	}
+
+	/* ]]> */
+	</style>
+</head>
+<body unresolved="" t:render="editor_body">
+<template id="application" is="auto-binding">
+
+<core-toolbar>
+	<core-icon-button icon="cancel">{{ closeLabel }}</core-icon-button>
+	<span id="experiment-title">{{ experimentTitle }}</span>
+</core-toolbar>
+
+<octopus-experiment-interface 
+	id="interface" 
+	on-request-data="{{ requestStreamData }}" 
+	on-set-value="{{ propertySetValue }}"
+	variables="{{ experimentVariables }}"
+	runtimeProperties="{{ runtimeProperties }}"
+	runtimeStreams="{{ runtimeStreams }}"
+	>
+</octopus-experiment-interface>
+
+<octopus-experiment-runtime 
+	id="runtime"
+	properties="{{ runtimeProperties }}"
+	streams="{{ runtimeStreams }}"
+	on-experiment-load="{{ experimentLoaded }}"
+	on-properties="{{ onPropertiesData }}"
+	on-streams="{{ onStreamData }}"
+>
+	<t:attr name="url"><t:slot name="websocket_url" /></t:attr>
+	<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
+	<t:attr name="experiment"><t:slot name="experiment_id" /></t:attr>
+</octopus-experiment-runtime>
+	
+</template>
+<script>
+// <![CDATA[
+
+var template = document.getElementById('application');
+
+template.closeLabel = "Back";
+template.experimentTitle = "";
+template.experimentTimeZero = "";
+template.experimentVariables = [];
+template.propertyUpdateFrequency = 1000;
+template.streamUpdateFrequency = 1000;
+template._propertyUpdateTimer = null;
+template._streamUpdateTimer = null;
+
+template.ready = function () {
+	this.closeLabel = window.opener ? "Back" : "Close";
+};
+
+template.experimentLoaded = function (e) {
+	this.experimentVariables = e.detail.variables.sort(function (a, b) {
+		if (a.name < b.name) return -1;
+		if (a.name > b.name) return 1;
+		return 0;
+	});
+	this.experimentTitle = e.detail.title;
+};
+
+template.onPropertiesData = function (e) {
+	this.$.interface.onPropertiesData(e.detail.data);
+
+	window.clearTimeout(this._propertyUpdateTimer);
+	this._propertyUpdateTimer = window.setTimeout(
+		this.$.runtime.requestProperties.bind(this.$.runtime),
+		this.propertyUpdateFrequency
+	);
+};
+
+template.requestStreamData = function (e, detail) {
+	this.$.runtime.requestOneOffStreamData(detail.streams, detail.start);
+};
+
+template.propertySetValue = function (e, detail) {
+	this.$.runtime.propertySetValue(detail.variable, detail.value);
+};
+
+template.onStreamData = function (e, detail) {
+	this.$.interface.onStreamData(detail.data);
+
+	if (!detail.oneoff) {
+		window.clearTimeout(this._streamUpdateTimer);
+		this._streamUpdateTimer = window.setTimeout(
+			this.$.runtime.requestStreams.bind(this.$.runtime),
+			this.streamUpdateFrequency
+		);
+	}
+};
+
+// ]]>
+</script>
+</body>
+</html>

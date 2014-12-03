@@ -162,12 +162,10 @@ class Sketch (EventEmitter):
 		if len(self.subscribers) is 0:
 			self.close()
 
-	def notifySubscribers (self, event, payload, source = None):
+	def notifySubscribers (self, protocol, topic, payload, source = None):
 		for subscriber, notifyFn in self.subscribers.iteritems():
 			if subscriber is not source:
-				notifyFn(event, payload)
-
-		#self.emit(event, **payload)
+				notifyFn(protocol, topic, payload)
 
 	#
 	# Experiment
@@ -179,13 +177,13 @@ class Sketch (EventEmitter):
 
 		self.experiment = Experiment(self)
 
-		self.notifySubscribers("experiment-started", { 
+		self.notifySubscribers("experiment", "state-started", { 
 			"sketch": self.id,
 			"experiment": self.experiment.id
 		}, self.experiment)
 
 		def _done (result):
-			self.notifySubscribers("experiment-stopped", { 
+			self.notifySubscribers("experiment", "state-stopped", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
@@ -201,7 +199,7 @@ class Sketch (EventEmitter):
 				_error("Stopped by user")
 
 		def _error (failure):
-			self.notifySubscribers("experiment-error", { 
+			self.notifySubscribers("experiment", "state-error", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id,
 				"error": str(failure)
@@ -218,13 +216,13 @@ class Sketch (EventEmitter):
 			raise NoExperimentRunning
 
 		def _notify (result):
-			self.notifySubscribers("experiment-paused", { 
+			self.notifySubscribers("experiment", "state-paused", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
 
 		def _error (failure):
-			self.notifySubscribers("experiment-error", { 
+			self.notifySubscribers("experiment", "state-error", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id,
 				"error": str(failure)
@@ -237,13 +235,13 @@ class Sketch (EventEmitter):
 			raise NoExperimentRunning
 
 		def _notify (result):
-			self.notifySubscribers("experiment-resumed", { 
+			self.notifySubscribers("experiment", "state-resumed", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
 
 		def _error (failure):
-			self.notifySubscribers("experiment-error", { 
+			self.notifySubscribers("experiment", "state-error", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id,
 				"error": str(failure)
@@ -268,13 +266,13 @@ class Sketch (EventEmitter):
 		self.db.runOperation("UPDATE sketches SET title = ? WHERE guid = ?", (newName, self.id))
 		self.title = newName
 
-		self.notifySubscribers("sketch-renamed", { "title": newName }, context)
+		self.notifySubscribers("sketch", "renamed", { "title": newName }, context)
 
 	def processEvent (self, event, context):
 		event.apply(self.workspace)
 		eid = self._writeEvent(event.type, event.values)
 
-		self.notifySubscribers(event.jsName, event.valuesWithEventId(eid), context)
+		self.notifySubscribers(event.jsProtocol, event.jsTopic, event.valuesWithEventId(eid), context)
 
 	def _writeEvent (self, eventType, data):
 		if not self.loaded:

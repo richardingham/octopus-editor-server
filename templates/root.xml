@@ -31,20 +31,28 @@
 		<button type="submit">New Sketch</button>
 		</form>
 	</section>
-	<!--section id="past">
-		<h2>Completed Experiments</h2>
+	<section id="running">
+		<h2>Running Experiments</h2>
 		<ul>
-			<li t:render="past_experiment">
+			<li t:render="running_experiment">
 				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
 			</li>
 		</ul>
-	</section-->
+	</section>
 	<section id="stored">
 		<h2>Saved Sketches</h2>
 		<ul>
 			<li t:render="saved_sketch">
 				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
 				<a class="delete"><t:attr name="href"><t:slot name="url" /></t:attr>Delete</a>
+			</li>
+		</ul>
+	</section>
+	<section id="past">
+		<h2>Completed Experiments</h2>
+		<ul>
+			<li t:render="past_experiment">
+				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
 			</li>
 		</ul>
 	</section>

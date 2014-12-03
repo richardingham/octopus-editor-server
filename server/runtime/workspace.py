@@ -810,13 +810,15 @@ class Event (object):
 	Events that can be applied to a workspace.
 	"""
 
+	jsProtocol = 'block'
+
 	@classmethod
 	def fromPayload (cls, action, payload):
 		try:
 			try:
 				return cls.types[action](**payload)
 			except AttributeError:
-				cls.types = { c.jsName: c for c in cls.__subclasses__() }
+				cls.types = { c.jsTopic: c for c in cls.__subclasses__() }
 				cls.types.update({ c.__name__: c for c in cls.__subclasses__() })
 				return cls.types[action](**payload)
 		except KeyError:
@@ -850,35 +852,35 @@ class Event (object):
 
 class AddBlock (Event):
 	_fields = ("id", "type", "fields", "x", "y")
-	jsName = "block-created"
+	jsTopic = "created"
 
 	def apply (self, workspace):
 		workspace.addBlock(**self.values)
 
 class RemoveBlock (Event):
 	_fields = ("id", )
-	jsName = "block-disposed"
+	jsTopic = "disposed"
 
 	def apply (self, workspace):
 		workspace.removeBlock(**self.values)
 
 class ConnectBlock (Event):
 	_fields = ("id", "connection", "parent", "input")
-	jsName = "block-connected"
+	jsTopic = "connected"
 
 	def apply (self, workspace):
 		workspace.connectBlock(**self.values)
 
 class DisconnectBlock (Event):
 	_fields = ("id", "connection", "parent", "input")
-	jsName = "block-disconnected"
+	jsTopic = "disconnected"
 
 	def apply (self, workspace):
 		workspace.disconnectBlock(**self.values)
 
 class SetBlockPosition (Event):
 	_fields = ("id", "x", "y")
-	jsName = "block-set-position"
+	jsTopic = "set-position"
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
@@ -889,7 +891,7 @@ class SetBlockPosition (Event):
 
 class SetBlockFieldValue (Event):
 	_fields = ("id", "field", "value")
-	jsName = "block-set-field-value"
+	jsTopic = "set-field-value"
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
@@ -897,7 +899,7 @@ class SetBlockFieldValue (Event):
 
 class SetBlockDisabled (Event):
 	_fields = ("id", "value")
-	jsName = "block-set-disabled"
+	jsTopic = "set-disabled"
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
@@ -905,7 +907,7 @@ class SetBlockDisabled (Event):
 
 class SetBlockInputsInline (Event):
 	_fields = ("id", "value")
-	jsName = "block-set-inputs-inline"
+	jsTopic = "set-inputs-inline"
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
@@ -913,7 +915,7 @@ class SetBlockInputsInline (Event):
 
 class SetBlockMutation (Event):
 	_fields = ("id", "mutation")
-	jsName = "block-set-mutation"
+	jsTopic = "set-mutation"
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])

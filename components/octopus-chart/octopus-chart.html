@@ -1,0 +1,298 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/core-icons/core-icons.html" />
+<link rel="import" href="../../bower_components/core-icon-button/core-icon-button.html" />
+<link rel="import" href="../../bower_components/core-icon/core-icon.html" />
+
+<script src="jquery.flot.min.js"></script>
+<script src="jintervals-0.7-min.js"></script>
+
+<polymer-element name="octopus-chart" attributes="streams width height time timezero">
+<template>
+<style>
+
+:host {
+	display: block;
+	margin: 5px;
+}
+
+#box {
+	background-color: #D5DEED;
+	border-radius: 2px;
+	padding: 5px;
+}
+
+#options {
+	display: none;
+	padding: 5px;
+	font-size: 0.8em;
+}
+
+#options.show {
+	display: block;
+}
+
+#box core-icon {
+	color: #3E57A1;
+	cursor: pointer;
+}
+
+#box core-icon.active,
+#box core-icon:hover {
+	color: #000;
+}
+
+#options core-icon-button {
+	color: #CD4848;
+}
+#options core-icon-button:hover {
+	color: #E22200
+}
+
+</style>
+
+<div id="box" style="width: {{ width + 10 }}px;">
+	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
+	<div style="text-align: right">	
+		<core-icon icon="settings" on-click="{{ toggleOptions }}"></core-icon>
+	</div>
+	<div id="options">
+		<div>
+			Scale: <input type="text" value="{{ time }}" style="width: 50px;"> seconds
+		</div>
+		<div><strong>Variables:</strong></div>
+		<ul style="list-style-type: none;">
+		<template repeat="{{ s in streams }}">
+			<li>{{ s.name }} <button on-click="{{ removeStream }}" data-name="{{ s.key }}">Remove</button></li>
+		</template>
+		</ul>
+		<div style="text-align: right">
+			<core-icon-button icon="cancel" on-click="{{ removeChart }}"> Remove Chart</core-icon-button>
+		</div>
+	</div>
+</div>
+
+</template>
+<script>
+
+Polymer('octopus-chart', {
+	width: 600, // Of the chart, in pixels
+	height: 400, // Of the chart, in pixels
+	time: 60, // In seconds
+	timezero: 0,
+	streams: [],
+
+	created: function () {
+		this._data = {};
+		this._series = [];
+		this.unit = null;
+	},
+
+	toggleOptions: function (e) {
+		$(e.srcElement).toggleClass("active");
+		$(this.$.options).toggleClass("show");
+	},
+
+	removeStream: function (e) {
+		var key = $(e.target).data("name");
+
+		for (i = 0, m = this.streams.length; i < m; i++) {
+			if (this.streams[i].key === key) {
+				this.streams.splice(i, 1);
+				break;
+			}
+		}
+	},
+
+	removeChart: function (e) {
+		this.fire("remove-chart");
+	},
+
+	streamsChanged: function (oldStreams) {
+		var _this = this;
+		var newStreams = this.streams;
+
+		// Make sure newStreams contains only unique items
+		for (var i = 0; i < newStreams.length; i++)
+			for (var j = i + 1; j < newStreams.length; j++)
+				if (newStreams[i] === newStreams[j])
+					newStreams.splice(j--, 1);
+
+		// Find streams that have been removed, discard data.
+		oldStreams.filter(function(obj) {
+			return !newStreams.some(function(obj2) {
+				return obj.key === obj2.key;
+			});
+		}).forEach(function (name) {
+			delete _this._data[name];
+		});
+
+		// Find streams that have been added
+		var addedStreams = newStreams.filter(function(obj) {
+			return !oldStreams.some(function(obj2) {
+				return obj.key === obj2.key;
+			});
+		});
+
+		// Set up this._series
+		var zero, stream, series = [];
+
+		for (i = 0, m = newStreams.length; i < m; i++) {
+			stream = newStreams[i];
+
+			if (this.unit === null) {
+				this.unit = stream.unit;
+			} else if (this.unit !== stream.unit) {
+				console.log("mismatched units: ", this.unit, stream);
+			}
+
+			series[i] = {
+				color: stream.colour,
+				data: this._data[stream.key] || [],
+				label: stream.name
+			};
+		}
+
+		this._series = series;
+
+		// Request data for added streams.
+		if (addedStreams.length) {
+			this.fire("request-data", {
+				streams: addedStreams.map(function (s) { return s.key; }),
+				start: +(new Date()) - (this.time * 1000)
+			});
+		}
+
+		// Draw the new chart
+		var _this = this;
+
+		var options = {
+			yaxis: {
+				//min: 0,
+				//max: 10
+			},
+			xaxis: {
+				//min: trace_zero,
+				//max: x_max,
+				transform: function (v) { return v - _this.timezero; },
+				inverseTransform: function (v) { return v + _this.timezero; },
+				//tickFormatter: relative_time
+				tickFormatter: function (d) {
+					if (_this.timezero === 0) {
+						return (new Date(d)).toTimeString().substr(0, 8);
+					} else {
+						d -= _this.timezero;
+						return (d >= 0 ? "" : "-") + jintervals(Math.round(Math.abs(d)), "{HH?:}{mm}:{ss}");
+					}
+				}
+			},
+			legend: {
+				position: "nw",
+				show: true
+			},
+			grid: {
+				backgroundColor: "#FFF"
+			}
+		};
+
+		this._plot = $.plot(this.$.chart, this._series, options);
+	},
+
+	addData: function (data) {
+		var name, newData, currentMaxTime;
+		var streamData;
+		var i, j, m, n;
+		var maxTime = 0;
+
+		// For each stream in this chart
+		for (i = 0, m = this.streams.length; i < m; i++) {
+			name = this.streams[i].key;
+			newData = data[name];
+
+			// Check if there is new data for this stream
+			if (typeof newData === "undefined" || !newData.length) {
+				continue;
+			}
+
+			maxTime = Math.max(maxTime, newData[newData.length - 1][0]);
+
+			// Figure out if any of the data points are repeated.
+			// Don't add repeats.
+			streamData = this._data[name] || [];
+
+			currentMaxTime = streamData.length ? 
+				streamData[streamData.length - 1][0] : 0;
+
+			// Append clones of the data to prevent charts from interacting.
+			for (j = 0, n = newData.length; j < n; j++) {
+				if (newData[j][0] > currentMaxTime) {
+					streamData.push(newData[j].slice());
+					currentMaxTime = newData[j][0];
+				}
+			}
+
+			// Append new data.
+			this._data[name] = streamData;
+		}
+
+		var desiredDataZero = maxTime - this.time * 1000;
+		var p0, p1, p2;
+
+		// Trim data off start of stream.
+		for (i = 0, m = this.streams.length; i < m; i++) {
+			streamData = this._data[this.streams[i].key];
+
+			for (j = 1, n = streamData.length; j < n; j++) {
+				// Interpolate point at desiredDataZero
+				if (streamData[j][0] >= desiredDataZero) {
+					// Exact point
+					if (streamData[j][0] === desiredDataZero) {
+						streamData.splice(0, j);
+						break;
+					}
+
+					// Interpolated point
+					p0 = streamData[j - 1];
+					p1 = streamData[j];
+
+					if (p0[0] == p1[0]) {
+						p2 = p1[1];
+					} else {
+						p2 = p0[1] + (p1[1] - p0[1]) * (desiredDataZero - p0[0]) / (p1[0] - p0[0]);
+					}
+
+					streamData.splice(0, j, [desiredDataZero, p2]);
+					break;
+				}
+			}
+
+			this._series[i].data = streamData;
+		}
+
+		this.redraw();
+	},
+
+	widthChanged: function () {
+		this.redraw();
+	},
+
+	heightChanged: function () {
+		this.redraw();
+	},
+
+	timeChanged:  function () {
+		// Request data for added streams.
+		this.fire("request-data", {
+			streams: (self.streams && self.streams.map(function (s) { return s.key; })) || [],
+			start: (+(new Date()) / 1000) - this.time
+		});
+	},
+
+	redraw: function () {
+		this._plot.setData(this._series);
+		this._plot.setupGrid();
+		this._plot.draw();
+	}
+});
+
+</script>
+</polymer-element>

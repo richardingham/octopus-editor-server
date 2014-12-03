@@ -1,0 +1,143 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<polymer-element name="octopus-experiment-runtime" attributes="url sketch experiment properties streams frequency">
+<script>
+
+Polymer('octopus-experiment-runtime', {
+	properties: [],
+	streams: [],
+
+	ready: function () {
+		var self = this;
+		var socket = new WebSocket(this.url, "octopus");
+
+		socket.onopen = function () {
+			console.log("Socket open");
+			self.open = true;
+			self.load(self.sketch, self.experiment)
+		};
+
+		socket.onmessage = function (e) {
+			var data = JSON.parse(e.data);
+
+			var protocol = data.protocol;
+			var command = data.command;
+			var payload = data.payload;
+
+			if (!(protocol === "experiment" && payload.sketch === self.sketch && payload.experiment === self.experiment)) {
+				return
+			}
+
+			if (command === "load") {
+				return self.fire("experiment-load", payload);
+			}
+
+			if (command === "variable-added") {
+				return self.fire("experiment-variable-added", payload);
+			}
+
+			if (command === "variable-removed") {
+				return self.fire("experiment-variable-removed", payload);
+			}
+
+			if (command === "streams") {
+				var a, p, z = payload.zero;
+				for (var key in payload.data) {
+					a = payload.data[key];
+					for (var i = 0, m = a.length; i < m; i++) {
+						p = a[i];
+						p[0] = (p[0] + z) * 1000;
+					};
+				}
+				return self.fire("streams", payload);
+			}
+
+			if (command === "properties") {
+				return self.fire("properties", payload);
+			}
+
+			console.log("socket message", data);
+		};
+
+		socket.onclose = function (reason) {
+			console.log("Connection Closed: ", reason);
+			self.open = false;
+		};
+
+		this.socket = socket;
+	},
+
+	propertiesChanged: function () {
+		this._socketSend("experiment", "choose-properties", {
+			properties: this.properties
+		});
+
+		this.requestProperties();
+	},
+
+	requestProperties: function () {
+		if (this.properties.length > 0) {
+			this._socketSend("experiment", "get-properties", {});
+		}
+	},
+
+	propertySetValue: function (variable, value) {
+		this._socketSend("experiment", "set-property", {
+			variable: variable,
+			value: value
+		});
+	},
+
+	streamsChanged: function () {
+		this._socketSend("experiment", "choose-streams", {
+			streams: this.streams
+		});
+
+		this.requestStreams();
+	},
+
+	requestStreams: function () {
+		var start;
+
+		if (!this._lastStreamRequest) {
+			start = +(new Date()) - 60 * 1000;
+			this._lastStreamRequest = start;
+		} else {
+			start = this._lastStreamRequest;
+			this._lastStreamRequest = +(new Date());
+		}
+
+		if (this.streams.length > 0) {
+			this._socketSend("experiment", "get-streams", { start: start / 1000 });
+		}
+	},
+
+	requestOneOffStreamData: function (streams, start) {
+		this._socketSend("experiment", "get-streams", { 
+			start: start / 1000, 
+			streams: streams, 
+			oneoff: true 
+		});
+	},
+
+	_socketSend: function (protocol, command, payload) {
+		if (!this.open) {
+			return;
+		}
+
+		payload.sketch = this.sketch;
+		payload.experiment = this.experiment;
+
+		var data = { protocol: protocol, command: command, payload: payload };
+
+		//console.log("Socket send", data);
+		this.socket.send(JSON.stringify(data));
+	},
+
+	load: function () {
+		this._socketSend("experiment", "load", {});
+	}
+});
+
+</script>
+</polymer-element>
