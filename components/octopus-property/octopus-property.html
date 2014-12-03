@@ -1,4 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/core-icon/core-icon.html" />
+<link rel="import" href="../../bower_components/core-icons/core-icons.html" />
+<link rel="import" href="../../bower_components/core-icons/image-icons.html" />
 
 <polymer-element name="octopus-property" attributes="variable">
 <template>
@@ -14,7 +17,33 @@
 	float: left;
 }
 
+#tools core-icon {
+	color: #9EB1CF;
+	width: 15px;
+	height: 15px;
+	cursor: pointer;
+}
+
+#tools core-icon:hover,
+#tools core-icon.active {
+	color: #FFF;
+}
+
+#value {
+	font-size: 1.2em;
+	padding: 4px;
+}
+#value .value {
+	font-weight: bold;
+}
+#value .unit {
+	font-size: 0.8em;
+}
+
 #editor {
+	border-top: 1px solid #9EB1CF;
+	margin: 4px;
+	padding-top: 6px;
 	display: none;
 }
 
@@ -24,19 +53,20 @@
 
 </style>
 
-<div>
-	<span class="close" on-click="{{ propertyRemove }}">X</span>
+<div id="tools">
+	<core-icon icon="cancel" on-click="{{ propertyRemove }}"></core-icon>
 	<template if="{{ variable.type === 'int' || variable.type === 'float' }}">
-		<span class="graph" on-click="{{ propertyGraph }}">G</span>
+		<core-icon icon="open-in-new" on-click="{{ propertyGraph }}"></core-icon>
 	</template>
 	<template if="{{ variable.edit }}">
-		<span class="edit" on-click="{{ toggleEditor }}">E</span>
+		<core-icon icon="image:edit" on-click="{{ toggleEditor }}"></core-icon>
 	</template>
+	<span class="name">{{ variable.name }}</span>
 </div>
 
-<div>
-	<span class="name">{{ variable.name }}</span>
+<div id="value">
 	<span class="value">{{ variable.value }}</span>
+	<span class="unit">{{ variable.unit }}</span>
 </div>
 
 <template if="{{ variable.edit }}">
@@ -72,6 +102,7 @@ Polymer('octopus-property', {
 	},
 
 	toggleEditor: function (e) {
+		$(e.srcElement).toggleClass("active");
 		$(this.$.editor).toggleClass("show");
 		$("input", this.$.editor).val(this.variable.value);
 	},
