@@ -217,6 +217,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 					# Call later to try to allow any other block-state events
 					# to propagate before the listeners are cancelled.
 					if not self._complete.called:
+						self.state = State.ERROR
 						reactor.callLater(0, self._complete.errback, error or failure)
 
 					self.emit("workspace-stopped")
@@ -260,6 +261,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 			if not (_blockError.called or self._complete.called):
 				self._complete.callback(None)
+				self.state = State.COMPLETE
 				self.emit("workspace-stopped")
 				self.off('top-block-added', onTopBlockAdded)
 				self.off('top-block-removed', _updateDependencyGraph)
