@@ -1976,7 +1976,6 @@ Block.prototype.setCommentText = function(text) {
     if (this.comment) {
       this.comment.dispose();
       changedState = true;
-      this.workspaceEmit("block-set-comment", { id: this.id, value: "" });
     }
   }
   if (this.rendered) {

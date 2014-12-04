@@ -108,6 +108,7 @@ Comment.prototype.createEditor_ = function() {
   body.appendChild(this.textarea_);
   this.foreignObject_.appendChild(body);
   Blockly.bindEvent_(this.textarea_, 'mouseup', this, this.textareaFocus_);
+  Blockly.bindEvent_(this.textarea_, 'blur', this, this.saveComment_);
   return this.foreignObject_;
 };
 
@@ -203,6 +204,14 @@ Comment.prototype.textareaFocus_ = function(e) {
 };
 
 /**
+ * Emit event to save comment value.
+ * @private
+ */
+Comment.prototype.saveComment_ = function() {
+  this.block_.workspaceEmit("block-set-comment", { id: this.block_.id, value: this.getText() });
+};
+
+/**
  * Get the dimensions of this comment's bubble.
  * @return {!Object} Object with width and height properties.
  */
@@ -253,6 +262,7 @@ Comment.prototype.setText = function(text) {
  */
 Comment.prototype.dispose = function() {
   this.block_.comment = null;
+  this.block_.workspaceEmit("block-set-comment", { id: this.block_.id, value: "" });
   Blockly.Icon.prototype.dispose.call(this);
 };
 
