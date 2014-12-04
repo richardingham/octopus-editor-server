@@ -379,7 +379,9 @@ class Block (BaseStep, EventEmitter):
 		self.fields = {}
 		self.inputs = {}
 		self.mutation = ""
+		self.comment = ""
 		#self._addedInputs = []
+		self.collapsed = False
 		self.disabled = False
 		self.position = [0, 0]
 		self.inputsInline = None
@@ -776,11 +778,8 @@ class Block (BaseStep, EventEmitter):
 		if self.mutation != "":
 			events.append({ "type": "SetBlockMutation", "data": { "id": self.id, "mutation": self.mutation }})		
 
-		if self.disabled:
-			events.append({ "type": "SetBlockDisabled", "data": { "id": self.id, "value": True }})		
-
-		if self.inputsInline is False:
-			events.append({ "type": "SetBlockInputsInline", "data": { "id": self.id, "value": False }})		
+		if self.comment != "":
+			events.append({ "type": "SetBlockComment", "data": { "id": self.id, "value": self.comment }})
 
 		if self.outputBlock is not None:
 			events.append({ "type": "ConnectBlock", "data": { "id": self.id, "connection": "input-value", "parent": self.outputBlock.id, "input": self.parentInput }})
@@ -793,6 +792,16 @@ class Block (BaseStep, EventEmitter):
 
 		for child in self.getChildren():
 			events.extend(child.toEvents())
+
+		if self.disabled:
+			events.append({ "type": "SetBlockDisabled", "data": { "id": self.id, "value": True }})
+
+		if self.inputsInline is False:
+			events.append({ "type": "SetBlockInputsInline", "data": { "id": self.id, "value": False }})
+
+		if self.collapsed:
+			events.append({ "type": "SetBlockCollapsed", "data": { "id": self.id, "value": True }})
+
 
 		return events
 
@@ -906,6 +915,22 @@ class SetBlockDisabled (Event):
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
 		block.disabled = bool(self.values['value'])
+
+class SetBlockCollapsed (Event):
+	_fields = ("id", "value")
+	jsTopic = "set-collapsed"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.collapsed = bool(self.values['value'])
+
+class SetBlockComment (Event):
+	_fields = ("id", "value")
+	jsTopic = "set-comment"
+
+	def apply (self, workspace):
+		block = workspace.getBlock(self.values['id'])
+		block.comment = str(self.values['value'])
 
 class SetBlockInputsInline (Event):
 	_fields = ("id", "value")
