@@ -70,6 +70,10 @@ Polymer('octopus-runtime', {
 					self._fireLogMessage(payload.experiment, payload.level, payload.message, new Date());
 				}
 			}
+
+			if (command === "error" && payload.sketch == self.sketch) {
+				console.error(protocol, payload);
+			}
 		};
 
 		socket.onclose = function (reason) {
