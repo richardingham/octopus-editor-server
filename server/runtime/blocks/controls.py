@@ -6,7 +6,7 @@ from octopus.constants import State
 
 # Twisted Imports
 from twisted.internet import reactor, defer
-import twisted.internet.error
+from twisted.internet.error import AlreadyCalled, AlreadyCancelled
 
 # Python Imports
 from time import time as now
@@ -85,27 +85,30 @@ class controls_wait (Block):
 
 	def _run (self):
 		complete = defer.Deferred()
+		self.duration = None
+		self._variables = []
 
 		@defer.inlineCallbacks
-		def _start ():
-			self.duration = None
+		def _update (data = None):
+			if self.state is not State.RUNNING:
+				return
 
 			time = yield self.getInputValue("TIME", 0)
 
 			timeType = type(time)
 
 			if timeType in (int, float):
-				self.duration = time
+				duration = time
 
 			elif timeType is str:
-				match = _wait_re.match(self._expr.value);
+				match = self._wait_re.match(time);
 
 				if match is None:
 					raise Error('{:s} is not a valid time'.format(time))
 
 				# Convert human-readable time to number of seconds
 				match = [int(x or 0) for x in match.groups()]
-				self.duration = \
+				duration = \
 					(match[0] * 3600) + \
 					(match[1] * 60) + match[2] + \
 					(match[3] * 0.001)
@@ -113,13 +116,62 @@ class controls_wait (Block):
 			else:
 				raise Error('{:s} is not a valid time'.format(time))
 
-			self._start = now()
-			self._c = reactor.callLater(self.duration, _done)
+			if duration == self.duration:
+				return
+			else:
+				self.duration = duration
 
+			if not (self._c and self._c.active()):
+				self._start = now()
+				self._c = reactor.callLater(duration, _done)
+			else:
+				self._c.reset(max(0, duration - (now() - self._start)))
+
+		def _tryUpdate (data = None):
+			_update().addErrback(_error)
+
+		def _setListeners (data = None):
+			for v in self._variables:	
+				v.off('change', _tryUpdate)
+
+			try:
+				self._variables = set(self.getInput("TIME").getVariables())
+			except (KeyError, AttributeError):
+				self._variables = []
+
+			for v in self._variables:	
+				v.on('change', _tryUpdate)
+
+			_tryUpdate()
+
+		def _removeListeners ():
+			self.off("value-changed", _setListeners)
+			self.off("connectivity-changed", _setListeners)
+
+			for v in self._variables:
+				v.off('change', _tryUpdate)
+			
 		def _done ():
+			_removeListeners()
 			complete.callback(None)
 
-		_start().addErrback(complete.errback)
+		def _error (failure = None):
+			_removeListeners()
+
+			try:
+				self._c.cancel()
+			except (AttributeError, AlreadyCalled, AlreadyCancelled):
+				pass
+
+			try:
+				complete.errback(failure)
+			except defer.AlreadyCalledError:
+				pass
+
+		self.on("value-changed", _setListeners)
+		self.on("connectivity-changed", _setListeners)
+
+		_setListeners()
 		return complete
 
 	def _pause (self):
@@ -154,11 +206,7 @@ class controls_wait (Block):
 			complete = self._c.func # i.e. _done
 			self._c.cancel()
 			reactor.callLater(0, complete)
-		except (
-			AttributeError,
-			twisted.internet.error.AlreadyCalled,
-			twisted.internet.error.AlreadyCancelled
-		):
+		except (AttributeError, AlreadyCalled, AlreadyCancelled):
 			pass
 
 
