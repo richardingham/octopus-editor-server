@@ -483,12 +483,15 @@ class Block (BaseStep, EventEmitter):
 	def getInput (self, inputName):
 		return self.inputs[inputName]
 
-	def getInputValue (self, inputName):
-		input = self.inputs[inputName]
+	def getInputValue (self, inputName, default = False):
+		try:
+			input = self.inputs[inputName]
+		except KeyError:
+			return defer.succeed(default)
 
 		def error (failure):
 			failure.trap(Disconnected)
-			return False
+			return default
 
 		return input.eval().addErrback(error)
 

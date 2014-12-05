@@ -61,8 +61,8 @@ class controls_bind (lexical_variable, Block):
 				v.off('change', runUpdate)
 
 			try:
-				self._variables = self.getInput("VALUE").getVariables()
-			except AttributeError:
+				self._variables = set(self.getInput("VALUE").getVariables())
+			except (KeyError, AttributeError):
 				self._variables = []
 
 			for v in self._variables:	
@@ -179,7 +179,7 @@ class controls_statemonitor (Block):
 			except AttributeError:
 				pass
 
-		for v in self._variables:	
+		for v in set(self._variables):
 			v.on('change', self.runUpdate)
 
 	def removeListeners (self):

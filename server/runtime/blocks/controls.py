@@ -1,12 +1,17 @@
+# Package imports
 from ..workspace import Block, Disconnected, Cancelled
 
+# Octopus Imports
 from octopus.constants import State
 
+# Twisted Imports
 from twisted.internet import reactor, defer
 import twisted.internet.error
 
+# Python Imports
 from time import time as now
 import re
+
 
 class controls_run (Block):
 	pass
@@ -60,9 +65,7 @@ class controls_log (Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		try:
-			message = yield self.getInputValue("TEXT")
-		except Disconnected:
-			message = ""
+			message = yield self.getInputValue("TEXT", "")
 		except Cancelled:
 			defer.returnValue()
 
@@ -91,9 +94,7 @@ class controls_wait (Block):
 			self.duration = None
 
 			try:
-				time = yield self.getInputValue("TIME")
-			except Disconnected:
-				time = 0
+				time = yield self.getInputValue("TIME", 0)
 			except Cancelled:
 				done()
 				defer.returnValue()
@@ -202,7 +203,7 @@ class controls_wait_until (Block):
 				v.off('change', runTest)
 
 			try:
-				self._variables = self.getInput("CONDITION").getVariables()
+				self._variables = set(self.getInput("CONDITION").getVariables())
 			except AttributeError:
 				self._variables = []
 

@@ -66,7 +66,7 @@ class global_declaration (Block):
 
 		try:
 			result = yield self.getInput('VALUE').eval()
-		except (KeyError, AttributeError, Disconnected):
+		except (KeyError, AttributeError, Disconnected, Cancelled):
 			return
 
 		try:
@@ -83,10 +83,7 @@ class global_declaration (Block):
 
 	@defer.inlineCallbacks
 	def _run (self):
-		try:
-			result = yield self.getInput('VALUE').eval()
-		except (KeyError, AttributeError, Disconnected):
-			result = None
+		result = yield self.getInputValue('VALUE', None)
 
 		if result is None:
 			raise Exception("Global declared value cannot be None")
