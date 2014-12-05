@@ -31,7 +31,6 @@ class controls_dependents (Block):
 class controls_bind (lexical_variable, Block):
 	def _run (self):
 		complete = defer.Deferred()
-		variable = self._getVariable()
 		self._variables = []
 
 		@defer.inlineCallbacks
@@ -45,9 +44,11 @@ class controls_bind (lexical_variable, Block):
 
 			try:
 				result = yield self.getInputValue("VALUE")
-				variable.set(result)
-			except Disconnected:
-				# Handled by setListeners
+				self._getVariable().set(result)
+			except (AttributeError, Disconnected):
+				# May get an AttributeError if the variable has been
+				# changed and become None
+				# Disconnected is handled by setListeners
 				pass
 			except Cancelled as e:
 				removeListeners()
