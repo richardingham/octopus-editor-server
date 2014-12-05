@@ -30,7 +30,8 @@ class global_declaration (Block):
 		@self.on('value-changed')
 		def onVarNameChanged (data):
 			if not (data["block"] is self and data["field"] == 'NAME'):
-				onConnectivityChanged()
+				self._onConnectivityChanged()
+				self._onChange()
 				return
 
 			if data["newValue"] == data["oldValue"]:
@@ -59,7 +60,7 @@ class global_declaration (Block):
 
 	# Handle any changes in variables
 	@defer.inlineCallbacks
-	def _onChange (self, data):
+	def _onChange (self, data = None):
 		if self.workspace.state not in (State.RUNNING, State.PAUSED):
 			return
 
