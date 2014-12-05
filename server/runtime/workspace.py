@@ -650,7 +650,9 @@ class Block (BaseStep, EventEmitter):
 		def _error (failure):
 			log.err("Block %s #%s Error: %s" % (self.type, self.id, failure))
 			self.state = State.ERROR
-			self._complete.errback(failure)
+
+			if self._complete is not None:
+				self._complete.errback(failure)
 
 		d = defer.maybeDeferred(self._run)
 		d.addCallbacks(_done, _error)
