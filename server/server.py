@@ -9,6 +9,7 @@ from twisted.python import log, filepath
 from twisted.web import server, static, resource, guard
 from twisted.web.template import flatten
 from twisted.cred.portal import IRealm, Portal
+from twisted.manhole.telnet import ShellFactory
 
 # Zope Imports
 from zope.interface import implements
@@ -226,6 +227,17 @@ def makeService (options):
 		int(options["port"]),
 		site
 	).setServiceParent(application)
+
+	# Manhole
+	shell_password = str(uuid.uuid1()).split("-")[0]
+	shell_factory = ShellFactory()
+	shell_factory.username = 'octopus'
+	shell_factory.password = shell_password
+	shell_factory.namespace['sketches'] = loaded_sketches
+	shell_factory.namespace['experiments'] = running_experiments
+	print "Octopus telnet shell running on port 4040 (octopus:%s)\n\n" % shell_password
+
+	internet.TCPServer(4040, shell_factory).setServiceParent(application)
 
 	return application
 
