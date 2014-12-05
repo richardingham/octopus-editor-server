@@ -64,10 +64,7 @@ class controls_if (Block):
 class controls_log (Block):
 	@defer.inlineCallbacks
 	def _run (self):
-		try:
-			message = yield self.getInputValue("TEXT", "")
-		except Cancelled:
-			defer.returnValue()
+		message = yield self.getInputValue("TEXT", "")
 
 		self.workspace.emit(
 			"log-message", 
@@ -93,11 +90,7 @@ class controls_wait (Block):
 		def _start ():
 			self.duration = None
 
-			try:
-				time = yield self.getInputValue("TIME", 0)
-			except Cancelled:
-				done()
-				defer.returnValue()
+			time = yield self.getInputValue("TIME", 0)
 
 			timeType = type(time)
 
@@ -184,13 +177,7 @@ class controls_wait_until (Block):
 				defer.returnValue(None)
 
 			try:
-				result = yield self.getInputValue("CONDITION")
-			except Disconnected:
-				# Handled by setListeners
-				pass
-			except Cancelled as e:
-				removeListeners()
-				complete.errback(e)
+				result = yield self.getInputValue("CONDITION", True)
 			except Exception as e:
 				removeListeners()
 				complete.errback(e)
@@ -233,14 +220,9 @@ class controls_whileUntil (Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		while True:
-			try:
-				condition = yield self.getInput.eval()
-				if self.fields['MODE'] == "UNTIL":
-					condition = (condition == False)
-			except Disconnected:
-				condition = (self.fields['MODE'] == "UNTIL")
-			except Cancelled:
-				break
+			condition = yield self.getInputValue('BOOL', False)
+			if self.fields['MODE'] == "UNTIL":
+				condition = (condition == False)
 
 			if condition:
 				try:
@@ -263,10 +245,7 @@ class controls_repeat_ext (Block):
 			# I imagine this is expected if a simple number block is used,
 			# but if variables are involved it may turn out to lead to
 			# unexpected behaviour!
-			try:
-				count = yield self.getInputValue('TIMES')
-			except (Disconnected, Cancelled):
-				break
+			count = yield self.getInputValue('TIMES', None)
 
 			if count is None or index >= count:
 				break

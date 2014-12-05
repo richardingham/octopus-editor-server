@@ -518,7 +518,7 @@ class Block (BaseStep, EventEmitter):
 			return defer.succeed(default)
 
 		def error (failure):
-			failure.trap(Disconnected)
+			failure.trap(Cancelled, Disconnected)
 			return default
 
 		return input.eval().addErrback(error)
