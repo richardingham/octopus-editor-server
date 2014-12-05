@@ -60,5 +60,20 @@ Blockly.PythonOcto['global_declaration'] = function(block) {
   var argument0 = Blockly.PythonOcto.valueToCode(block, 'VALUE',
       Blockly.PythonOcto.ORDER_NONE) || '0';
   var name = Blockly.PythonOcto.getVariableName_(block.variable_);
-  return name + ' = variable(' + argument0 + ')';
+  var targetBlock = block.getInputTargetBlock('VALUE');
+  var vars = targetBlock && targetBlock.getVars();
+  var conn = targetBlock && targetBlock.outputConnection;
+
+  if (vars && vars.length) {
+    return name + ' = ' + argument0;
+  } else if (conn) {
+    var type = "str";
+    if (conn && conn.check_) {
+      if (conn.check_.indexOf("Number") !== -1) type = "float";
+      if (conn.check_.indexOf("Boolean") !== -1) type = "bool";
+    }
+    return name + ' = variable(' + type + ', ' + argument0 + ')';
+  } else {
+    return name + ' = variable()';
+  }
 };

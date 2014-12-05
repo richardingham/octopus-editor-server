@@ -2043,6 +2043,16 @@ Block.prototype.getVariableScope = function(thisBlockOnly) {
   return this.variableScope_ || (parent && parent.getVariableScope()) || Blockly.GlobalScope;
 };
 
+/**
+ * Return all variables referenced by this block or its children.
+ * @return {!Array.string} Array of variable names.
+ */
+Block.prototype.getVars = function () {
+  return Array.prototype.concat.apply([], this.getChildren().map(function (block) {
+    return block.getVars();
+  }));
+};
+
 return Block;
 
 });

@@ -423,6 +423,7 @@ class Block (BaseStep, EventEmitter):
 				childBlock.off('value-changed', onValueChange)
 				self.off('disconnected', onDisconnect)
 
+		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-removed', block = childBlock)
 
 	def disconnectNextBlock (self, childBlock):
@@ -517,6 +518,7 @@ class Block (BaseStep, EventEmitter):
 				childBlock.off('value-changed', onValueChange)
 				self.off('disconnected', onDisconnect)
 
+		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-removed', block = childBlock)
 
 	def disconnectInput (self, inputName, type):
