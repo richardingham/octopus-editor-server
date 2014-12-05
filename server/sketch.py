@@ -202,7 +202,7 @@ class Sketch (EventEmitter):
 			self.notifySubscribers("experiment", "state-error", { 
 				"sketch": self.id,
 				"experiment": self.experiment.id,
-				"error": str(failure)
+				"error": failure.getErrorMessage()
 			}, self.experiment)
 
 			self.experiment = None

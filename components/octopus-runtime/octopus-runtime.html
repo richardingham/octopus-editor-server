@@ -63,7 +63,7 @@ Polymer('octopus-runtime', {
 					self._fireLogMessage(payload.experiment, "status", "Experiment resumed", new Date());
 				} else if (command === "state-error") {
 					self.experiment.state = "error";
-					self._fireLogMessage(payload.experiment, "error", "Experiment error", new Date());
+					self._fireLogMessage(payload.experiment, "error", "Experiment error: " + payload.error, new Date());
 				} 
 
 				else if (command === "log" && payload.experiment == self.experiment.id) {
