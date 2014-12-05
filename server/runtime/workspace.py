@@ -515,6 +515,9 @@ class Block (BaseStep, EventEmitter):
 		try:
 			input = self.inputs[inputName]
 		except KeyError:
+			input = None
+
+		if input is None:
 			return defer.succeed(default)
 
 		def error (failure):
