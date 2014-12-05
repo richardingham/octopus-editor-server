@@ -216,7 +216,8 @@ class controls_statemonitor (Block):
 			except AttributeError:
 				pass
 
-		for v in set(self._variables):
+		self._variables = set(self._variables)
+		for v in self._variables:
 			v.on('change', self.runUpdate)
 
 		self.runUpdate()
