@@ -183,6 +183,8 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			runningBlocks.discard(block)
 			decls = block.getDeclarationNames()
 
+			print "Satisfied dependencies: " + str(decls)
+
 			# Check if any other blocks can be run
 			toRun = []
 			for item in dependencyGraph:
@@ -233,7 +235,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		def _updateDependencyGraph (data = None):
 			for item in dependencyGraph:
-				item['deps'] = item['block'].getVariableNames()
+				item['deps'] = set(item['block'].getVariableNames())
 
 		@self.on('top-block-added')
 		def onTopBlockAdded (data):
@@ -258,6 +260,8 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 			if len(runningBlocks) > 0:
 				return
+
+			log.msg("Skipped blocks:" + str(dependencyGraph))
 
 			if not (_blockError.called or self._complete.called):
 				self._complete.callback(None)
