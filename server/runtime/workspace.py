@@ -150,6 +150,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		self._complete = defer.Deferred()
 		dependencyGraph = []
 		runningBlocks = set()
+		externalStopBlocks = set()
 		resumeBlocks = []
 		self.emit("workspace-started")
 
@@ -159,7 +160,10 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				resumeBlocks.add(block)
 				return
 
-			runningBlocks.add(block)
+			if block.externalStop:
+				externalStopBlocks.add(block)
+			else:
+				runningBlocks.add(block)
 
 			# Run in the next tick so that dependency graph
 			# and runningBlocks are all updated before blocks
@@ -180,6 +184,9 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			resumeBlocks = []
 
 		def _blockComplete (result, block):
+			if block.externalStop:
+				return
+
 			runningBlocks.discard(block)
 			decls = block.getDeclarationNames()
 
@@ -219,6 +226,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 					# Call later to try to allow any other block-state events
 					# to propagate before the listeners are cancelled.
 					if not self._complete.called:
+						_externalStop()
 						self.state = State.ERROR
 						reactor.callLater(0, self._complete.errback, error or failure)
 
@@ -242,8 +250,12 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			block = data['block']
 			print "Block #%s added to top blocks (%s)" % (block.id, block._complete)
 
-			if block._complete is not None and block._complete.called is False:
-				runningBlocks.add(block)
+			if block._complete is not None and block._complete.called is False:	
+				if block.externalStop:
+					externalStopBlocks.add(block)
+				else:
+					runningBlocks.add(block)
+
 				block._complete.addCallbacks(
 					callback = _blockComplete,
 					callbackArgs = [block],
@@ -264,11 +276,19 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			log.msg("Skipped blocks:" + str(dependencyGraph))
 
 			if not (_blockError.called or self._complete.called):
-				self._complete.callback(None)
+				_externalStop()
 				self.state = State.COMPLETE
+				self._complete.callback(None)
 				self.emit("workspace-stopped")
 				self.off('top-block-added', onTopBlockAdded)
 				self.off('top-block-removed', _updateDependencyGraph)
+
+		def _externalStop ():
+			for block in externalStopBlocks:
+				try:
+					block.cancel(propagate = True).addErrback(log.err)
+				except NotRunning:
+					pass
 
 		# Get all blocks ordered by x then y.
 		blocks = sorted(self.topBlocks.itervalues(), key = lambda b: b.position)
@@ -360,6 +380,10 @@ def anyOfStackIs (block, states):
 
 
 class Block (BaseStep, EventEmitter):
+
+	# If this block needs to be stopped by the workspace
+	# (e.g. long-running disconnected controls)
+	externalStop = False
 
 	@property
 	def state (self):
