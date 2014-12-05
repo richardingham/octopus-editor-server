@@ -100,11 +100,11 @@ class controls_wait (Block):
 			if timeType in (int, float):
 				duration = time
 
-			elif timeType is str:
+			elif timeType in (str, unicode):
 				match = self._wait_re.match(time);
 
 				if match is None:
-					raise Error('{:s} is not a valid time'.format(time))
+					raise Exception('{:s} is not a valid time string'.format(time))
 
 				# Convert human-readable time to number of seconds
 				match = [int(x or 0) for x in match.groups()]
@@ -114,7 +114,7 @@ class controls_wait (Block):
 					(match[3] * 0.001)
 
 			else:
-				raise Error('{:s} is not a valid time'.format(time))
+				raise Exception('{:s} is not a valid time'.format(time))
 
 			if duration == self.duration:
 				return
