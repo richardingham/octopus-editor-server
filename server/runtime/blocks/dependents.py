@@ -70,9 +70,8 @@ class controls_bind (lexical_variable, Block):
 		self._variables = []
 
 		self.on("connectivity-changed", self._setListeners)
-		self.on("value-changed", self._runUpdate)
+		self.on("value-changed", self._setListeners)
 		self._setListeners()
-		self._runUpdate()
 
 		return self._run_complete
 
@@ -106,9 +105,11 @@ class controls_bind (lexical_variable, Block):
 		for v in self._variables:	
 			v.on('change', self._runUpdate)
 
+		self._runUpdate()
+
 	def _removeListeners (self):
 		self.off("connectivity-changed", self._setListeners)
-		self.off("value-changed", self._runUpdate)
+		self.off("value-changed", self._setListeners)
 
 		for v in self._variables:	
 			v.off('change', self._runUpdate)
@@ -131,9 +132,8 @@ class controls_statemonitor (Block):
 		self._variables = []
 
 		self.on("connectivity-changed", self.setListeners)
-		self.on("value-changed", self.runUpdate)
-		self.setListeners(None)
-		self.runUpdate(None)
+		self.on("value-changed", self.setListeners)
+		self.setListeners()
 
 		return self._run_complete
 
@@ -200,7 +200,7 @@ class controls_statemonitor (Block):
 			except (KeyError, AttributeError, AlreadyRunning):
 				return
 
-	def setListeners (self, data):
+	def setListeners (self, data = None):
 		for v in self._variables:	
 			v.off('change', self.runUpdate)
 
@@ -219,9 +219,11 @@ class controls_statemonitor (Block):
 		for v in set(self._variables):
 			v.on('change', self.runUpdate)
 
+		self.runUpdate()
+
 	def removeListeners (self):
 		self.off("connectivity-changed", self.setListeners)
-		self.off("value-changed", self.runUpdate)
+		self.off("value-changed", self.setListeners)
 
 		for v in self._variables:	
 			v.off('change', self.runUpdate)
