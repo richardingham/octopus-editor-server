@@ -110,17 +110,23 @@
 	}
 
 	#experiments-log .experiment core-icon {
+		width: 16px;
+		height: 16px;
+	}
+
+	#experiments-log .experiment core-icon[icon="cancel"] {
 		color: #223388;
 		cursor: pointer;
 		position: absolute;
 		right: 4px;
 		top: 0px;
 		width: 16px;
+		height: 24px;
 	}
-	#experiments-log .experiment core-icon:hover {
+	#experiments-log .experiment core-icon[icon="cancel"]:hover {
 		color: #526E9C;
 	}
-	
+
 	#experiments-log .experiment ul {
 		font-size: 12px;
 		list-style-type: none;
@@ -152,7 +158,10 @@
 			<core-icon icon="cancel" on-click="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
 			<ul>
 				<template repeat="{{ experiment.messages as item }}">
-				<li>[{{item.time | formatLogTime}} {{ item.level }}] {{ item.message }}</li>
+				<li>
+					<core-icon icon="{{ item.level | levelToIcon }}" style="color: {{ item.level | levelToIconColour }};"></core-icon>
+					[{{item.time | formatLogTime}}] {{ item.message }}
+				</li>
 				</template>
 			</ul>
 		</div>
@@ -236,7 +245,20 @@ template.closeLog = function (e) {
 	}
 };
 template.formatLogTime = function (date) {
-	return [date.getHours(), date.getMinutes(), date.getSeconds()].join(":");
+	function pad (n) { return ("0" + n).slice(-2); }
+	return [date.getHours(), date.getMinutes(), date.getSeconds()].map(pad).join(":");
+};
+template.levelToIcon = function (level) {
+	if (level === "status") return "label";
+	if (level === "warning") return "warning";
+	if (level === "error") return "error";
+	return "info";
+};
+template.levelToIconColour = function (level) {
+	if (level === "status") return "#0D7C38";
+	if (level === "warning") return "#FFC200";
+	if (level === "error") return "#CB0909";
+	return "#526E9C";
 };
 
 // ]]>
