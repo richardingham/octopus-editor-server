@@ -209,6 +209,9 @@ Comment.prototype.textareaFocus_ = function(e) {
  */
 Comment.prototype.saveComment_ = function() {
   this.block_.workspaceEmit("block-set-comment", { id: this.block_.id, value: this.getText() });
+  if (this.block_.rendered) {
+    this.block_.render();
+  }
 };
 
 /**

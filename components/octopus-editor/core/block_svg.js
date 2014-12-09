@@ -48,6 +48,8 @@ var BlockSvg = function(block) {
       this.svgGroup_);
   this.svgPathLight_ = Blockly.createSvgElement('path',
       {'class': 'blocklyPathLight'}, this.svgGroup_);
+  this.commentTextElement_ = Blockly.createSvgElement('text',
+      {'class': 'blocklyCommentText', 'transform': 'translate(1, -10)'}, this.svgGroup_);
   this.svgPath_.tooltip = this.block_;
   Blockly.Tooltip.bindMouseEvents(this.svgPath_);
   this.updateMovable();
@@ -314,6 +316,7 @@ BlockSvg.prototype.dispose = function() {
   this.svgPath_ = null;
   this.svgPathLight_ = null;
   this.svgPathDark_ = null;
+  this.commentTextElement_ = null;
   // Break circular references.
   this.block_ = null;
 };
@@ -701,13 +704,36 @@ BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
   } else {
     this.squareTopLeftCorner_ = false;
     this.squareBottomLeftCorner_ = false;
+
     // If this block is in the middle of a stack, square the corners.
     if (this.block_.previousConnection) {
       var prevBlock = this.block_.previousConnection.targetBlock();
       if (prevBlock && prevBlock.getNextBlock() == this.block_) {
         this.squareTopLeftCorner_ = true;
-       }
+      }
     }
+
+    // Empty the comment text element.
+    var child, node = this.commentTextElement_;
+    while ((child = node.firstChild)) {
+      node.removeChild(child);
+    }
+    if (!(this.block_.previousConnection && prevBlock)) {
+      var text = this.block_.getCommentText();
+
+      if (text !== '') {
+        // Replace whitespace with non-breaking spaces so the text doesn't collapse.
+        text = text.replace(/\s/g, '\u00A0');
+
+        // Truncate text to 40 chars
+        if (text.length > 42) {
+          text = text.substring(0, 40) + '\u2026';
+        }
+
+        node.appendChild(document.createTextNode(text));
+      }
+    }
+
     var nextBlock = this.block_.getNextBlock();
     if (nextBlock) {
       this.squareBottomLeftCorner_ = true;
