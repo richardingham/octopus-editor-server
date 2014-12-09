@@ -31,6 +31,17 @@ Polymer('octopus-runtime', {
 
 			if (protocol === "sketch" && payload.sketch == self.sketch) {
 				if (command === "load") {
+					if (payload.state !== "ready") {
+						self.experiment.state = payload.state;
+						self.experiment.id = payload.experiment;
+					}
+
+					var message, messages = payload['log-messages'] || [];
+					for (var i = 0, m = messages.length; i < m; i++) {
+						message = messages[i];
+						self._fireLogMessage(message.experiment, message.level, message.message, new Date(message.time * 1000));
+					}
+
 					return self.fire("sketch-loaded", payload);
 				} 
 
@@ -67,7 +78,7 @@ Polymer('octopus-runtime', {
 				} 
 
 				else if (command === "log" && payload.experiment == self.experiment.id) {
-					self._fireLogMessage(payload.experiment, payload.level, payload.message, new Date());
+					self._fireLogMessage(payload.experiment, payload.level, payload.message, new Date(payload.time * 1000));
 				}
 			}
 

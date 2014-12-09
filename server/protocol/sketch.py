@@ -2,6 +2,8 @@ from ..sketch import Sketch
 
 from twisted.internet import reactor
 
+from octopus.constants import State
+
 class SketchProtocol (object):
 	def __init__ (self, transport):
 		self.transport = transport
@@ -34,12 +36,25 @@ class SketchProtocol (object):
 			payload['sketch'] = id
 			self.transport.send(protocol, topic, payload, context)
 
-		def _sendData (sketch):
+		def _sendData (sketch):	
+			blockStates = {
+				block.id: block.state.name.lower()
+				for block in sketch.workspace.allBlocks.itervalues()
+				if block.state is not State.READY
+			}
+
 			sketchData = {
 				"sketch": sketch.id,
 				"title": sketch.title,
-				"events": sketch.workspace.toEvents()
+				"events": sketch.workspace.toEvents(),
+				"state": sketch.workspace.state.name.lower(),
+				"block-states": blockStates
 			}
+
+			if sketch.experiment is not None:
+				sketchData['experiment'] = sketch.experiment.id
+				sketchData['log-messages'] = sketch.experiment.logMessages
+
 			self.send('load', sketchData, context)
 
 		try:

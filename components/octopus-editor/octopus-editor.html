@@ -14,7 +14,6 @@
 <script type="text/javascript" src="dist/blocks.js"></script>
 <script type="text/javascript" src="dist/python-octo.js"></script>
 
-
 <polymer-element name="octopus-editor" attributes="toolbox code">
 <template>
 
@@ -312,12 +311,18 @@ Polymer('octopus-editor', {
 		}
 
 		// Force re-evaluation of variable names upon loading.
-		topBlocks = Blockly.mainWorkspace.getTopBlocks();
+		var topBlocks = Blockly.mainWorkspace.getTopBlocks();
 		for (var i = 0, m = topBlocks.length; i < m; i++) {
 			topBlocks[i].setParent(null);
 		}
 
 		workspace.render();
+
+		// Set block running states
+		var states = sketch['block-states'];
+		for (var id in states) {
+			workspace.getBlockById(id).setRunningState(states[id]);
+		}
 
 		var blockEvents = [
 			"created", "disposed", "connected", "disconnected",

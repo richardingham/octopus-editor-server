@@ -51,6 +51,7 @@ class Experiment (EventEmitter):
 
 		self.id = id
 		self.sketch = sketch
+		self.logMessages = []
 
 	@defer.inlineCallbacks
 	def run (self):
@@ -120,6 +121,8 @@ class Experiment (EventEmitter):
 		def onLogMessage (data):
 			data['sketch'] = sketch_id
 			data['experiment'] = id
+			data['time'] = round(now(), 2)
+			self.logMessages.append(data)
 			sketch.notifySubscribers("experiment", "log", data, self)
 
 			# Store message in log file
