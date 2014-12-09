@@ -450,6 +450,13 @@ Workspace.prototype.completeEmitTransaction = function () {
     this.emitTransaction_ = [];
   }
 };
+Workspace.prototype.discardEmitTransaction = function () {
+  if (this.inEmitTransaction_ !== 1) {
+    throw new Error("Cannot discard inner transaction");
+  }
+  this.inEmitTransaction_ = 0;
+  this.emitTransaction_ = [];
+};
 var _emit = Workspace.prototype.emit;
 Workspace.prototype.emit = function(event, data) {
   if (this.inEmitTransaction_ > 0) {

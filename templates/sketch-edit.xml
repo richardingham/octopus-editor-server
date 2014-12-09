@@ -173,7 +173,7 @@
 		experiment="{{experiment}}" 
 		on-sketch-loaded="{{onRuntimeSketchLoaded}}" 
 		on-sketch-renamed="{{onRuntimeSketchRenamed}}"
-		on-block-state="{{onRuntimeBlockStateChanged}}"
+		on-block-changed="{{onRuntimeBlockChanged}}"
 		on-experiment-log="{{onRuntimeLogMessage}}"
 	>
 		<t:attr name="url"><t:slot name="websocket_url" /></t:attr>
@@ -208,8 +208,8 @@ template.onRuntimeSketchLoaded = function (e) {
 template.onRuntimeSketchRenamed = function (e) {
 	this.$['experiment-title'].value = e.detail;
 };
-template.onRuntimeBlockStateChanged = function (e) {
-	this.$.editor.setBlockState.call(this.$.editor, e.detail);
+template.onRuntimeBlockChanged = function (e) {
+	this.$.editor.blockChanged.call(this.$.editor, e.detail.command, e.detail.payload);
 };
 template.onTitleChanged = function (e) {
 	this.$.runtime.changeTitle.call(this.$.runtime, e.srcElement.value);

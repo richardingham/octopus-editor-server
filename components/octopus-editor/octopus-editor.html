@@ -342,11 +342,93 @@ Polymer('octopus-editor', {
 		});
 	},
 
-	setBlockState: function (e) {
-		var block = Blockly.mainWorkspace.getBlockById(e.block);
-		if (block) {
-			block.setRunningState(e.state);
+	blockChanged: function (command, payload) {
+		var workspace = Blockly.mainWorkspace;
+
+		if (command === "transaction") {
+			return console.log("transaction", payload);
 		}
+		if (command === "created") {
+			workspace.startEmitTransaction();
+
+			var block = Blockly.Block.obtain(workspace, payload.type, payload.id);
+			block.initSvg();
+			block.render();
+
+			block.moveBy(payload.x, payload.y);
+
+			for (var field in payload.fields) {
+				block.setFieldValue(payload.fields[field], field);
+			}
+
+			workspace.discardEmitTransaction();
+			return;
+		}
+
+		var block = workspace.getBlockById(payload.id);
+		if (!block) {
+			return;
+		}
+
+		workspace.startEmitTransaction();
+		switch (command) {
+			case "state":
+				block.setRunningState(payload.state);
+				break;
+			case "set-position":
+				block.moveTo(payload.x, payload.y);
+				break;
+			case "set-field-value":
+				block.setFieldValue(payload.value, payload.field);
+				break;
+			case "set-disabled":
+				block.setDisabled(payload.value);
+				break;
+			case "set-inputs-inline":
+				block.setInputsInline(payload.value);
+				break;
+			case "set-collapsed":
+				block.setCollapsed(payload.value);
+				break;
+			case "set-comment":
+				block.setCommentText(payload.value);
+				break;
+			case "set-mutation":
+				block.JSONToMutation(JSON.parse(payload.mutation));
+				break;
+			case "disposed":
+				block.dispose();
+				break;
+			case "connected":
+				var parent = workspace.getBlockById(payload.parent);
+				if (payload.connection === "input-value") {
+					parent.getInput(payload.input).connection.connect(block.outputConnection);
+					break;
+				}
+				if (payload.connection === "input-statement") {
+					parent.getInput(payload.input).connection.connect(block.previousConnection);
+					break;
+				}
+				if (payload.connection === "previous") {
+					parent.nextConnection.connect(block.previousConnection);
+					break;
+				}
+			case "disconnected":
+				var connection, parentConnection;
+				if (payload.connection === "input-value") {
+					connection = block.outputConnection;
+				} else if (payload.connection === "input-statement") {
+					connection = block.previousConnection;
+				} else if (payload.connection === "previous") {
+					connection = block.previousConnection;
+				}
+				parentConnection = connection.targetConnection;
+				block.setParent(null);
+				connection.bumpAwayFrom_(parentConnection);
+				break;
+		}
+
+		workspace.discardEmitTransaction();
 	},
 
 	clearBlockStates: function () {

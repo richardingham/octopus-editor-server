@@ -51,10 +51,7 @@ Polymer('octopus-runtime', {
 			}
 			
 			if (protocol === "block" && payload.sketch == self.sketch) {
-				if (command === "state") {
-					console.log("Block", payload.block, "state", payload.state);
-					return self.fire("block-state", payload);
-				}
+				return self.fire("block-changed", data);
 			}
 
 			if (protocol === "experiment" && payload.sketch == self.sketch) {

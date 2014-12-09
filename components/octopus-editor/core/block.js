@@ -545,7 +545,18 @@ Block.prototype.moveBy = function(dx, dy) {
   this.svg_.getRootElement().setAttribute('transform',
       'translate(' + (xy.x + dx) + ', ' + (xy.y + dy) + ')');
   this.moveConnections_(dx, dy);
-  //Blockly.Realtime.blockChanged(this);
+};
+
+/**
+ * Move a block to an absolute offset.
+ * @param {number} dx Horizontal offset.
+ * @param {number} dy Vertical offset.
+ */
+Block.prototype.moveTo = function(x, y) {
+  var xy = this.getRelativeToSurfaceXY();
+  this.svg_.getRootElement().setAttribute('transform',
+      'translate(' + x + ', ' + y + ')');
+  this.moveConnections_(x - xy.x, y - xy.y);
 };
 
 /**
