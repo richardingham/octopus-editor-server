@@ -157,6 +157,23 @@ FieldLexicalVariable.prototype.getNamesInScope = function () {
   return FieldLexicalVariable.getNamesInScope.call(this, this.block_);
 }
 
+function _compareVariables (a, b) {
+  if (a.subScope_ < b.subScope_) {
+    return -1;
+  }
+  if (a.subScope_ > b.subScope_) {
+    return 1;
+  }
+  if (a.varName_ < b.varName_) {
+    return -1;
+  }
+  if (a.varName_ > b.varName_) {
+    return 1;
+  }
+  // a must be equal to b
+  return 0;
+}
+
 /**
  * @param block
  * @returns {list} A list of all global and lexical names in scope at the given block.
@@ -165,6 +182,7 @@ FieldLexicalVariable.prototype.getNamesInScope = function () {
 FieldLexicalVariable.getNamesInScope = function (block) {
 
   var variables = Blockly.GlobalScope.getVariables().slice();
+  variables.sort(_compareVariables);
 
   if (block) {
     var allLexicalNames = block.getVariableScope().getVariablesInScope();
