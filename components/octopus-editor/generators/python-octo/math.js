@@ -339,3 +339,19 @@ Blockly.PythonOcto['math_random_float'] = function(block) {
   Blockly.PythonOcto.definitions_['import_random'] = 'import random';
   return ['random.random()', Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
+
+Blockly.PythonOcto['math_framed'] = function(block) {
+  // Framed arithmetic operations
+  var OPERATORS = {
+    'MAX': 'Max',
+    'MIN': 'Min',
+    'AVERAGE': 'Avg',
+    'CHANGE': 'Change'
+  };
+  var fn = OPERATORS[block.getFieldValue('OP')];
+  var expr = Blockly.PythonOcto.valueToCode(block, 'INPUT', 
+      Blockly.PythonOcto.ORDER_NONE) || '0';
+  var time = parseFloat(block.getFieldValue('TIME')) || '0';
+  var code = fn + '(' + expr + ', frame = ' + time + ')';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};

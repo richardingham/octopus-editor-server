@@ -1,7 +1,18 @@
+# Package Imports
 from ..workspace import Block
-from twisted.internet import defer
 
-import math, operator, random
+# Twisted Imports
+from twisted.internet import defer
+from twisted.python import log
+
+# Python Imports
+import math, operator, random, time
+
+now = time.time
+
+# NumPy
+import numpy
+
 
 class math_number (Block):
 	def eval (self):
@@ -173,3 +184,60 @@ class math_random_int (Block):
 class math_random_float (Block):
 	def eval (self):
 		return defer.succeed(random.random())
+
+
+class math_framed (Block):
+	_map = {
+		"MAX": lambda x, y: max(y),
+		"MIN": lambda x, y: min(y),
+		"AVERAGE": lambda x, y: numpy.mean(y),
+		"CHANGE": lambda x, y: numpy.polyfit(x, y, 1)[0],
+	}
+
+	def created (self):
+		self.on("connectivity-changed", self._onChange)
+		self.on("value-changed", self._onChange)
+
+		self._x = []
+		self._y = []
+
+	def disposed (self):
+		self.off("connectivity-changed", self._onChange)
+		self.off("value-changed", self._onChange)
+
+	def _onChange (self, data = None):
+		# Do nothing if only the frame length has changed.
+		if 'block' in data and data['block'] is self:
+			return
+
+		self._x = []
+		self._y = []
+		self.eval()
+
+	@defer.inlineCallbacks
+	def eval (self):
+		try:
+			value = yield self.getInputValue("INPUT")
+			time = now()
+			op = self._map[self.fields['OP']]
+
+			if value is not None:
+				self._x.append(time)
+				self._y.append(value)
+
+				# Truncate if necessary
+				min_time = time - float(self.fields['TIME'])
+				if self._x[0] < min_time:
+					self._x = [x for x in self._x if x > min_time]
+					self._y = self._y[-len(self._x):]
+
+			try:
+				framedValue = op(self._x, self._y)
+			except:
+				# Emit a warning
+				framedValue = None
+		except:
+			log.err()
+		else:
+			defer.returnValue(framedValue)
+

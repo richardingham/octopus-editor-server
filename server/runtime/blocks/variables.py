@@ -115,15 +115,15 @@ class lexical_variable (object):
 
 		try:
 			variable = self.workspace.variables[name]
-		except AttributeError:
-			raise Exception("Nonexistent variable {:s}".format(name))
+		except KeyError:
+			raise KeyError("Nonexistent variable {:s}".format(name))
 
 		try:
 			if attr is not None:
 				for key in attr:
 					variable = getattr(variable, key)
 		except AttributeError:
-			raise Exception("Nonexistent attribute {:s} for variable {:s}".format(".".join(attr), name))
+			raise AttributeError("Nonexistent attribute {:s} for variable {:s}".format(".".join(attr), name))
 
 		return variable
 
@@ -154,18 +154,31 @@ class lexical_variable_set (lexical_variable, Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		result = yield self.getInputValue("VALUE")
+
+		try:
+			variable = self._getVariable()
+		except KeyError:
+			return
+
 		yield self._getVariable().set(result)
 
 
 class lexical_variable_get (lexical_variable, Block):
 	def eval (self):
-		variable = self._getVariable()
-		return defer.succeed(variable.value)
+		try:
+			variable = self._getVariable()
+			return defer.succeed(variable.value)
+		except (KeyError, AttributeError):
+			return defer.succeed(None)
 
 
 class math_change (lexical_variable, Block):
 	def _run (self):
-		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1 
-		variable = self._getVariable()
+		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1
+
+		try:
+			variable = self._getVariable()
+		except KeyError:
+			return
 
 		return variable.set(variable.value + add)

@@ -413,3 +413,56 @@ Blockly.Blocks['math_random_float'] = {
     this.setTooltip(Blockly.Msg.MATH_RANDOM_FLOAT_TOOLTIP);
   }
 };
+
+Blockly.Blocks['math_framed'] = {
+  /**
+   * Block for max value over a timeframe.
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.MATH_NUMBER_HELPURL);
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+
+    var OPERATORS =
+        [['Maximum', 'MAX'],
+         ['Minimum', 'MIN'],
+         ['Average', 'AVERAGE'],
+         ['Change', 'CHANGE']];
+
+    function validator (text) {
+      text = text.replace(/O/ig, '0');
+      // Strip out thousands separators.
+      text = text.replace(/,/g, '');
+      var n = Math.max(0, parseFloat(text || 0));
+      return isNaN(n) ? null : String(n);
+    }
+
+    this.fieldNumber_ = new Blockly.FieldTextInput(
+      '0',
+      validator
+    );
+
+    this.appendValueInput('INPUT')
+        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP')
+        .setCheck('Number');
+    this.appendDummyInput()
+        .appendField('over')
+        .appendField(this.fieldNumber_, 'TIME')
+        .appendField('seconds');
+    this.setOutput(true, 'Number');
+
+    /*var thisBlock = this;
+    this.setTooltip(function() {
+      var mode = thisBlock.getFieldValue('OP');
+      var TOOLTIPS = {
+        'ADD': Blockly.Msg.MATH_ARITHMETIC_TOOLTIP_ADD,
+        'MINUS': Blockly.Msg.MATH_ARITHMETIC_TOOLTIP_MINUS,
+        'MULTIPLY': Blockly.Msg.MATH_ARITHMETIC_TOOLTIP_MULTIPLY,
+        'DIVIDE': Blockly.Msg.MATH_ARITHMETIC_TOOLTIP_DIVIDE,
+        'POWER': Blockly.Msg.MATH_ARITHMETIC_TOOLTIP_POWER
+      };
+      return TOOLTIPS[mode];
+    });*/
+  }
+};
+
