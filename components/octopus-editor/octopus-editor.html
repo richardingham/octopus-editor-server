@@ -311,6 +311,12 @@ Polymer('octopus-editor', {
 			}
 		}
 
+		// Force re-evaluation of variable names upon loading.
+		topBlocks = Blockly.mainWorkspace.getTopBlocks();
+		for (var i = 0, m = topBlocks.length; i < m; i++) {
+			topBlocks[i].setParent(null);
+		}
+
 		workspace.render();
 
 		var blockEvents = [
