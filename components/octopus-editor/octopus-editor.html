@@ -364,6 +364,12 @@ Polymer('octopus-editor', {
 			workspace.discardEmitTransaction();
 			return;
 		}
+		if (command === "state") {
+			var block = workspace.getBlockById(payload.block);
+			if (block) {
+				return block.setRunningState(payload.state);
+			}
+		}
 
 		var block = workspace.getBlockById(payload.id);
 		if (!block) {
@@ -372,9 +378,6 @@ Polymer('octopus-editor', {
 
 		workspace.startEmitTransaction();
 		switch (command) {
-			case "state":
-				block.setRunningState(payload.state);
-				break;
 			case "set-position":
 				block.moveTo(payload.x, payload.y);
 				break;
