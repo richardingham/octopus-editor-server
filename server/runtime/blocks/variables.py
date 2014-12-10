@@ -23,7 +23,6 @@ class global_declaration (Block):
 		return "global.global::" + (name or self.fields['NAME'])
 
 	def created (self):
-		self.workspace.variables[self._varName()] = None
 		self._variables = []
 
 		# Deal with name changes
@@ -34,13 +33,7 @@ class global_declaration (Block):
 				self._onChange()
 				return
 
-			if data["newValue"] == data["oldValue"]:
-				return
-
-			self.workspace.variables[self._varName(data["newValue"])] = \
-				self.workspace.variables[self._varName(data["oldValue"])]
-
-			del self.workspace.variables[self._varName(data["oldValue"])]
+			self.workspace.variables.rename(data["oldValue"], data["newValue"])
 
 		self.on('connectivity-changed', self._onConnectivityChanged)
 		self._onConnectivityChanged()
@@ -69,10 +62,7 @@ class global_declaration (Block):
 		except (KeyError, AttributeError, Disconnected, Cancelled):
 			return
 
-		try:
-			variable = self.workspace.variables[self._varName()]
-		except KeyError:
-			return
+		variable = self.workspace.variables[self._varName()]
 
 		try:
 			yield variable.set(result)
@@ -88,9 +78,10 @@ class global_declaration (Block):
 		if result is None:
 			raise Exception("Global declared value cannot be None")
 
-		variable = data.Variable(type(result), result)
+		variable = data.Variable(type(result))
 		variable.alias = self.fields['NAME']
 		self.workspace.variables[self._varName()] = variable
+		yield variable.set(result)
 
 		self._onConnectivityChanged()
 
@@ -98,7 +89,7 @@ class global_declaration (Block):
 		for v in self._variables:
 			v.off('change', self._onChange)
 
-		del self.workspace.variables[ self._varName() ]
+		self.workspace.variables.remove(self._varName())
 
 	def getDeclarationNames (self):
 		variables = [ self._varName() ]
@@ -112,18 +103,14 @@ class global_declaration (Block):
 class lexical_variable (object):
 	def _getVariable (self):
 		name, attr = variableName(self.fields['VAR'])
-
-		try:
-			variable = self.workspace.variables[name]
-		except KeyError:
-			raise KeyError("Nonexistent variable {:s}".format(name))
+		variable = self.workspace.variables[name]
 
 		try:
 			if attr is not None:
 				for key in attr:
 					variable = getattr(variable, key)
 		except AttributeError:
-			raise AttributeError("Nonexistent attribute {:s} for variable {:s}".format(".".join(attr), name))
+			return None
 
 		return variable
 

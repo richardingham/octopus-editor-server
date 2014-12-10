@@ -1,12 +1,18 @@
+# Twisted Imports
 from twisted.internet import reactor, defer, task
 from twisted.python import log
 
+# Octopus Imports
 from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
 from octopus.sequence.error import NotRunning, AlreadyRunning, NotPaused
 from octopus.constants import State
+from octopus.data.data import BaseVariable
+from octopus.machine import Component
 
+# Package Imports
 from ..util import EventEmitter
 
+# Debugging
 defer.Deferred.debug = True
 
 
@@ -29,7 +35,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		self.allBlocks = {}
 		self.topBlocks = {}
-		self.variables = {}
+		self.variables = Variables()
 
 	def addBlock (self, id, type, fields = None, x = 0, y = 0):
 		try:
@@ -369,6 +375,93 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				e['data']['id'] = e['data']['block']
 			event = Event.fromPayload(e['type'], e['data'])
 			event.apply(self)
+
+
+class Variables (EventEmitter):
+	def __init__ (self):
+		self._variables = {}
+		self._handlers = {}
+
+	def add (self, name, variable):
+		if name in self._variables:
+			if self._variables[name]['variable'] is variable:
+				return
+
+			self.remove(name)
+
+		self._variables[name] = variable
+
+		def _makeHandler (name):
+			def onChange (data):
+				self.emit('variable-changed', name = name, **data)
+
+			return onChange
+
+		if isinstance(variable, BaseVariable):
+			onChange = _makeHandler(name)
+			variable.on('change', onChange)
+			self._handlers[name] = onChange
+
+		elif isinstance(variable, Component):
+			handlers = {}
+			for attrname, attr in variable.variables.iteritems():
+				onChange = _makeHandler(attrname)
+				attr.on('change', onChange)
+				handlers[attrname] = onChange
+
+			self._handlers[name] = handlers
+
+		else:
+			self._handlers[name] = None
+
+	def remove (self, name):
+		try:
+			variable = self._variables[name]
+		except KeyError:
+			return
+
+		if isinstance(variable, BaseVariable):
+			variable.off(
+				'change', 
+				self._handlers[name]
+			)
+
+		elif isinstance(variable, Component):
+			for attrname, attr in variable.variables.iteritems():
+				attr.off(
+					'change',
+					self._handlers[name][attrname]
+				)
+
+		del self._variables[name]
+		del self._handlers[name]
+
+	def rename (self, oldName, newName):
+		if oldName == newName:
+			return
+
+		if oldName in self._variables:
+			self._variables[newName] = self._variables[oldName]
+			del self._variables[oldName]
+
+			self._handlers[newName] = self._handlers[oldName]
+			del self._handlers[oldName]
+
+	def get (self, name):
+		try:
+			return self._variables[name]
+		except KeyError:
+			return None
+
+	__getitem__ = get
+	__setitem__ = add
+	__delitem__ = remove
+
+	def iteritems (self):
+		return self._variables.iteritems()
+
+	def itervalues (self):
+		return self._variables.itervalues()
 
 
 def anyOfStackIs (block, states):

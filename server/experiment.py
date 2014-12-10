@@ -1,15 +1,21 @@
+# Python Imports
 import uuid
 import os
 import json
 import time
+import re
 
 now = time.time # shortcut
 
-from twisted.internet import defer, threads
+# Twisted Imports
+from twisted.internet import defer, threads, task
+from twisted.python import log
 from twisted.python.filepath import FilePath
 
+# Octopus Imports
 from octopus.sequence.error import AlreadyRunning, NotRunning
 
+# Package Imports
 from util import EventEmitter
 
 
@@ -88,14 +94,19 @@ class Experiment (EventEmitter):
 		eventFile = self._experimentDir.child("events.log").create()
 		sketchFile = self._experimentDir.child("sketch.log").create()
 		snapFile = self._experimentDir.child("sketch.snapshot.log")
+		openFiles = { "_events": eventFile, "_sketch": sketchFile }
 
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
 
-		def writeSketchEvent (protocol, topic, data):
+		def onSketchEvent (protocol, topic, data):
+			print "Sketch event: %s %s %s" % (protocol, topic, data)
 			if protocol == "block" and topic == "state":
 				return
 
+			writeEvent(sketchFile, protocol, topic, data)
+
+		def writeEvent (file, protocol, topic, data):
 			time = now()
 
 			event = {
@@ -106,28 +117,49 @@ class Experiment (EventEmitter):
 				"data": data
 			}
 
-			sketchFile.write(json.dumps(event) + "\n")
+			file.write(json.dumps(event) + "\n")
 
-		sketch.subscribe(self, writeSketchEvent)
+		sketch.subscribe(self, onSketchEvent)
 
 		# Subscribe to workspace events
 		@workspace.on("block-state")
 		def onBlockStateChange (data):
+			writeEvent(eventFile, "block", "state", data)
+
 			data['sketch'] = sketch_id
 			data['experiment'] = id
 			sketch.notifySubscribers("block", "state", data, self)
 
 		@workspace.on("log-message")
 		def onLogMessage (data):
+			writeEvent(eventFile, "experiment", "log", data)
+
 			data['sketch'] = sketch_id
 			data['experiment'] = id
 			data['time'] = round(now(), 2)
 			self.logMessages.append(data)
 			sketch.notifySubscribers("experiment", "log", data, self)
 
-			# Store message in log file
+		@workspace.variables.on("variable-changed")
+		def onVarChanged (data):
+			try:
+				logFile = openFiles[data['name']]
+			except KeyError:
+				fileName = re.sub(r'[^a-z0-9\.]', '_', data['name']) + '.csv'
+				logFile = self._experimentDir.child(fileName).create()
+				openFiles[data['name']] = logFile
 
-		# (log all data change events)
+				logFile.write("# {:s} start:{:.2f}\n".format(data['name'], self.startTime))
+
+			logFile.write("{:.2f}, {:s}\n".format(data['time'] - self.startTime, str(data['value'])))
+
+		def flushFiles ():
+			for file in openFiles:
+				file.flush()
+				os.fsync(file.fileno())
+
+		flushFilesLoop = task.LoopingCall(flushFiles)
+		flushFilesLoop.start(5 * 60, False).addErrback(log.err)
 
 		try:
 			yield workspace.run()
@@ -135,8 +167,15 @@ class Experiment (EventEmitter):
 			sketch.unsubscribe(self)
 			workspace.off("block-state", onBlockStateChange)
 			workspace.off("log-message", onLogMessage)
-			eventFile.close()
-			sketchFile.close()
+			workspace.variables.off("variable-changed", onVarChanged)
+
+			try:
+				flushFilesLoop.stop()
+			except:
+				log.err()
+
+			for file in openFiles.itervalues():
+				file.close()
 
 	def pause (self):
 		return self.sketch.workspace.pause()

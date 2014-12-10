@@ -12,20 +12,12 @@ class machine_declaration (Block):
 		return "global.machine::" + (name or self.fields['NAME'])
 
 	def created (self):
-		self.workspace.variables[self._varName()] = None
-
 		@self.on('value-changed')
 		def onVarNameChanged (data):
 			if not (data["block"] is self and data["field"] == 'NAME'):
 				return
 
-			if data["newValue"] == data["oldValue"]:
-				return
-
-			self.workspace.variables[self._varName(data["newValue"])] = \
-				self.workspace.variables[self._varName(data["oldValue"])]
-
-			del self.workspace.variables[self._varName(data["oldValue"])]
+			self.workspace.variables.rename(data["oldValue"], data["newValue"])
 
 	def _run (self):
 		@defer.inlineCallbacks
@@ -46,7 +38,7 @@ class machine_declaration (Block):
 				alias = self.fields['NAME'], 
 				**self.getMachineParams()
 			)
-			self.workspace.variables[self._varName()] = self.machine
+			self.workspace.variables.add(self._varName(), self.machine)
 
 			try:
 				result = yield self.machine.ready
@@ -79,6 +71,7 @@ class machine_declaration (Block):
 		self.workspace.off("workspace-resumed", self._onWorkspaceResumed)
 
 		self.machine.stop()
+		self.workspace.variables.remove(self._varName())
 
 		def _disconnect (machine):
 			try:
@@ -97,9 +90,6 @@ class machine_declaration (Block):
 
 	def _onWorkspaceResumed (self, data):
 		self.machine.resume()
-
-	def disposed (self):
-		del self.workspace.variables[self._varName()]
 
 	def getMachineClass (self):
 		raise NotImplementedException
