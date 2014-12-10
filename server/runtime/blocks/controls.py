@@ -18,40 +18,46 @@ class controls_run (Block):
 
 
 class controls_if (Block):
-	def _getInput (self, type, i = ""):
-		try:
-			return self.inputs[type + str(i)]
-		except KeyError:
-			return None
+	def _nextInput (self, i = -1):
+		# Find the next input after IF{i}
+		return next((
+			(int(name[2:]), input) for name, input in self.inputs.iteritems() 
+			if input is not None and name[:2] == "IF" and int(name[2:]) > i
+		), (None, None))
 
 	@defer.inlineCallbacks
 	def _run (self):
-		i = 0
-		input = self._getInput("IF", i)
+		i, input = self._nextInput()
 
+		# Try each IF input, in ascending numerical order.
 		while input is not None:
 			try:
 				result = yield input.eval()
 			except (Cancelled, Disconnected):
 				result = False
 
+			# Attempt to run DO{i} if IF{i} was True.
 			if result:
-				action = self._getInput("DO", i)
 				try:
+					action = self.getInput("DO" + str(i))
 					yield action.run()
 				except Disconnected:
 					yield self.cancel()
-				except Cancelled:
+				except (KeyError, Cancelled):
 					pass
 
 				# Skip any further conditions
-				defer.returnValue(None)
+				return
 
 			# Move to the next condition
-			i += 1
-			input = self._getInput("IF", i)
+			i, input = self._nextInput(i)
 
-		action = self._getInput("ELSE")
+		# Run the else clause if it exists.
+		try:
+			action = self.getInput("ELSE")
+		except KeyError:
+			action = None
+
 		if action is not None:
 			try:
 				yield action.run()
