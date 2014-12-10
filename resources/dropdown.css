@@ -154,7 +154,6 @@
 .dropup .dropdown-menu,
 .navbar-fixed-bottom .dropdown .dropdown-menu {
   top: auto;
-  bottom: 100%;
   margin-bottom: 1px;
 }
 .dropdown-submenu {
