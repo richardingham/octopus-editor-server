@@ -255,6 +255,7 @@ Polymer('octopus-editor', {
 	// Received initial load data from the server
 	loadSketch: function (sketch) {
 		var workspace = Blockly.mainWorkspace;
+		var moveBlocks = {};
 
 		var event, data;
 		for (var i in sketch.events) {
@@ -265,11 +266,18 @@ Polymer('octopus-editor', {
 				block.initSvg();
 				block.render();
 
-				block.moveTo(data.x, data.y);
+				// Temporary - for compatibility with old sketches.
+				if (data.x !== null && data.y !== null) {
+					block.moveTo(data.x, data.y);
+				}
 
 				for (var field in data.fields) {
 					block.setFieldValue(data.fields[field], field);
 				}
+
+			} else if (event.type === "SetBlockPosition") {
+				var block = workspace.getBlockById(data.id);
+				block.moveTo(data.x, data.y);
 
 			} else if (event.type === "SetBlockInputsInline") {
 				var block = workspace.getBlockById(data.id);

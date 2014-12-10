@@ -811,7 +811,7 @@ class Block (BaseStep, EventEmitter):
 
 	def toEvents (self):
 		events = []
-		events.append({ "type": "AddBlock", "data": { "id": self.id, "type": self.type, "fields": self.fields, "x": self.position[0], "y": self.position[1] }})
+		events.append({ "type": "AddBlock", "data": { "id": self.id, "type": self.type, "fields": self.fields }})
 
 		if self.mutation != "":
 			events.append({ "type": "SetBlockMutation", "data": { "id": self.id, "mutation": self.mutation }})		
@@ -821,7 +821,7 @@ class Block (BaseStep, EventEmitter):
 
 		if self.outputBlock is not None:
 			events.append({ "type": "ConnectBlock", "data": { "id": self.id, "connection": "input-value", "parent": self.outputBlock.id, "input": self.parentInput }})
-			
+
 		elif self.prevBlock is not None:
 			if self.parentInput is not None:
 				events.append({ "type": "ConnectBlock", "data": { "id": self.id, "connection": "input-statement", "parent": self.prevBlock.id, "input": self.parentInput }})
@@ -837,9 +837,13 @@ class Block (BaseStep, EventEmitter):
 		if self.inputsInline is False:
 			events.append({ "type": "SetBlockInputsInline", "data": { "id": self.id, "value": False }})
 
+		# Collapsed should come after children
 		if self.collapsed:
 			events.append({ "type": "SetBlockCollapsed", "data": { "id": self.id, "value": True }})
 
+		# Only move top blocks, and only once children have been added
+		if self.outputBlock is None and self.prevBlock is None:
+			events.append({ "type": "SetBlockPosition", "data": { "id": self.id, "x": self.position[0], "y": self.position[1] }})
 
 		return events
 
