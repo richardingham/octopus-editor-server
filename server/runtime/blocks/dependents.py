@@ -22,7 +22,7 @@ class controls_dependents (Block):
 		stack = self.getInput("STACK")
 
 		if stack is None:
-			defer.returnValue(None)
+			return
 
 		self._runDependents()
 		self.on("connectivity-changed", self._runDependents)
