@@ -263,17 +263,12 @@ Polymer('octopus-editor', {
 			data = event.data;
 			if (event.type === "AddBlock") {
 				var block = Blockly.Block.obtain(workspace, data.type, data.id);
-				block.initSvg();
-				block.render();
-
-				// Temporary - for compatibility with old sketches.
-				if (data.x !== null && data.y !== null) {
-					block.moveTo(data.x, data.y);
-				}
 
 				for (var field in data.fields) {
 					block.setFieldValue(data.fields[field], field);
 				}
+
+				block.initSvg();
 
 			} else if (event.type === "SetBlockPosition") {
 				var block = workspace.getBlockById(data.id);
