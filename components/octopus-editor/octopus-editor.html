@@ -265,7 +265,7 @@ Polymer('octopus-editor', {
 				block.initSvg();
 				block.render();
 
-				block.moveBy(data.x, data.y);
+				block.moveTo(data.x, data.y);
 
 				for (var field in data.fields) {
 					block.setFieldValue(data.fields[field], field);
