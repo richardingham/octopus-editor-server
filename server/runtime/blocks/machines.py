@@ -128,7 +128,7 @@ class machine_vici_multivalve (machine_declaration):
 class machine_mt_icir (machine_declaration):
 	def getMachineClass (self):
 		from octopus.manufacturer import mt
-		return mt.iCIR
+		return mt.ICIR
 
 	def getMachineParams (self):
 		import json
