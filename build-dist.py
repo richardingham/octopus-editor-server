@@ -4,6 +4,7 @@ import wget
 from distutils.dir_util import mkpath, copy_tree, remove_tree
 from distutils.file_util import copy_file
 
+import six
 import octopus
 import autobahn
 import twisted.plugins
@@ -18,6 +19,7 @@ server_src_dir = os.path.dirname(__file__)
 octopus_src_dir = os.path.dirname(os.path.dirname(octopus.__file__))
 autobahn_src_dir = os.path.dirname(autobahn.__file__)
 twisted_plugin_dir = os.path.dirname(twisted.plugins.__file__)
+six_dir = os.path.dirname(six.__file__)
 
 origWD = os.getcwd()
 os.chdir(server_src_dir)
@@ -67,6 +69,8 @@ copy_tree(autobahn_src_dir, pjoin(dist_dir, 'autobahn'))
 for file in ['autobahn_endpoints.py', 'autobahn_twistd.py']:
 	copy_file(pjoin(twisted_plugin_dir, file), pjoin(dist_dir, 'twisted', 'plugins', file))
 
+copy_file(pjoin(six_dir, 'six.py'), pjoin(dist_dir, 'six.py'))
+
 # mkdir data/{sketches, experiments}
 # make data/octopus.db
 
@@ -83,7 +87,7 @@ filelist = glob.glob(pjoin(dist_dir, '**', '*.pyc'))
 for f in filelist:
     os.remove(f)
 
-# Down
+# Download Installers
 
 print "Download Installers"
 os.chdir(dist_dir)
@@ -91,3 +95,6 @@ wget.download("https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi", out = 
 wget.download("https://pypi.python.org/packages/2.7/T/Twisted/Twisted-14.0.2.win32-py2.7.msi#md5=e5f239987f3b5efbec41e6224bf982cb", out = "Twisted-14.0.2.win32-py2.7.msi")
 wget.download("http://sourceforge.net/projects/numpy/files/NumPy/1.9.1/numpy-1.9.1-win32-superpack-python2.7.exe/download", out = "numpy-1.9.1-win32-superpack-python2.7.exe")
 wget.download("https://pypi.python.org/packages/any/p/pyserial/pyserial-2.7.win32.exe#md5=21555387937eeb79126cde25abee4b35", out = "pyserial-2.7.win32.exe")
+wget.download("http://www.voidspace.org.uk/downloads/pycrypto26/pycrypto-2.6.win32-py2.7.exe", out = "pycrypto-2.6.win32-py2.7.exe")
+wget.download("https://pypi.python.org/packages/2.7/z/zope.interface/zope.interface-4.1.1.win32-py2.7.exe#md5=8b36e1fcd506ac9fb325ddf1c7238b07", out = "zope.interface-4.1.1.win32-py2.7.exe")
+wget.download("http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/pywin32-219.win32-py2.7.exe/download", out = "pywin32-219.win32-py2.7.exe")
