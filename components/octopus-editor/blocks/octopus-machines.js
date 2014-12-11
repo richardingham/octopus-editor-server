@@ -30,6 +30,10 @@ var _R2R4_vars = [{
 }, {
 	name: "power", title: "Power", type: "String"
 }, {
+	name: "loop1", title: "Loop A", type: "String"
+}, {
+	name: "loop2", title: "Loop B", type: "String"
+}, {
 	name: "pressure_limit", title: "Pressure Limit", type: "Number"
 }, {
 	name: "pressure", title: "System Pressure", type: "Number", readonly: true
