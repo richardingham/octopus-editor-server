@@ -118,6 +118,7 @@ var machineBlock = {
     this.setInputsInline(false);
 
     if (!this.isInFlyout) {
+      var machineVars = this.machineVars;
       var machineVar = Blockly.GlobalScope.addVariable(default_name, "machine");
       machineVar.setType("component");
       machineVar.setReadonly("true");
@@ -139,7 +140,7 @@ var machineBlock = {
         }
       }
 
-      addParts(machineVar, this.machineVars, "");
+      addParts(machineVar, machineVars, "");
       this.variable_ = machineVar;
       this.getField_('NAME').setValue(machineVar.getVarName());
 
@@ -259,7 +260,7 @@ var machineBlock = {
           thisBlock.applyMutation();
         };
         this.applyMutation = function applyMutation (xmlElement) {
-          var opt, attributes = [];
+          var opt, attributes = machineVars.slice();
           for (var i = 0, max = options.length; i < max; i++) {
             opt = options[i];
             if (opt.createAttributes) {
