@@ -52,6 +52,9 @@ class math_single (Block):
 
 	def eval (self):
 		def calculate (result):
+			if result is None:
+				return None
+
 			op = self._map[self.fields['OP']]
 			return op(result)
 
@@ -93,6 +96,9 @@ class math_arithmetic (Block):
 		def calculate (results):
 			lhs, rhs = results
 
+			if lhs is None or rhs is None:
+				return None
+
 			op = self._map[self.fields['OP']]
 			return op(lhs, rhs)
 
@@ -118,7 +124,7 @@ class math_number_property (Block):
 		if self.fields['PROPERTY'] == "DIVISIBLE_BY":
 			def calculate (results):
 				lhs, rhs = results
-				
+
 				return float(lhs) % float(rhs) == 0
 
 			lhs = self.getInputValue('NUMBER_TO_CHECK')
@@ -142,6 +148,10 @@ class math_modulo (Block):
 	def eval (self):
 		def calculate (results):
 			a, b = results
+
+			if a is None or b is None:
+				return None
+
 			return operator.mod(a, b)
 
 		self._complete = defer.gatherResults([
@@ -156,6 +166,10 @@ class math_constrain (Block):
 	def eval (self):
 		def calculate (results):
 			val, low, high = results
+
+			if val is None or low is None or high is None:
+				return None
+
 			return min(max(val, low), high)
 
 		self._complete = defer.gatherResults([
@@ -171,6 +185,10 @@ class math_random_int (Block):
 	def eval (self):
 		def calculate (results):
 			low, high = results
+
+			if low is None or high is None:
+				return None
+
 			return math.randint(low, high)
 
 		self._complete = defer.gatherResults([
