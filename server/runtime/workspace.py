@@ -16,20 +16,21 @@ from ..util import EventEmitter
 defer.Deferred.debug = True
 
 
-blocks = {}
 def populate_blocks ():
-	global blocks
-	blocks = {}
+	def subclasses (cls):
+		return cls.__subclasses__() + [
+			g for s in cls.__subclasses__()
+            for g in subclasses(s)
+		]
 
 	from .blocks import mathematics, text, logic, controls, variables, machines, dependents
 
-	for mod in (mathematics, text, logic, controls, variables, machines, dependents):
-		blocks.update(dict([(name, cls) for name, cls in mod.__dict__.items() if isinstance(cls, type)]))
-
-	del blocks['Block']
+	Workspace.blocks = { c.__name__: c for c in subclasses(Block) }
 
 
 class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
+	blocks = {}
+
 	def __init__ (self):
 		self.state = State.READY
 
@@ -40,7 +41,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 	def addBlock (self, id, type, fields = None, x = 0, y = 0):
 		try:
 			blockType = type
-			blockClass = blocks[blockType]
+			blockClass = self.blocks[blockType]
 		except KeyError:
 			raise Exception("Unknown Block: %s" %  blockType)
 
