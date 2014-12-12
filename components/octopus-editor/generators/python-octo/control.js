@@ -73,6 +73,21 @@ Blockly.PythonOcto['controls_run'] = function(block) {
   return code;
 };
 
+Blockly.PythonOcto['controls_parallel'] = function(block) {
+  var code = [];
+  var block;
+
+  for (var n = 1; n <= block.mutation_.stacks; n++) {
+    block = Blockly.PythonOcto.statementToCode(block, 'STACK' + n);
+    if (block) {
+      code.push(block);
+    }
+  }
+
+  return 'parallel(' + (code.length ? '\n' : '') +
+      indent(code.join(',\n')) + (code.length ? '\n' : '') + ')';
+};
+
 Blockly.PythonOcto['controls_dependents'] = function(block) {
   var code = [];
   var branch = Blockly.PythonOcto.statementToCode(block, 'STACK') || 'sequence()';

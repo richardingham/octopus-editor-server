@@ -17,6 +17,28 @@ class controls_run (Block):
 	pass
 
 
+class controls_parallel (Block):
+	@defer.inlineCallbacks
+	def _run (self):
+		inputs = [
+			input for name, input in self.inputs.iteritems() 
+			if name[:5] == "STACK" and input is not None
+		]
+
+		def _error (failure):
+			error = failure.trap(Cancelled, Disconnected)
+
+			if error is Aborted:
+				return failure
+
+		runResults = defer.gatherResults(
+			[input.run().addErrback(_error) for input in inputs], 
+			consumeErrors = True
+		)
+
+		yield runResults
+
+
 class controls_if (Block):
 	def _nextInput (self, i = -1):
 		# Find the next input after IF{i}

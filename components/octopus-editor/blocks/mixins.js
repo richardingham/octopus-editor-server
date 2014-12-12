@@ -137,3 +137,40 @@ function withMutation (mutationDefault) {
   };
 }
 
+function mutator_stack (colour, text, tooltip) {
+  return {
+    init: function() {
+      this.setColour(colour);
+      this.appendDummyInput()
+          .appendField(text);
+      this.appendStatementInput('STACK');
+
+      if (tooltip) {
+        this.setTooltip(tooltip);
+      }
+
+      this.contextMenu = false;
+    }
+  };
+}
+
+function mutator_child (colour, text, tooltip, isFinal) {
+  return {
+    init: function() {
+      this.setColour(colour);
+      this.appendDummyInput()
+          .appendField(text);
+      this.setPreviousStatement(true);
+
+      if (!isFinal) {
+        this.setNextStatement(true);
+      }
+
+      if (tooltip) {
+        this.setTooltip(tooltip);
+      }
+
+      this.contextMenu = false;
+    }
+  };
+}
