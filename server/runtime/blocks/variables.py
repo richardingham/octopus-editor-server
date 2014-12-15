@@ -1,4 +1,6 @@
 from ..workspace import Block, Disconnected, Cancelled
+import images
+import SimpleCV
 
 from twisted.internet import defer
 from twisted.python import log
@@ -78,7 +80,11 @@ class global_declaration (Block):
 		if result is None:
 			raise Exception("Global declared value cannot be None")
 
-		variable = data.Variable(type(result))
+		if type(result).__name__ == "instance" and result.__class__ is SimpleCV.ImageClass.Image:
+			variable = images.DerivedImage()
+		else:
+			variable = data.Variable(type(result))
+
 		variable.alias = self.fields['NAME']
 		self.workspace.variables[self._varName()] = variable
 		yield variable.set(result)

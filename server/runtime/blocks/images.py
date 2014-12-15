@@ -16,7 +16,7 @@ import octopus.transport.basic
 # Python Imports
 import StringIO
 import urllib
-
+from time import time as now
 
 class Image (BaseVariable):
 
@@ -66,6 +66,48 @@ class Image (BaseVariable):
 		)
 
 
+class DerivedImage (BaseVariable):
+
+	@property
+	def value (self):
+		return self._value
+
+	def get_value (self):
+		return self._value
+
+	@property
+	def type (self):
+		return Image
+
+	def serialize (self):
+		if self.alias is None:
+			return "[Image]"
+		else:
+			return str(self.alias)
+
+	def __init__ (self):
+		self.alias = None
+		self._value = None
+
+	def set (self, value):
+		self._value = value
+		self.emit("changed", value = None, time = now())
+
+	def __str__ (self):
+		output = StringIO.StringIO()
+		img = self._value
+		img.scale(0.25).getPIL().save(output, format = "PNG")
+		encoded = "data:image/png;base64," + urllib.quote(output.getvalue().encode('base64'))
+
+		return encoded
+
+	def __repr__ (self):
+		return "<%s at %s>" % (
+			self.__class__.__name__, 
+			hex(id(self))
+		)
+
+
 class ImageProvider (Machine):
 	protocolFactory = None
 	name = "Provide an image from a webcam"
@@ -97,16 +139,16 @@ class ImageProvider (Machine):
 		self.stop()
 
 		try:
-			self.protocol.camera = None
+			self.protocol.disconnect()
 		except AttributeError:
 			pass
 
 
 class image_findcolour (Block):
 	_map = {
-		"RED": lambda r, g, b: r - (g + b) / 2,
-		"GREEN": lambda r, g, b: g - (r + b) / 2,
-		"BLUE": lambda r, g, b: b - (g + r) / 2,
+		"RED": lambda r, g, b: r - g,
+		"GREEN": lambda r, g, b: g - r,
+		"BLUE": lambda r, g, b: b - r,
 	}
 
 	def eval (self):
