@@ -30,6 +30,8 @@ class WebSocketRuntime (BaseTransport):
 			"payload": payload,
 		}
 
+		if topic == "error":
+			log.err("Response Error: " + str(payload))
 		# log.msg("Response", response)
 
 		context.sendMessage(json.dumps(response))

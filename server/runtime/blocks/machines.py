@@ -75,7 +75,7 @@ class machine_declaration (Block):
 
 		def _disconnect (machine):
 			try:
-				machine.protocol.transport.loseConnection()
+				machine.disconnect()
 			except AttributeError:
 				pass
 			except:
