@@ -385,7 +385,7 @@ class Variables (EventEmitter):
 
 	def add (self, name, variable):
 		if name in self._variables:
-			if self._variables[name]['variable'] is variable:
+			if self._variables[name] is variable:
 				return
 
 			self.remove(name)
