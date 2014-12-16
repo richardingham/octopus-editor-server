@@ -10,138 +10,10 @@ from octopus import data
 from octopus.data.errors import Immutable
 from octopus.data.data import BaseVariable
 from octopus.constants import State
-from octopus.machine import Machine, ui
 import octopus.transport.basic
 
 # Python Imports
-import StringIO
-import urllib
 from time import time as now
-
-class Image (BaseVariable):
-
-	@property
-	def value (self):
-		return self._image_fn()
-
-	def get_value (self):
-		return self._image_fn()
-
-	@property
-	def type (self):
-		return Image
-
-	def serialize (self):
-		if self.alias is None:
-			return "[Image]"
-		else:
-			return str(self.alias)
-
-	def __init__ (self, title, fn):
-		self.alias = None
-		self.title = title
-		self._image_fn = fn
-
-	def set (self, value):
-		raise Immutable
-
-	def setLogFile (self, logFile):
-		pass
-
-	def stopLogging (self):
-		pass
-
-	def __str__ (self):
-		output = StringIO.StringIO()
-		img = self._image_fn()
-		img.scale(0.25).getPIL().save(output, format = "PNG")
-		encoded = "data:image/png;base64," + urllib.quote(output.getvalue().encode('base64'))
-
-		return encoded
-
-	def __repr__ (self):
-		return "<%s at %s>" % (
-			self.__class__.__name__, 
-			hex(id(self))
-		)
-
-
-class DerivedImage (BaseVariable):
-
-	@property
-	def value (self):
-		return self._value
-
-	def get_value (self):
-		return self._value
-
-	@property
-	def type (self):
-		return Image
-
-	def serialize (self):
-		if self.alias is None:
-			return "[Image]"
-		else:
-			return str(self.alias)
-
-	def __init__ (self):
-		self.alias = None
-		self._value = None
-
-	def set (self, value):
-		self._value = value
-		self.emit("changed", value = None, time = now())
-
-	def __str__ (self):
-		output = StringIO.StringIO()
-		img = self._value
-		img.scale(0.25).getPIL().save(output, format = "PNG")
-		encoded = "data:image/png;base64," + urllib.quote(output.getvalue().encode('base64'))
-
-		return encoded
-
-	def __repr__ (self):
-		return "<%s at %s>" % (
-			self.__class__.__name__, 
-			hex(id(self))
-		)
-
-
-class ImageProvider (Machine):
-	protocolFactory = None
-	name = "Provide an image from a webcam"
-	update_frequency = 1
-
-	def setup (self):
-		# setup variables
-		self.image = Image(title = "Tracked", fn = self._getImage)
-
-		self.ui = ui(
-			properties = [self.image]
-		)
-
-	def _getImage (self):
-		return self.protocol.image()
-
-	def start (self):
-		from time import time as now
-
-		def monitor ():
-			self.image.emit("change", time = now(), value = None)
-
-		self._tick(monitor, self.update_frequency)
-
-	def stop (self):
-		self._stopTicks()
-
-	def disconnect (self):
-		self.stop()
-
-		try:
-			self.protocol.disconnect()
-		except AttributeError:
-			pass
 
 
 class image_findcolour (Block):
@@ -173,8 +45,6 @@ class image_threshold (Block):
 
 			return result.threshold(int(self.fields['THRESHOLD']))
 
-			# Emit a warning if bad op given
-
 		self._complete = self.getInputValue('INPUT').addCallback(calculate)
 		return self._complete
 
@@ -186,8 +56,6 @@ class image_erode (Block):
 				return None
 
 			return result.erode()
-
-			# Emit a warning if bad op given
 
 		self._complete = self.getInputValue('INPUT').addCallback(calculate)
 		return self._complete
@@ -225,6 +93,7 @@ class image_tonumber (Block):
 
 class machine_imageprovider (machine_declaration):
 	def getMachineClass (self):
+		from octopus.image.provider import ImageProvider
 		return ImageProvider
 
 

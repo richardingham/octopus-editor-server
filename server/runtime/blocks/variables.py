@@ -1,5 +1,4 @@
 from ..workspace import Block, Disconnected, Cancelled
-import images
 import SimpleCV
 
 from twisted.internet import defer
@@ -7,6 +6,7 @@ from twisted.python import log
 
 from octopus import data
 from octopus.constants import State
+from octopus.image.data import DerivedImage
 
 
 def variableName (name):
@@ -81,7 +81,7 @@ class global_declaration (Block):
 			raise Exception("Global declared value cannot be None")
 
 		if type(result).__name__ == "instance" and result.__class__ is SimpleCV.ImageClass.Image:
-			variable = images.DerivedImage()
+			variable = DerivedImage()
 		else:
 			variable = data.Variable(type(result))
 
