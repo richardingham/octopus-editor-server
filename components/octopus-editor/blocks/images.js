@@ -92,7 +92,7 @@ Blockly.Blocks['image_tonumber'] = {
          ['size y', 'SIZEY']];
     //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
     this.setColour(Blockly.MATH_CATEGORY_HUE);
-    this.setOutput(true, 'Image');
+    this.setOutput(true, 'Number');
     this.appendValueInput('INPUT')
         .setCheck('Image')
         .appendField('calculate')
