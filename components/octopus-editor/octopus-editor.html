@@ -163,6 +163,8 @@ octopus-blockly-code {
 	<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-click="{{resumeClicked}}">Resume</core-icon-button>
 	<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
 	<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
+	<div flex></div>
+	<core-icon-button icon="file-download" on-click="{{ downloadXML }}"></core-icon-button>
 </core-toolbar>
 
 <div horizontal layout flex>
@@ -372,7 +374,8 @@ octopus-blockly-code {
 	</category>
     <!--category name="Functions" custom="PROCEDURE"></category-->
   </xml>
-  
+<iframe id="download" style="display:none"></iframe>
+
 </template>
 <script> 
 
@@ -660,6 +663,21 @@ Polymer('octopus-editor', {
 	},
 	onTitleChanged: function (e) {
 		this.$.runtime.changeTitle(e.srcElement.value);
+	},
+	downloadXML: function (e) {
+		var xmlDom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
+		var xmlText = Blockly.Xml.domToPrettyText(xmlDom);
+
+		var a = window.document.createElement('a');
+		a.href = window.URL.createObjectURL(new Blob([xmlText], {type: 'text/xml'}));
+		a.download = 'experiment.xml';
+
+		// Append anchor to body.
+		document.body.appendChild(a)
+		a.click();
+
+		// Remove anchor from body
+		document.body.removeChild(a)
 	},
 
 	toolboxPopulate: function (xml) {
