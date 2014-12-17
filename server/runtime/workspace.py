@@ -1032,8 +1032,8 @@ class SetBlockPosition (Event):
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
 		block.position = [
-			int(self.values['x']),
-			int(self.values['y'])
+			int(self.values['x'] or 0),
+			int(self.values['y'] or 0)
 		]
 
 class SetBlockFieldValue (Event):
