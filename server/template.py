@@ -45,6 +45,8 @@ class Root (Element):
 				for sketch in sketches:
 					yield tag.clone().fillSlots(
 						url = "/sketch/{:s}".format(sketch['guid']),
+						delete_url = "/sketch/{:s}/delete".format(sketch['guid']),
+						copy_url = "/sketch/{:s}/copy".format(sketch['guid']),
 						title = sketch['title']
 					)
 			

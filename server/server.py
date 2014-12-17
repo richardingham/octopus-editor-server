@@ -8,6 +8,7 @@ from twisted.spread import pb
 from twisted.python import log, filepath
 from twisted.web import server, static, resource, guard
 from twisted.web.template import flatten
+from twisted.web.resource import NoResource
 from twisted.cred.portal import IRealm, Portal
 from twisted.manhole.telnet import ShellFactory
 
@@ -112,7 +113,7 @@ class NewSketch (resource.Resource):
 
 
 class EditSketch (resource.Resource):
-	
+
 	def __init__ (self, id):
 		resource.Resource.__init__(self)
 		self._id = id
@@ -135,6 +136,43 @@ class EditSketch (resource.Resource):
 
 		d = sketch.Sketch.exists(self._id)
 		d.addCallbacks(_done, _error)
+
+		return server.NOT_DONE_YET
+
+	def getChild (self, action, request):
+		if action == "copy":
+			return CopySketch(self._id)
+		elif action == "delete":
+			pass
+
+		return NoResource()
+
+
+class CopySketch (resource.Resource):
+
+	isLeaf = True
+
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_POST (self, request):
+		@defer.inlineCallbacks
+		def _copy (id):
+			s = sketch.Sketch(id)
+
+			yield s.copyFrom(self._id)
+			yield s.close()
+
+			url = request.URLPath().parent().sibling(id)
+			request.redirect(url)
+			request.finish()
+
+		def _error (failure):
+			request.write("There was an error: " + failure)
+			request.finish()
+
+		sketch.Sketch.createId().addCallbacks(_copy, _error)
 
 		return server.NOT_DONE_YET
 

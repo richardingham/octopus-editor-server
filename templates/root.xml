@@ -17,6 +17,10 @@
 		-webkit-touch-callout: none;
 	}
 
+	#stored ul li form {
+		display: inline;
+	}
+
 	</style>
 
 	<title>Octopus</title>
@@ -44,7 +48,14 @@
 		<ul>
 			<li t:render="saved_sketch">
 				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
-				<a class="delete"><t:attr name="href"><t:slot name="url" /></t:attr>Delete</a>
+				<form method="post">
+					<t:attr name="action"><t:slot name="delete_url" /></t:attr>
+					<button type="submit">Delete</button>
+				</form>
+				<form method="post">
+					<t:attr name="action"><t:slot name="copy_url" /></t:attr>
+					<button type="submit">Duplicate</button>
+				</form>
 			</li>
 		</ul>
 	</section>

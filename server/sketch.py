@@ -1,12 +1,16 @@
+# Python Imports
 import uuid
 import os
+import re
 import json
 from time import time as now
 
+# Twisted Imports
 from twisted.internet import defer, threads
 from twisted.python import log
 from twisted.python.filepath import FilePath
 
+# Package Imports
 from util import EventEmitter
 from runtime.workspace import Workspace, Aborted, Cancelled
 from experiment import Experiment
@@ -86,32 +90,39 @@ class Sketch (EventEmitter):
 
 		self._eventsLog = eventFile.open('a')
 
-	@defer.inlineCallbacks
 	def load (self):
+		return self._loadFrom(self.id)
+
+	def copyFrom (self, id):
+		return self._loadFrom(id, copy = True)
+
+	@defer.inlineCallbacks
+	def _loadFrom (self, id, copy = False):
 		sketch = yield self.db.runQuery(
 			"SELECT title FROM sketches WHERE guid = ?", 
-			(self.id, )
+			(id, )
 		)
 
 		if len(sketch) == 0:
-			raise Error("Sketch %s not found." % self.id)
+			raise Error("Sketch %s not found." % id)
 
 		self.title = sketch[0][0]
 		self.loaded = True
 
 		# Find the most recent snapshot file
 		try:
+			sketchDir = FilePath(self.dataDir).child(id)
 			max_snap = max(map(
 				lambda fp: int(
 					os.path.splitext(fp.basename())[0].split('.')[1]
 				),
-				self._sketchDir.globChildren('snapshot.*.log')
+				sketchDir.globChildren('snapshot.*.log')
 			))
 
 			log.msg(
 				"Found snapshot {:d} for sketch {:s}".format(
 					max_snap, 
-					self.id
+					id
 				)
 			)
 
@@ -119,16 +130,26 @@ class Sketch (EventEmitter):
 			self._eventIndex = 0
 			self._snapEventIndex = 0
 		else:
-			self._eventIndex = max_snap
-			self._snapEventIndex = max_snap
-			snapFile = self._sketchDir.child('snapshot.' + str(max_snap) + '.log')
+			snapFile = sketchDir.child('snapshot.' + str(max_snap) + '.log')
 
 			if max_snap > 0:
 				snapshot = yield threads.deferToThread(snapFile.getContent)
-				self.workspace.fromEvents(map(
+				events = map(
 					json.loads, 
 					filter(lambda e: e.strip() != "", snapshot.split("\n"))
-				))
+				)
+				self.workspace.fromEvents(events)
+
+			if copy:
+				self._eventIndex = len(events)
+				self._snapEventIndex = 0
+			else:
+				self._eventIndex = max_snap
+				self._snapEventIndex = max_snap
+
+		# Rename if a copy
+		if copy:
+			self.rename(self.title + " Copy")
 
 	def close (self):
 		log.msg("Closing sketch {:s}".format(self.id))
@@ -147,6 +168,11 @@ class Sketch (EventEmitter):
 		self._eventsLog.close()
 
 		self.emit("closed")
+
+	def rename (self, title):
+		self._writeEvent("RenameSketch", { "from": self.title, "to": title })
+		self.db.runOperation("UPDATE sketches SET title = ? WHERE guid = ?", (title, self.id))
+		self.title = title
 
 	#
 	# Subscribers
@@ -260,13 +286,12 @@ class Sketch (EventEmitter):
 	#
 
 	def renameSketch (self, payload, context):
-		newName = payload['title']
+		self.rename(payload['title'])
 
-		self._writeEvent("RenameSketch", { "from": self.title, "to": newName })
-		self.db.runOperation("UPDATE sketches SET title = ? WHERE guid = ?", (newName, self.id))
-		self.title = newName
-
-		self.notifySubscribers("sketch", "renamed", { "title": newName }, context)
+		self.notifySubscribers("sketch", "renamed", { 
+			"event": self._eventIndex, 
+			"title": payload['title'] 
+		}, context)
 
 	def processEvent (self, event, context):
 		event.apply(self.workspace)
