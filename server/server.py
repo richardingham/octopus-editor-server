@@ -143,7 +143,7 @@ class EditSketch (resource.Resource):
 		if action == "copy":
 			return CopySketch(self._id)
 		elif action == "delete":
-			pass
+			return DeleteSketch(self._id)
 
 		return NoResource()
 
@@ -173,6 +173,29 @@ class CopySketch (resource.Resource):
 			request.finish()
 
 		sketch.Sketch.createId().addCallbacks(_copy, _error)
+
+		return server.NOT_DONE_YET
+
+
+class DeleteSketch (resource.Resource):
+
+	isLeaf = True
+
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_POST (self, request):
+		def _redirect (id):
+			url = request.URLPath().parent().parent()
+			request.redirect(url)
+			request.finish()
+
+		def _error (failure):
+			request.write("There was an error: " + failure)
+			request.finish()
+
+		sketch.Sketch.delete(self._id).addCallbacks(_redirect, _error)
 
 		return server.NOT_DONE_YET
 

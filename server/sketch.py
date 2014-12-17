@@ -41,8 +41,8 @@ class Sketch (EventEmitter):
 
 		return cls.db.runOperation("""
 				INSERT INTO sketches 
-				(guid, title, user_id, created_date, modified_date) 
-				VALUES (?, ?, ?, ?, ?)
+				(guid, title, user_id, created_date, modified_date, deleted) 
+				VALUES (?, ?, ?, ?, ?, 0)
 			""", 
 			(id, "New Sketch", 1, created_date, created_date)
 		).addCallback(_done)
@@ -53,6 +53,10 @@ class Sketch (EventEmitter):
 		d.addCallback(lambda r: len(r) > 0)
 
 		return d
+
+	@classmethod
+	def delete (cls, id):
+		return cls.db.runOperation("UPDATE sketches SET deleted = 1 WHERE guid = ?", (id, ))
 
 	@classmethod
 	def list (cls):
@@ -68,7 +72,8 @@ class Sketch (EventEmitter):
 		return cls.db.runQuery("""
 			SELECT guid, title, user_id, modified_date, created_date 
 			FROM sketches 
-			ORDER BY modified_date
+			WHERE deleted = 0
+			ORDER BY modified_date DESC
 		""").addCallback(_done)
 
 	def __init__ (self, id):
@@ -163,6 +168,13 @@ class Sketch (EventEmitter):
 
 			with snapFile.open('w') as fp:
 				fp.write("\n".join(map(json.dumps, self.workspace.toEvents())))
+
+		# Set the modified date
+		self.db.runOperation('''
+			UPDATE sketches 
+			SET modified_date = ? 
+			WHERE guid = ?
+		''', (now(), self.id))
 
 		# Close the events log
 		self._eventsLog.close()
