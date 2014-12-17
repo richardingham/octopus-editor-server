@@ -65,8 +65,13 @@
 </div>
 
 <div id="value">
+	<template if="{{ variable.type == 'Image' }}">
+	<img src="{{ variable.value }}">
+	</template>
+	<template if="{{ variable.type != 'Image' }}">
 	<span class="value">{{ variable.value }}</span>
 	<span class="unit">{{ variable.unit }}</span>
+	</template>
 </div>
 
 <template if="{{ variable.edit }}">

@@ -364,6 +364,14 @@ Blockly.Blocks['machine_mt_icir'] = extend(machineBlock, {
   machineOptions: _iCIR_options,
 });
 
+Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
+  machineTitle: "Image Provider",
+  machineVars: [
+    { name: "image", title: "Image", type: "Image", readonly: true }
+  ],
+  machineConnectionType: "CameraConnection"
+});
+
 Blockly.Blocks['machine_singletracker'] = extend(machineBlock, {
   machineTitle: "Single Tracker",
   machineVars: _SingleTracker_vars,

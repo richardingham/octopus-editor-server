@@ -1,10 +1,12 @@
 from ..workspace import Block, Disconnected, Cancelled
+import SimpleCV
 
 from twisted.internet import defer
 from twisted.python import log
 
 from octopus import data
 from octopus.constants import State
+from octopus.image.data import DerivedImage
 
 
 def variableName (name):
@@ -78,7 +80,11 @@ class global_declaration (Block):
 		if result is None:
 			raise Exception("Global declared value cannot be None")
 
-		variable = data.Variable(type(result))
+		if type(result).__name__ == "instance" and result.__class__ is SimpleCV.ImageClass.Image:
+			variable = DerivedImage()
+		else:
+			variable = data.Variable(type(result))
+
 		variable.alias = self.fields['NAME']
 		self.workspace.variables[self._varName()] = variable
 		yield variable.set(result)

@@ -1,7 +1,10 @@
+# Package Imports
 from ..workspace import Block, Disconnected, Cancelled
 
+# Twisted Imports
 from twisted.internet import reactor, defer, task
 
+# Octopus Imports
 from octopus import data
 from octopus.constants import State
 import octopus.transport.basic
@@ -140,27 +143,6 @@ class machine_mt_icir (machine_declaration):
 			return {}
 
 
-class machine_singletracker (machine_declaration):
-	def getMachineClass (self):
-		from octopus.image import tracker
-		return tracker.SingleBlobTracker
-
-
-class machine_multitracker (machine_declaration):
-	def getMachineClass (self):
-		from octopus.image import tracker
-		return tracker.MultiBlobTracker
-
-	def getMachineParams (self):
-		import json
-		try:
-			return {
-				"count": json.loads(self.mutation)['count']
-			}
-		except (ValueError, KeyError):
-			return {}
-
-
 class connection_tcp (Block):
 	def eval (self):
 		return octopus.transport.basic.tcp(
@@ -175,10 +157,4 @@ class connection_serial (Block):
 			str(self.fields['PORT']), 
 			baudrate = int(self.fields['BAUD'])
 		)
-
-
-class connection_cvcamera (Block):
-	def eval (self):
-		from octopus.image.source import cv_webcam
-		return cv_webcam(int(self.fields['ID']))
 

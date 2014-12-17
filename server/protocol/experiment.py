@@ -1,6 +1,14 @@
 from time import time as now
 from octopus.data import Variable
 
+def _format (variable):
+	if variable.type in (str, unicode, int):
+		return variable.value
+	if variable.type is float:
+		return round(variable.value, 2)
+
+	return str(variable)
+
 class ExperimentProtocol (object):
 	def __init__ (self, transport):
 		self.transport = transport
@@ -60,7 +68,7 @@ class ExperimentProtocol (object):
 				"title": p.title if hasattr(p, "title") else "",
 				"unit":  p.unit if hasattr(p, "unit") else "",
 				"type":  p.type.__name__ if type(p.type) is not str else p.type,
-				"value": p.value,
+				"value": _format(p),
 				"edit":  hasattr(p, "_setter") or type(p) is Variable
 			}
 
@@ -107,7 +115,7 @@ class ExperimentProtocol (object):
 
 		def _value (name):
 			try:
-				return variables[name].value
+				return _format(variables[name])
 			except KeyError:
 				return None
 
