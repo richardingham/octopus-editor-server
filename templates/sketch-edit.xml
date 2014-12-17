@@ -3,14 +3,7 @@
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
 	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
 	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
-
 	<link rel="import" href="/components/octopus-editor/octopus-editor.html" />
-	<link rel="import" href="/components/octopus-runtime/octopus-runtime.html" />
-	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
-	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
-	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
-	<link rel="import" href="/bower_components/core-icons/av-icons.html" />
-	<link rel="import" href="/bower_components/core-input/core-input.html" />
 
 	<link rel="stylesheet" href="/components/octopus-editor/global.css" />
 	<link rel="stylesheet" href="/resources/dropdown.css" />
@@ -36,103 +29,6 @@
 		-webkit-tap-highlight-color: rgba(0,0,0,0);
 		-webkit-touch-callout: none;
 	}
-	
-	#editor-container {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		height: 100vh;
-	}
-
-	core-toolbar {
-		background-color: #526E9C;
-		color: #FFF;
-		transition: background-color 0.2s linear 0.5s;
-	}
-	core-toolbar.experiment-running {
-		background-color: #0D7C38;
-	}
-	core-toolbar.experiment-paused {
-		background-color: #FFC200;
-	}
-	core-toolbar.experiment-error {
-		background-color: #CB0909;
-	}
-
-	core-toolbar.experiment-running #btn-run,
-	core-toolbar.experiment-paused #btn-run,
-	core-toolbar #btn-pause,
-	core-toolbar #btn-resume,
-	core-toolbar #btn-stop {
-		display: none;
-	}
-	core-toolbar.experiment-running #btn-pause,
-	core-toolbar.experiment-paused #btn-resume,
-	core-toolbar.experiment-running #btn-stop,
-	core-toolbar.experiment-paused #btn-stop {
-		display: block;
-	}
-
-	core-toolbar input {
-		color: #fff;
-		padding-bottom: 3px;
-		font-size: 24px;
-		margin-left: 15px;
-	}
-
-	#experiments-log {
-		position: absolute;
-		right: 10px;
-		top: 10px;
-		width: 500px;
-		-webkit-user-select: text;
-		-moz-user-select: text;
-		-ms-user-select: element;
-	}
-
-	#experiments-log .experiment {
-		background: #fff;
-		border: 2px solid #223388;
-		margin-top: 10px;
-		padding: 5px;
-		position: relative;
-	}
-
-	#experiments-log .experiment .experiment-link {
-		margin-bottom: 5px;
-		font-weight: bold;
-		font-size: 12px;
-	}
-
-	#experiments-log .experiment .experiment-link a {
-		text-decoration: none;
-		color: #223388;
-	}
-
-	#experiments-log .experiment core-icon {
-		width: 16px;
-		height: 16px;
-	}
-
-	#experiments-log .experiment core-icon[icon="cancel"] {
-		color: #223388;
-		cursor: pointer;
-		position: absolute;
-		right: 4px;
-		top: 0px;
-		width: 16px;
-		height: 24px;
-	}
-	#experiments-log .experiment core-icon[icon="cancel"]:hover {
-		color: #526E9C;
-	}
-
-	#experiments-log .experiment ul {
-		font-size: 12px;
-		list-style-type: none;
-		margin: 0;
-		padding-left: 0;
-	}
 
 	/* ]]> */
 	</style>
@@ -140,128 +36,12 @@
   
 </head>
 <body unresolved="" t:render="editor_body">
-<template id="application" is="auto-binding">
-	<div id="editor-container">
-		<core-toolbar class="experiment-{{experiment.state}}">
-			<core-icon-button icon="av:play-circle-fill" id="btn-run" on-click="{{runClicked}}">Run</core-icon-button>
-			<core-icon-button icon="av:pause-circle-fill" id="btn-pause" on-click="{{pauseClicked}}">Pause</core-icon-button>
-			<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-click="{{resumeClicked}}">Resume</core-icon-button>
-			<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
-			<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
-		</core-toolbar>
-		<octopus-editor id="editor" on-block-event="{{onEditorBlockEvent}}"></octopus-editor>
-	</div>
-	<div id="experiments-log">
-		<template repeat="{{ logMessages as experiment }}">
-		<div class="experiment">
-			<div class="experiment-link"><a href="/experiment/{{ experiment.id }}" target="_blank">Show Experiment</a></div>
-			<core-icon icon="cancel" on-click="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
-			<ul>
-				<template repeat="{{ experiment.messages as item }}">
-				<li>
-					<core-icon icon="{{ item.level | levelToIcon }}" style="color: {{ item.level | levelToIconColour }};"></core-icon>
-					[{{item.time | formatLogTime}}] {{ item.message }}
-				</li>
-				</template>
-			</ul>
-		</div>
-		</template>
-	</div>
-	<div id="menu-container"></div>
-	<octopus-runtime 
-		id="runtime" 
-		experiment="{{experiment}}" 
-		on-sketch-loaded="{{onRuntimeSketchLoaded}}" 
-		on-sketch-renamed="{{onRuntimeSketchRenamed}}"
-		on-block-changed="{{onRuntimeBlockChanged}}"
-		on-experiment-log="{{onRuntimeLogMessage}}"
-	>
-		<t:attr name="url"><t:slot name="websocket_url" /></t:attr>
-		<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
-	</octopus-runtime>
-</template>
-<script>
-// <![CDATA[
 
-var template = document.getElementById('application');
-template.logMessages = [];
-template.runClicked = function (e) {
-    this.$.editor.clearBlockStates();
-	this.$.runtime.experimentAction.call(this.$.runtime, "run");
-};
-template.pauseClicked = function (e) {
-	this.$.runtime.experimentAction.call(this.$.runtime, "pause");
-};
-template.resumeClicked = function (e) {
-	this.$.runtime.experimentAction.call(this.$.runtime, "resume");
-};
-template.stopClicked = function (e) {
-	this.$.runtime.experimentAction.call(this.$.runtime, "stop");
-};
-template.onEditorBlockEvent = function (e) {
-	this.$.runtime.blockEvent.call(this.$.runtime, e.detail);
-};
-template.onRuntimeSketchLoaded = function (e) {
-	this.$['experiment-title'].value = e.detail.title;
-	this.$.editor.loadSketch.call(this.$.editor, e.detail);
-};
-template.onRuntimeSketchRenamed = function (e) {
-	this.$['experiment-title'].value = e.detail;
-};
-template.onRuntimeBlockChanged = function (e) {
-	this.$.editor.blockChanged.call(this.$.editor, e.detail.command, e.detail.payload);
-};
-template.onTitleChanged = function (e) {
-	this.$.runtime.changeTitle.call(this.$.runtime, e.srcElement.value);
-};
-template.onRuntimeLogMessage = function (e) {
-	var logMessages = this.logMessages;
-	var experiment;
-	for (var i = 0, m = logMessages.length; i < m; i++) {
-		if (logMessages[i].id === e.detail.experiment) {
-			experiment = logMessages[i];
-		}
-	}
-	if (!experiment) {
-		experiment = {
-			id: e.detail.experiment,
-			messages: []
-		};
-		logMessages.push(experiment);
-	}
-	experiment.messages.push({
-		time: e.detail.time,
-		level: e.detail.level,
-		message: e.detail.message
-	});
-};
-template.closeLog = function (e) {
-	var experimentId = e.srcElement.dataset.experiment;
-	var logMessages = this.logMessages;
-	for (var i = 0, m = logMessages.length; i < m; i++) {
-		if (logMessages[i].id === experimentId) {
-			logMessages.splice(i, 1);
-		}
-	}
-};
-template.formatLogTime = function (date) {
-	function pad (n) { return ("0" + n).slice(-2); }
-	return [date.getHours(), date.getMinutes(), date.getSeconds()].map(pad).join(":");
-};
-template.levelToIcon = function (level) {
-	if (level === "status") return "label";
-	if (level === "warning") return "warning";
-	if (level === "error") return "error";
-	return "info";
-};
-template.levelToIconColour = function (level) {
-	if (level === "status") return "#0D7C38";
-	if (level === "warning") return "#FFC200";
-	if (level === "error") return "#CB0909";
-	return "#526E9C";
-};
+<octopus-editor id="editor">
+	<t:attr name="websocketUrl"><t:slot name="websocket_url" /></t:attr>
+	<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
+</octopus-editor>
+<div id="menu-container"></div>
 
-// ]]>
-</script>
 </body>
 </html>

@@ -1,5 +1,13 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/core-item/core-item.html">
+<link rel="import" href="../../bower_components/core-input/core-input.html">
+<link rel="import" href="../../bower_components/core-toolbar/core-toolbar.html" />
+<link rel="import" href="../../bower_components/core-icon-button/core-icon-button.html" />
+<link rel="import" href="../../bower_components/core-icons/core-icons.html" />
+<link rel="import" href="../../bower_components/core-icons/av-icons.html" />
+<link rel="import" href="../../bower_components/core-input/core-input.html" />
+
+<link rel="import" href="../octopus-runtime/octopus-runtime.html" />
 <link rel="import" href="octopus-blockly-toolbox/octopus-blockly-toolbox.html">
 <link rel="import" href="octopus-blockly-code/octopus-blockly-code.html">
 
@@ -14,7 +22,7 @@
 <script type="text/javascript" src="dist/blocks.js"></script>
 <script type="text/javascript" src="dist/python-octo.js"></script>
 
-<polymer-element name="octopus-editor" attributes="toolbox code">
+<polymer-element name="octopus-editor" attributes="websocketUrl sketch">
 <template>
 
 <link rel="stylesheet" href="blockly.css">
@@ -28,28 +36,118 @@
 	height: 100vh;
 }
 
-:host octopus-blockly-toolbox {
+core-toolbar {
+	background-color: #526E9C;
+	color: #FFF;
+	transition: background-color 0.2s linear 0.5s;
+}
+core-toolbar.experiment-running {
+	background-color: #0D7C38;
+}
+core-toolbar.experiment-paused {
+	background-color: #FFC200;
+}
+core-toolbar.experiment-error {
+	background-color: #CB0909;
+}
+
+core-toolbar.experiment-running #btn-run,
+core-toolbar.experiment-paused #btn-run,
+core-toolbar #btn-pause,
+core-toolbar #btn-resume,
+core-toolbar #btn-stop {
+	display: none;
+}
+core-toolbar.experiment-running #btn-pause,
+core-toolbar.experiment-paused #btn-resume,
+core-toolbar.experiment-running #btn-stop,
+core-toolbar.experiment-paused #btn-stop {
+	display: block;
+}
+
+core-toolbar input {
+	color: #fff;
+	padding-bottom: 3px;
+	font-size: 24px;
+	margin-left: 15px;
+}
+
+#experiments-log {
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	width: 500px;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: element;
+}
+
+#experiments-log .experiment {
+	background: #fff;
+	border: 2px solid #223388;
+	margin-top: 10px;
+	padding: 5px;
+	position: relative;
+}
+
+#experiments-log .experiment .experiment-link {
+	margin-bottom: 5px;
+	font-weight: bold;
+	font-size: 12px;
+}
+
+#experiments-log .experiment .experiment-link a {
+	text-decoration: none;
+	color: #223388;
+}
+
+#experiments-log .experiment core-icon {
+	width: 16px;
+	height: 16px;
+}
+
+#experiments-log .experiment core-icon[icon="cancel"] {
+	color: #223388;
+	cursor: pointer;
+	position: absolute;
+	right: 4px;
+	top: 0px;
+	width: 16px;
+	height: 24px;
+}
+#experiments-log .experiment core-icon[icon="cancel"]:hover {
+	color: #526E9C;
+}
+
+#experiments-log .experiment ul {
+	font-size: 12px;
+	list-style-type: none;
+	margin: 0;
+	padding-left: 0;
+}
+
+octopus-blockly-toolbox {
 	margin: 12px 0;
 	width: 180px;
 }
 
-:host octopus-blockly-toolbox core-item {
+octopus-blockly-toolbox core-item {
 	padding: 0 10px;
 }
 
-:host octopus-blockly-toolbox core-item.core-selected {
+octopus-blockly-toolbox core-item.core-selected {
 	background: #E2E2E2;
 }
 
-:host octopus-blockly-code {
+octopus-blockly-code {
 	width: 400px;
 }
 
-:host #blockly {
+#blockly {
 	position:relative;
 }
 
-:host #blockly svg {
+#blockly svg {
 	position: absolute;
 	top: 0;
 	bottom: 0;
@@ -58,6 +156,14 @@
 }
 
 </style>
+
+<core-toolbar class="experiment-{{experiment.state}}">
+	<core-icon-button icon="av:play-circle-fill" id="btn-run" on-click="{{runClicked}}">Run</core-icon-button>
+	<core-icon-button icon="av:pause-circle-fill" id="btn-pause" on-click="{{pauseClicked}}">Pause</core-icon-button>
+	<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-click="{{resumeClicked}}">Resume</core-icon-button>
+	<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
+	<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
+</core-toolbar>
 
 <div horizontal layout flex>
 	<octopus-blockly-toolbox valueattr="name" selected="{{ toolboxSelected }}" on-activate="{{ toolboxActivate }}" on-deactivate="{{ toolboxDeactivate }}" >
@@ -69,6 +175,34 @@
 	<octopus-blockly-code code="{{ code }}"></octopus-blockly-code>
 </div>
 
+<div id="experiments-log">
+	<template repeat="{{ logMessages as experiment }}">
+	<div class="experiment">
+		<div class="experiment-link"><a href="/experiment/{{ experiment.id }}" target="_blank">Show Experiment</a></div>
+		<core-icon icon="cancel" on-click="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
+		<ul>
+			<template repeat="{{ experiment.messages as item }}">
+			<li>
+				<core-icon icon="{{ item.level | levelToIcon }}" style="color: {{ item.level | levelToIconColour }};"></core-icon>
+				[{{item.time | formatLogTime}}] {{ item.message }}
+			</li>
+			</template>
+		</ul>
+	</div>
+	</template>
+</div>
+
+<octopus-runtime 
+	id="runtime"
+	url="{{ websocketUrl }}"
+	experiment="{{ experiment }}"
+	sketch="{{ sketch }}"
+	on-sketch-loaded="{{onSketchLoaded}}"
+	on-sketch-renamed="{{onSketchRenamed}}"
+	on-block-changed="{{onBlockChanged}}"
+	on-experiment-log="{{onLogMessage}}"
+>
+</octopus-runtime>
 
 <xml id="toolboxCategories" style="display: none">
     <category name="Machines">
@@ -261,7 +395,9 @@ Polymer('octopus-editor', {
 	},
 
 	// Received initial load data from the server
-	loadSketch: function (sketch) {
+	onSketchLoaded: function (e, sketch) {
+		this.$['experiment-title'].value = sketch.title;
+
 		var workspace = Blockly.mainWorkspace;
 		var moveBlocks = {};
 
@@ -343,10 +479,10 @@ Polymer('octopus-editor', {
 			"set-comment", "set-collapsed",
 			"set-mutation", "transaction"
 		];
-		var editor = this;
+		var runtime = this.$.runtime;
 		blockEvents.forEach(function (type) {
 			Blockly.on("block-" + type, function (detail) {
-				editor.fire("block-event", {
+				runtime.blockEvent({
 					eventType: type,
 					data: detail
 				});
@@ -354,7 +490,13 @@ Polymer('octopus-editor', {
 		});
 	},
 
-	blockChanged: function (command, payload) {
+	onSketchRenamed: function (e, title) {
+		this.$['experiment-title'].value = title;
+	},
+	
+	onBlockChanged: function (e) {
+		var command = e.detail.command;
+		var payload = e.detail.payload;
 		var workspace = Blockly.mainWorkspace;
 
 		if (command === "transaction") {
@@ -452,6 +594,74 @@ Polymer('octopus-editor', {
 		});
 	},
 
+	// Log messages
+	logMessages: [],
+	onLogMessage: function (e) {
+		var logMessages = this.logMessages;
+		var experiment;
+		for (var i = 0, m = logMessages.length; i < m; i++) {
+			if (logMessages[i].id === e.detail.experiment) {
+				experiment = logMessages[i];
+			}
+		}
+		if (!experiment) {
+			experiment = {
+				id: e.detail.experiment,
+				messages: []
+			};
+			logMessages.push(experiment);
+		}
+		experiment.messages.push({
+			time: e.detail.time,
+			level: e.detail.level,
+			message: e.detail.message
+		});
+	},
+
+	closeLog: function (e) {
+		var experimentId = e.srcElement.dataset.experiment;
+		var logMessages = this.logMessages;
+		for (var i = 0, m = logMessages.length; i < m; i++) {
+			if (logMessages[i].id === experimentId) {
+				logMessages.splice(i, 1);
+			}
+		}
+	},
+	formatLogTime: function (date) {
+		function pad (n) { return ("0" + n).slice(-2); }
+		return [date.getHours(), date.getMinutes(), date.getSeconds()].map(pad).join(":");
+	},
+	levelToIcon: function (level) {
+		if (level === "status") return "label";
+		if (level === "warning") return "warning";
+		if (level === "error") return "error";
+		return "info";
+	},
+	levelToIconColour: function (level) {
+		if (level === "status") return "#0D7C38";
+		if (level === "warning") return "#FFC200";
+		if (level === "error") return "#CB0909";
+		return "#526E9C";
+	},
+
+	// Toolbar actions
+	runClicked: function (e) {
+		this.clearBlockStates();
+		this.$.runtime.experimentAction("run");
+	},
+	pauseClicked: function (e) {
+		this.$.runtime.experimentAction("pause");
+	},
+	resumeClicked: function (e) {
+		this.$.runtime.experimentAction("resume");
+	},
+	stopClicked: function (e) {
+		this.$.runtime.experimentAction("stop");
+	},
+	onTitleChanged: function (e) {
+		this.$.runtime.changeTitle(e.srcElement.value);
+	},
+
 	toolboxPopulate: function (xml) {
 		// Iterate over each category.
 		var toolbox = [];
@@ -475,6 +685,8 @@ Polymer('octopus-editor', {
 
 		this.toolbox = toolbox;
 	},
+
+	// Toolbox
 
 	toolboxActivate: function (ev, detail) {
 		//try {
