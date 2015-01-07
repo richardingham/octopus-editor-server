@@ -139,19 +139,13 @@ octopus-blockly-toolbox core-item.core-selected {
 	background: #E2E2E2;
 }
 
-octopus-blockly-code {
-	width: 400px;
-}
-
 #blockly {
 	position:relative;
 }
 
 #blockly svg {
 	position: absolute;
-	top: 0;
 	bottom: 0;
-	left: 0;
 	right: 0;
 }
 
@@ -165,6 +159,7 @@ octopus-blockly-code {
 	<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
 	<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
 	<div flex></div>
+	<core-icon-button icon="developer-mode-tv" on-click="{{ toggleCodeVisible }}" active="{{ codeVisible }}"></core-icon-button>
 	<core-icon-button icon="file-download" on-click="{{ downloadXML }}"></core-icon-button>
 </core-toolbar>
 
@@ -175,7 +170,7 @@ octopus-blockly-code {
 		</template>
 	</octopus-blockly-toolbox>
 	<div id="blockly" flex></div>
-	<octopus-blockly-code code="{{ code }}"></octopus-blockly-code>
+	<octopus-blockly-code code="{{ code }}" class="{{ { show: codeVisible } | tokenList }}"></octopus-blockly-code>
 </div>
 
 <div id="experiments-log">
@@ -395,7 +390,9 @@ Polymer('octopus-editor', {
 	},
 
 	blocklyChanged: function () {
-		this.code = Blockly.PythonOcto.workspaceToCode();
+		if (this.codeVisible) {
+			this.code = Blockly.PythonOcto.workspaceToCode();
+		}
 	},
 
 	// Received initial load data from the server
@@ -690,6 +687,12 @@ Polymer('octopus-editor', {
 
 		// Remove anchor from body
 		document.body.removeChild(a)
+	},
+	codeVisible: true,
+	toggleCodeVisible: function (e) {
+		this.codeVisible = !this.codeVisible;
+		this.blocklyChanged();
+		Blockly.mainWorkspace.render();
 	},
 
 	toolboxPopulate: function (xml) {

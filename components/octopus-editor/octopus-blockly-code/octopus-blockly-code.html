@@ -7,16 +7,27 @@
 <style>
 
 :host {
+	width: 0;
 	display: flex;
 	flex-direction: row;
 }
 
+:host(.show) {
+	width: 400px;
+}
+
 #blocklyCode {
+	display: none;
 	flex: 1;
-	padding: 20px;
 	margin: 0;
 	overflow: scroll;
 }
+
+:host(.show) #blocklyCode {
+	display: block;
+	padding: 20px;
+}
+
 
 </style>
 
