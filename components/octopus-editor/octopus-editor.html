@@ -158,6 +158,7 @@ octopus-blockly-code {
 </style>
 
 <core-toolbar class="experiment-{{experiment.state}}">
+	<core-icon-button icon="home" on-click="{{ returnHome }}"></core-icon-button>
 	<core-icon-button icon="av:play-circle-fill" id="btn-run" on-click="{{runClicked}}">Run</core-icon-button>
 	<core-icon-button icon="av:pause-circle-fill" id="btn-pause" on-click="{{pauseClicked}}">Pause</core-icon-button>
 	<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-click="{{resumeClicked}}">Resume</core-icon-button>
@@ -671,6 +672,17 @@ Polymer('octopus-editor', {
 		var a = window.document.createElement('a');
 		a.href = window.URL.createObjectURL(new Blob([xmlText], {type: 'text/xml'}));
 		a.download = 'experiment.xml';
+
+		// Append anchor to body.
+		document.body.appendChild(a)
+		a.click();
+
+		// Remove anchor from body
+		document.body.removeChild(a)
+	},
+	returnHome: function (e) {
+		var a = window.document.createElement('a');
+		a.href = '/';
 
 		// Append anchor to body.
 		document.body.appendChild(a)
