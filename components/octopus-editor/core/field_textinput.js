@@ -270,7 +270,12 @@ FieldTextInput.numberValidator = function(text) {
   // Strip out thousands separators.
   text = text.replace(/,/g, '');
   var n = parseFloat(text || 0);
-  return isNaN(n) ? null : String(n);
+  if (isNaN(n)) return null;
+  var s = String(n);
+  if (s.indexOf('.') === -1 && text.indexOf('.') !== -1 && parseInt(text || 0) === n) {
+    return s + '.0';
+  }
+  return s;
 };
 
 /**

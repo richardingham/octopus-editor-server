@@ -69,7 +69,7 @@ Blockly.PythonOcto['global_declaration'] = function(block) {
   } else if (conn) {
     var type = "str";
     if (conn && conn.check_) {
-      if (conn.check_.indexOf("Number") !== -1) type = "float";
+      if (conn.check_.indexOf("Number") !== -1) type = argument0.indexOf('.') > -1 ? "float" : "int";
       if (conn.check_.indexOf("Boolean") !== -1) type = "bool";
     }
     return name + ' = variable(' + type + ', ' + argument0 + ')';

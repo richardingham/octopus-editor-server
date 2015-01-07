@@ -31,8 +31,8 @@ Blockly.PythonOcto.addReservedWords('math,random');
 
 Blockly.PythonOcto['math_number'] = function(block) {
   // Numeric value.
-  var code = parseFloat(block.getFieldValue('NUM'));
-  var order = code < 0 ? Blockly.PythonOcto.ORDER_UNARY_SIGN :
+  var code = Blockly.FieldTextInput.numberValidator(block.getFieldValue('NUM')) || 0;
+  var order = parseFloat(code) < 0 ? Blockly.PythonOcto.ORDER_UNARY_SIGN :
               Blockly.PythonOcto.ORDER_ATOMIC;
   return [code, order];
 };
