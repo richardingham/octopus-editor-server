@@ -119,11 +119,15 @@ FieldFlydown.prototype.init = function(block) {
 
 FieldFlydown.prototype.onMouseOver_ = function(e) {
   // alert("FieldFlydown mouseover");
-  if (! this.sourceBlock_.isInFlyout) { // [lyn, 10/22/13] No flydowns in a flyout!
-    FieldFlydown.showPid_ =
-        window.setTimeout(this.showFlydownMaker_(), FieldFlydown.timeout);
-    // This event has been handled.  No need to bubble up to the document.
+  if (this.sourceBlock_.isInFlyout) { // [lyn, 10/22/13] No flydowns in a flyout!
+    return;
   }
+  if (!this.sourceBlock_.isEditable()) {
+    return;
+  }
+  FieldFlydown.showPid_ =
+      window.setTimeout(this.showFlydownMaker_(), FieldFlydown.timeout);
+
   e.stopPropagation();
 };
 

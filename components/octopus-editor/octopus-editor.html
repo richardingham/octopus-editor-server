@@ -131,6 +131,11 @@ octopus-blockly-toolbox {
 	width: 180px;
 }
 
+octopus-blockly-toolbox.hide {
+	display: none;
+	width: 0;
+}
+
 octopus-blockly-toolbox core-item {
 	padding: 0 10px;
 }
@@ -159,12 +164,13 @@ octopus-blockly-toolbox core-item.core-selected {
 	<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
 	<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
 	<div flex></div>
+	<core-icon-button icon="{{ workspaceLocked ? 'lock' : 'lock-open' }}" on-click="{{ toggleWorkspaceLocked }}" active="{{ workspaceLocked }}"></core-icon-button>
 	<core-icon-button icon="developer-mode-tv" on-click="{{ toggleCodeVisible }}" active="{{ codeVisible }}"></core-icon-button>
 	<core-icon-button icon="file-download" on-click="{{ downloadXML }}"></core-icon-button>
 </core-toolbar>
 
 <div horizontal layout flex>
-	<octopus-blockly-toolbox valueattr="name" selected="{{ toolboxSelected }}" on-activate="{{ toolboxActivate }}" on-deactivate="{{ toolboxDeactivate }}" >
+	<octopus-blockly-toolbox valueattr="name" selected="{{ toolboxSelected }}" on-activate="{{ toolboxActivate }}" on-deactivate="{{ toolboxDeactivate }}" class="{{ { hide: workspaceLocked } | tokenList }}">
 		<template repeat="{{ category, i in toolbox }}">
 			<core-item icon="{{ category.icon }}" name="category-{{ i }}" label="{{ category.name }}"></core-item>
 		</template>
@@ -692,6 +698,22 @@ Polymer('octopus-editor', {
 	toggleCodeVisible: function (e) {
 		this.codeVisible = !this.codeVisible;
 		this.blocklyChanged();
+		Blockly.mainWorkspace.render();
+	},
+	toggleWorkspaceLocked: function (e) {
+		this.workspaceLocked = !this.workspaceLocked;
+		if (this.workspaceLocked) {
+			Blockly.mainWorkspace.getAllBlocks().forEach(function (block) {
+				Blockly.hideChaff();
+				block.setEditable(false);
+				block.setMovable(false);
+			});
+		} else {
+			Blockly.mainWorkspace.getAllBlocks().forEach(function (block) {
+				block.setEditable(true);
+				block.setMovable(true);
+			});
+		}
 		Blockly.mainWorkspace.render();
 	},
 
