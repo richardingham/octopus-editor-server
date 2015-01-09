@@ -1,5 +1,6 @@
-<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" flex="" vertical="" layout="">
 <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
 	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
 	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
@@ -14,9 +15,7 @@
 	html, body {
 		margin: 0;
 		padding: 0;
-		display: flex;
 		height: 100vh;
-		flex-direction: column;
 	}
 
 	body {
@@ -35,9 +34,9 @@
 	
   
 </head>
-<body unresolved="" t:render="editor_body">
+<body unresolved="" t:render="editor_body" flex="" vertical="" layout="">
 
-<octopus-editor id="editor">
+<octopus-editor id="editor" flex="" vertical="" layout="">
 	<t:attr name="websocketUrl"><t:slot name="websocket_url" /></t:attr>
 	<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
 </octopus-editor>

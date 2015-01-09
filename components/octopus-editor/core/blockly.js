@@ -567,6 +567,11 @@ Blockly.loadAudio_ = function(filenames, name) {
   }
 };
 
+var _isios = (function (a) {
+  if (/ip(ad|hone|od)/i.test(a))
+    return true;
+})(navigator.userAgent||navigator.vendor||window.opera);
+
 /**
  * Preload all the audio files so that they play quickly when asked for.
  * @private
@@ -579,12 +584,16 @@ Blockly.preloadAudio_ = function() {
     sound.pause();
     // iOS can only process one sound at a time.  Trying to load more than one
     // corrupts the earlier ones.  Just load one and leave the others uncached.
-    // TODO
-	//if (goog.userAgent.IPAD || goog.userAgent.IPHONE) {
-    //  break;
-    //}
+    if (_isios) {
+      break;
+    }
   }
 };
+
+var _isipadorandroid = (function (a) {
+  if (/ipad|android/i.test(a))
+    return true;
+})(navigator.userAgent||navigator.vendor||window.opera);
 
 /**
  * Play an audio file at specified value.  If volume is not specified,
@@ -595,20 +604,20 @@ Blockly.preloadAudio_ = function() {
 Blockly.playAudio = function(name, opt_volume) {
   var sound = Blockly.SOUNDS_[name];
   if (sound) {
-    //var mySound;
-    //var ie9 = goog.userAgent.DOCUMENT_MODE &&
-    //          goog.userAgent.DOCUMENT_MODE === 9;
-    //if (ie9 || goog.userAgent.IPAD || goog.userAgent.ANDROID) {
+    var mySound;
+    var ie9 = goog.userAgent.DOCUMENT_MODE &&
+              goog.userAgent.DOCUMENT_MODE === 9;
+    if (ie9 || _isipadorandroid) {
       // Creating a new audio node causes lag in IE9, Android and iPad. Android
       // and IE9 refetch the file from the server, iPad uses a singleton audio
       // node which must be deleted and recreated for each new audio tag.
-      //mySound = sound;
-    //} else {
-    //  mySound = sound.cloneNode();
-    //}
-    sound.currentTime = 0; // Reset sound.
-    sound.volume = (opt_volume === undefined ? 1 : opt_volume);
-    sound.play();
+      mySound = sound;
+    } else {
+      mySound = sound.cloneNode();
+    }
+    //sound.currentTime = 0; // Reset sound.
+    mySound.volume = (opt_volume === undefined ? 1 : opt_volume);
+    mySound.play();
   }
 };
 

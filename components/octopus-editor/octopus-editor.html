@@ -30,9 +30,6 @@
 <style>
 
 :host {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
 	height: 100vh;
 }
 
@@ -157,16 +154,16 @@ octopus-blockly-toolbox core-item.core-selected {
 </style>
 
 <core-toolbar class="experiment-{{experiment.state}}">
-	<core-icon-button icon="home" on-click="{{ returnHome }}"></core-icon-button>
-	<core-icon-button icon="av:play-circle-fill" id="btn-run" on-click="{{runClicked}}">Run</core-icon-button>
-	<core-icon-button icon="av:pause-circle-fill" id="btn-pause" on-click="{{pauseClicked}}">Pause</core-icon-button>
-	<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-click="{{resumeClicked}}">Resume</core-icon-button>
-	<core-icon-button icon="cancel" id="btn-stop" on-click="{{stopClicked}}">Stop</core-icon-button>
+	<core-icon-button icon="home" on-tap="{{ returnHome }}"></core-icon-button>
+	<core-icon-button icon="av:play-circle-fill" id="btn-run" on-tap="{{runClicked}}">Run</core-icon-button>
+	<core-icon-button icon="av:pause-circle-fill" id="btn-pause" on-tap="{{pauseClicked}}">Pause</core-icon-button>
+	<core-icon-button icon="av:play-circle-fill" id="btn-resume" on-tap="{{resumeClicked}}">Resume</core-icon-button>
+	<core-icon-button icon="cancel" id="btn-stop" on-tap="{{stopClicked}}">Stop</core-icon-button>
 	<input is="core-input" id="experiment-title" on-change="{{onTitleChanged}}" />
 	<div flex></div>
-	<core-icon-button icon="{{ workspaceLocked ? 'lock' : 'lock-open' }}" on-click="{{ toggleWorkspaceLocked }}" active="{{ workspaceLocked }}"></core-icon-button>
-	<core-icon-button icon="developer-mode-tv" on-click="{{ toggleCodeVisible }}" active="{{ codeVisible }}"></core-icon-button>
-	<core-icon-button icon="file-download" on-click="{{ downloadXML }}"></core-icon-button>
+	<core-icon-button icon="{{ workspaceLocked ? 'lock' : 'lock-open' }}" on-tap="{{ toggleWorkspaceLocked }}" active="{{ workspaceLocked }}"></core-icon-button>
+	<core-icon-button icon="developer-mode-tv" on-tap="{{ toggleCodeVisible }}" active="{{ codeVisible }}"></core-icon-button>
+	<core-icon-button icon="file-download" on-tap="{{ downloadXML }}"></core-icon-button>
 </core-toolbar>
 
 <div horizontal layout flex>
@@ -183,7 +180,7 @@ octopus-blockly-toolbox core-item.core-selected {
 	<template repeat="{{ logMessages as experiment }}">
 	<div class="experiment">
 		<div class="experiment-link"><a href="/experiment/{{ experiment.id }}" target="_blank">Show Experiment</a></div>
-		<core-icon icon="cancel" on-click="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
+		<core-icon icon="cancel" on-tap="{{ closeLog }}" data-experiment="{{ experiment.id }}"></core-icon>
 		<ul>
 			<template repeat="{{ experiment.messages as item }}">
 			<li>
@@ -392,7 +389,6 @@ Polymer('octopus-editor', {
 		this.toolboxPopulate(this.$.toolboxCategories);
 		Blockly.addChangeListener(this.blocklyChanged.bind(this));
 		Blockly.on("hide-toolbox", this.toolboxClosed.bind(this));
-
 	},
 
 	blocklyChanged: function () {
