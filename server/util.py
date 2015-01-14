@@ -1,4 +1,9 @@
+# System Imports
 import functools
+
+# Twisted Imports
+from twisted.python import log
+
 
 class EventEmitter (object):
 	def on (self, name, function = None):
@@ -11,8 +16,12 @@ class EventEmitter (object):
 			except KeyError:
 				self._events[name] = []
 
-			if function not in self._events[name]:
-				self._events[name].append(function)
+			# Use is instead of in to avoid equality comparison
+			for f in self._events[name]:
+				if function is f:
+					return function
+
+			self._events[name].append(function)
 
 			return function
 
@@ -66,7 +75,7 @@ class EventEmitter (object):
 		handled = False
 
 		try:
-			events = self._events[_event]
+			events = self._events[_event][:]
 		except AttributeError:
 			return False # No events defined yet
 		except KeyError:
@@ -75,16 +84,22 @@ class EventEmitter (object):
 			handled |= bool(len(events))
 
 			for function in events:
-				function(data)
+				try:
+					function(data)
+				except:
+					log.err()
 
 		try:
-			events = self._events["all"]
+			events = self._events["all"][:]
 		except KeyError:
 			pass
 		else:
 			handled |= bool(len(events))
 
 			for function in events:
-				function(_event, data)
+				try:
+					function(_event, data)
+				except:
+					log.err()
 
 		return handled
