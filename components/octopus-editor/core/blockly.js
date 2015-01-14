@@ -590,9 +590,10 @@ Blockly.preloadAudio_ = function() {
   }
 };
 
-var _isipadorandroid = (function (a) {
+var _isie9oripadorandroid = (function (a) {
   if (/ipad|android/i.test(a))
     return true;
+  return (document.documentMode === 9);
 })(navigator.userAgent||navigator.vendor||window.opera);
 
 /**
@@ -605,9 +606,7 @@ Blockly.playAudio = function(name, opt_volume) {
   var sound = Blockly.SOUNDS_[name];
   if (sound) {
     var mySound;
-    var ie9 = goog.userAgent.DOCUMENT_MODE &&
-              goog.userAgent.DOCUMENT_MODE === 9;
-    if (ie9 || _isipadorandroid) {
+    if (_isie9oripadorandroid) {
       // Creating a new audio node causes lag in IE9, Android and iPad. Android
       // and IE9 refetch the file from the server, iPad uses a singleton audio
       // node which must be deleted and recreated for each new audio tag.
