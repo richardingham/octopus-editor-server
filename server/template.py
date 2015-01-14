@@ -2,6 +2,7 @@ from twisted.web.template import Element, renderer, XMLFile
 from twisted.python.filepath import FilePath
 
 import os
+import json
 
 templatesDir = FilePath(os.path.join(os.path.basename(__file__), "..", "templates"))
 
@@ -73,15 +74,26 @@ class SketchEdit (Element):
 class ExperimentResult (Element):
 	loader = XMLFile(templatesDir.child('experiment-result.xml'))
 
-	def __init__ (self, expt_id):
+	def __init__ (self, expt):
 		Element.__init__(self)
-		self.expt_id = expt_id
+		self.expt = expt
+		self._load = expt.load()
 
 	@renderer
-	def editor_body (self, request, tag):
-		return tag.fillSlots(
-			experiment_id = self.expt_id
-		)
+	def body (self, request, tag):
+		def _done (result):
+			return tag.fillSlots(
+				sketch_url = "/sketch/{:s}".format(self.expt.sketch_id),
+				data_url = "/experiment/{:s}/data".format(self.expt.id),
+				id = self.expt.id,
+				title = self.expt.title,
+				sketch_id = self.expt.sketch_id,
+				date = self.expt.date,
+				variables = json.dumps([{ "key": "myvar1", "name": "my var 1" }]),
+				#data = self.expt.data
+			)
+
+		return self._load.addCallback(_done)
 
 
 class ExperimentRunning (Element):

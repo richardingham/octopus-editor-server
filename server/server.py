@@ -30,6 +30,7 @@ import template
 import os
 import uuid
 import sqlite3
+import json
 from time import time as now
 
 ##
@@ -224,7 +225,9 @@ class ShowExperiment (resource.Resource):
 			if expt is not None:
 				tpl = template.ExperimentRunning(expt)
 			else:
-				tpl = template.ExperimentResult(self._id)
+				tpl = template.ExperimentResult(
+					experiment.CompletedExperiment(self._id)
+				)
 
 			d = flatten(request, tpl, request.write)
 			d.addCallbacks(lambda _: request.finish())
@@ -239,6 +242,41 @@ class ShowExperiment (resource.Resource):
 
 		return server.NOT_DONE_YET
 
+	def getChild (self, id, request):
+		if id == "data":
+			return ExperimentData(self._id)
+
+
+class ExperimentData (resource.Resource):
+	
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_GET (self, request):
+		def getarg (arg):
+			try:
+				return request.args[arg]
+			except KeyError:
+				return None
+
+		def _done (result):
+			request.write(json.dumps(result))
+			request.finish()
+
+		def _error (failure):
+			request.write("There was an error: " + str(failure))
+			request.finish()
+
+		variables = request.args['var']
+		start = getarg('start')
+		interval = getarg('interval')
+		step = getarg('step')
+
+		expt = experiment.CompletedExperiment(self._id)
+		expt.loadData(variables, start, interval, step).addCallbacks(_done, _error)
+
+		return server.NOT_DONE_YET
 
 def makeService (options):
 	"""

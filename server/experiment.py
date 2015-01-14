@@ -4,6 +4,7 @@ import os
 import json
 import time
 import re
+import numpy as np
 
 now = time.time # shortcut
 
@@ -149,7 +150,7 @@ class Experiment (EventEmitter):
 				logFile = self._experimentDir.child(fileName).create()
 				openFiles[data['name']] = logFile
 
-				logFile.write("# {:s} start:{:.2f}\n".format(data['name'], self.startTime))
+				logFile.write("# name:{:s}\n# type:{:s} \n# start:{:.2f}\n".format(data['name'], type(data['value']), self.startTime))
 
 			logFile.write("{:.2f}, {:s}\n".format(data['time'] - self.startTime, str(data['value'])))
 
@@ -203,3 +204,116 @@ class Experiment (EventEmitter):
 				variables[name] = var
 
 		return variables
+
+
+class CompletedExperiment (object):
+	def __init__ (self, id):
+		self.id = id
+
+	@defer.inlineCallbacks
+	def load (self):
+		expt = yield self._fetchFromDb(self.id)
+		experimentDir = self._getExperimentDir(self.id, expt['started_date'])
+
+		self.title = expt['sketch_title']
+		self.date = expt['started_date']
+		self.sketch_id = expt['sketch_guid']
+		# todo: expt should write a file containing all the variables and their types.
+		#self.data = yield defer.gatherResults(map(self._getData, experimentDir.globChildren('*.csv')))
+
+	@defer.inlineCallbacks
+	def loadData (self, variables, start, interval, step):
+		date = yield self._fetchDateFromDb(self.id)
+		experimentDir = self._getExperimentDir(self.id, date)
+
+		fileNames = map(lambda name: re.sub(r'[^a-z0-9\.]', '_', str(name)) + '.csv', variables)
+		data = yield defer.gatherResults(
+			map(lambda name: self._getData(experimentDir.child(name), start, interval, step), fileNames)
+		)
+
+		defer.returnValue(data)
+
+	def _fetchFromDb (self, id):
+		def _done (rows):
+			try:
+				row = rows[0]
+			except KeyError:
+				return None
+
+			return {
+				'guid': str(row[0]),
+				'sketch_guid': str(row[1]),
+				'user_id': int(row[2]),
+				'started_date': int(row[3]),
+				'sketch_title': str(row[4])
+			}
+
+		return Experiment.db.runQuery("""
+			SELECT e.guid, e.sketch_guid, e.user_id, e.started_date, s.title
+			FROM experiments AS e 
+			LEFT JOIN sketches AS s ON (s.guid = e.sketch_guid)
+			WHERE e.guid = ?
+		""", (id, )).addCallback(_done)
+
+	def _fetchDateFromDb (self, id):
+		def _done (rows):
+			try:
+				return int(rows[0][0])
+			except KeyError:
+				return None
+
+		return Experiment.db.runQuery("""
+			SELECT started_date
+			FROM experiments
+			WHERE guid = ?
+		""", (id, )).addCallback(_done)
+
+	def _getExperimentDir (self, id, startTime):
+		stime = time.gmtime(startTime)
+
+		experimentDir = FilePath(Experiment.dataDir)
+		for segment in [stime.tm_year, stime.tm_mon, stime.tm_mday, id]:
+			experimentDir = experimentDir.child(str(segment))
+			if not experimentDir.exists():
+				return None
+
+		return experimentDir
+
+	@defer.inlineCallbacks
+	def _getData (self, dataFile, start = None, interval = None, step = None):
+		try:
+			content = yield threads.deferToThread(dataFile.getContent)
+		except:
+			defer.returnValue({})
+
+		lines = content.split('\n')
+		var_name = lines[0].split(':')[1]
+		var_type = lines[1].split(':')[1]
+		data = map(lambda l: l.split(','), lines[3:])
+
+		# Make a readable variable name
+		name_split = var_name.split('::')
+		if len(name_split) > 2:
+			# Name with an attribute
+			var_name = name_split[1] + '.' + name_split[2]
+		else:
+			var_name = name_split[1]
+
+		# Cast string to numbers if required
+		if var_type == 'int':
+			data = map(lambda x: [float(x[0]), int(x[1])], data)
+		elif var_type == 'float':
+			data = map(lambda x: [float(x[0]), float(x[1])], data)
+		else:
+			data = map(lambda x: [float(x[0]), x[1]], data)
+
+		if start is not None and interval is not None and step is not None:
+			data_a = np.array(data)
+			new_x = np.arange(start, start + interval, step, float)
+			data = zip(new_x.tolist(), np.interp(new_x, data_a[:,0], data_a[:,1]).toarray())
+
+		defer.returnValue({
+			'name': var_name,
+			'type': var_type,
+			'data': data
+		})
