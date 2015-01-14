@@ -26,6 +26,18 @@ Blockly.Blocks['connection_serial'] = {
   }
 };
 
+Blockly.Blocks['connection_phidget'] = {
+  init: function() {
+    //this.setHelpUrl('http://www.example.com/');
+    this.setColour(Blockly.CONNECTIONS_CATEGORY_HUE);
+    this.appendDummyInput()
+        .appendField("Phidget ID")
+        .appendField(new Blockly.FieldTextInput("0"), "ID");
+    this.setOutput(true, "PhidgetConnection");
+    this.setTooltip('Represents a Phidget device. Specify the serial ID of the phidget board.');
+  }
+};
+
 Blockly.Blocks['connection_cvcamera'] = {
   init: function() {
     //this.setHelpUrl('http://www.example.com/');

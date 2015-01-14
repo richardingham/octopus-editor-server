@@ -219,7 +219,7 @@ var machineBlock = {
               mutation[opt.name] = values;
             } else {
               var value = containerBlock.getFieldValue(opt.name);
-              mutation[opt.name] = opt.type === "Number" ? parseInt(value, 10) : value;
+              mutation[opt.name] = opt.type === "Number" ? parseFloat(value) : value;
             }
           }
           thisBlock.mutation = mutation;
@@ -255,7 +255,7 @@ var machineBlock = {
             if (opt.multi) {
               mutation[opt.name] = JSON.parse(xmlElement.getAttribute(opt.name) || []);
             } else if (opt.type === "Number") {
-              mutation[opt.name] = parseInt(xmlElement.getAttribute(opt.name) || 0, 10);
+              mutation[opt.name] = parseFloat(xmlElement.getAttribute(opt.name) || 0);
             } else {
               mutation[opt.name] = xmlElement.getAttribute(opt.name) || "";
             }
@@ -376,6 +376,18 @@ Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
   machineOptions: [
     { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
   ]
+});
+
+Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
+  machineTitle: "Phidgets pH Sensor",
+  machineVars: [
+    { name: "ph", title: "pH Reading", type: "Number", readonly: true },
+    { name: "temperature", title: "Temperature", type: "Number" }
+  ],
+  machineOptions: [
+    { name: "min_change", title: "Minimum pH Change", type: "Number", min: 0 }
+  ],
+  machineConnectionType: "PhidgetConnection"
 });
 
 Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {

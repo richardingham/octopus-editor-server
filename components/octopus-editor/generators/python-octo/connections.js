@@ -12,6 +12,13 @@ Blockly.PythonOcto['connection_serial'] = function(block) {
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
 
+Blockly.PythonOcto['connection_phidget'] = function(block) {
+  Blockly.PythonOcto.definitions_['import_transport_basic_phidget'] = 'from octopus.transport.basic import Phidget';
+  var id = parseInt(block.getFieldValue('ID'));
+  var code = 'Phidget(' + id + ')';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};
+
 Blockly.PythonOcto['connection_cvcamera'] = function(block) {
   Blockly.PythonOcto.definitions_['import_image_source'] = 'from octopus.image.source import cv_webcam';
   var id = parseInt(block.getFieldValue('ID'));

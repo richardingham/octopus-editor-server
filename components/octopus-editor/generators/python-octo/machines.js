@@ -33,6 +33,7 @@ Blockly.PythonOcto['machine_knauer_S100'] = machineBlockGenerator('octopus.manuf
 Blockly.PythonOcto['machine_vici_multivalve'] = machineBlockGenerator('octopus.manufacturer', 'vici', 'MultiValve');
 Blockly.PythonOcto['machine_mt_icir'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'iCIR');
 Blockly.PythonOcto['machine_wpi_aladdin'] = machineBlockGenerator('octopus.manufacturer', 'wpi', 'Aladdin');
+Blockly.PythonOcto['machine_phidgets_phsensor'] = machineBlockGenerator('octopus.manufacturer', 'phidgets', 'PHSensor');
 Blockly.PythonOcto['machine_singletracker'] = machineBlockGenerator('octopus.image', 'tracker', 'SingleBlobTracker');
 Blockly.PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.image', 'tracker', 'MultiBlobTracker');
 Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('_fixme_', 'image', 'ImageProvider');
