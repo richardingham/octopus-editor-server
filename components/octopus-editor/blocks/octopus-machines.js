@@ -364,6 +364,20 @@ Blockly.Blocks['machine_mt_icir'] = extend(machineBlock, {
   machineOptions: _iCIR_options,
 });
 
+Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
+  machineTitle: "WPI Aladdin syringe pump",
+  machineVars: [
+    { name: "status", title: "Status", type: "String", readonly: true },
+    { name: "rate", title: "Position", type: "Number" },
+    { name: "direction", title: "Direction", type: "String", options: ['infuse', 'withdraw'] },
+    { name: "dispensed", title: "Dispensed Volume", type: "Number", readonly: true },
+    { name: "withdrawn", title: "Withdrawn Volume", type: "Number", readonly: true }
+  ],
+  machineOptions: [
+    { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
+  ]
+});
+
 Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
   machineTitle: "Image Provider",
   machineVars: [
