@@ -402,6 +402,7 @@ class Variables (EventEmitter):
 			onChange = _makeHandler(name)
 			variable.on('change', onChange)
 			self._handlers[name] = onChange
+			self.emit('variable-added', name = name, variable = variable)
 
 		elif isinstance(variable, Component):
 			handlers = {}
@@ -409,6 +410,7 @@ class Variables (EventEmitter):
 				onChange = _makeHandler(attrname)
 				attr.on('change', onChange)
 				handlers[attrname] = onChange
+				self.emit('variable-added', name = attrname, variable = variable)
 
 			self._handlers[name] = handlers
 
@@ -426,6 +428,7 @@ class Variables (EventEmitter):
 				'change', 
 				self._handlers[name]
 			)
+			self.emit('variable-removed', name = name, variable = variable)
 
 		elif isinstance(variable, Component):
 			for attrname, attr in variable.variables.iteritems():
@@ -433,20 +436,43 @@ class Variables (EventEmitter):
 					'change',
 					self._handlers[name][attrname]
 				)
+				self.emit('variable-removed', name = attrname, variable = variable)
 
 		del self._variables[name]
 		del self._handlers[name]
 
 	def rename (self, oldName, newName):
+		log.msg("Renaming variable: %s to %s" % (oldName, newName))
+
 		if oldName == newName:
 			return
 
-		if oldName in self._variables:
-			self._variables[newName] = self._variables[oldName]
-			del self._variables[oldName]
+		try:
+			variable = self._variables[oldName]
+		except KeyError:
+			return
 
-			self._handlers[newName] = self._handlers[oldName]
-			del self._handlers[oldName]
+		if isinstance(variable, Component):
+			oldNames = [name for name, var in variable.variables.iteritems()]
+		else:
+			oldNames = [oldName]
+
+		variable.alias = newName
+
+		for name in oldNames:
+			variable = self._variables[name]
+			newName = variable.alias
+
+			self._variables[newName] = self._variables[name]
+			self._handlers[newName] = self._handlers[name]
+			del self._variables[name]
+			del self._handlers[name]
+
+			self.emit('variable-renamed', 
+				oldName = name, 
+				newName = newName, 
+				variable = variable
+			)
 
 	def get (self, name):
 		try:

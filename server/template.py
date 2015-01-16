@@ -89,8 +89,7 @@ class ExperimentResult (Element):
 				title = self.expt.title,
 				sketch_id = self.expt.sketch_id,
 				date = self.expt.date,
-				variables = json.dumps([{ "key": "myvar1", "name": "my var 1" }]),
-				#data = self.expt.data
+				variables = json.dumps(self.expt.variables)
 			)
 
 		return self._load.addCallback(_done)

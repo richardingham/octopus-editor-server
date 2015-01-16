@@ -222,7 +222,17 @@ Polymer('octopus-chart-static', {
 	},
 
 	loadedData: function (e, detail) {
-		console.log(e);
+		var name, series = this._series, n = series.length, data = detail.response;
+		for (var i = 0, m = data.length; i < m; i++) {
+			name = data[i].name;
+			for (var j = 0; j < n; j++) {
+				if (series[j].label === name) {
+					series[j].data = data[i].data;
+				}
+			}
+		}
+
+		this.redraw();
 	},
 
 	getData: function () {

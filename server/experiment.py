@@ -95,7 +95,9 @@ class Experiment (EventEmitter):
 		eventFile = self._experimentDir.child("events.log").create()
 		sketchFile = self._experimentDir.child("sketch.log").create()
 		snapFile = self._experimentDir.child("sketch.snapshot.log")
+		varsFile = self._experimentDir.child("variables")
 		openFiles = { "_events": eventFile, "_sketch": sketchFile }
+		usedFiles = {}
 
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
@@ -141,18 +143,57 @@ class Experiment (EventEmitter):
 			self.logMessages.append(data)
 			sketch.notifySubscribers("experiment", "log", data, self)
 
+		# Files are only created when a variable actually gets data,
+		# not necessarily when it is created.
 		@workspace.variables.on("variable-changed")
 		def onVarChanged (data):
 			try:
 				logFile = openFiles[data['name']]
 			except KeyError:
-				fileName = re.sub(r'[^a-z0-9\.]', '_', data['name']) + '.csv'
+				varName = unusedVarName(data['name'])
+				fileName = fileNameFor(varName)
 				logFile = self._experimentDir.child(fileName).create()
-				openFiles[data['name']] = logFile
+				openFiles[varName] = logFile
+				addUsedFile(varName, fileName, workspace.variables.get(data['name']))
 
-				logFile.write("# name:{:s}\n# type:{:s} \n# start:{:.2f}\n".format(data['name'], type(data['value']), self.startTime))
+				logFile.write(
+					"# name:{:s}\n# type:{:s} \n# start:{:.2f}\n".format(
+						data['name'], 
+						type(data['value']).__name__, 
+						self.startTime
+				))
 
 			logFile.write("{:.2f}, {:s}\n".format(data['time'] - self.startTime, str(data['value'])))
+
+		@workspace.variables.on("variable-renamed")
+		def onVarRenamed (data):
+			openFiles[data['newName']] = openFiles[data['oldName']]
+			del openFiles[data['oldName']]
+			addUsedFile(data['newName'], "", data['variable'])
+
+		def unusedVarName (varName):
+			if varName in usedFiles:
+				return unusedVarName(varName + "_")
+			return varName
+
+		def fileNameFor (varName):
+			return re.sub(r'[^a-z0-9\.]', '_', varName) + '.csv'
+
+		def addUsedFile (varName, fileName, variable):
+			try:
+				unit = str(variable.unit)
+			except AttributeError:
+				unit = ""
+
+			if fileName != "":
+				usedFiles[varName] = {
+					"name": varName,
+					"type": variable.type.__name__,
+					"unit": unit,
+					"file": fileName
+				}
+			else:
+				usedFiles[varName] = {}
 
 		def flushFiles ():
 			for file in openFiles:
@@ -169,6 +210,10 @@ class Experiment (EventEmitter):
 			workspace.off("block-state", onBlockStateChange)
 			workspace.off("log-message", onLogMessage)
 			workspace.variables.off("variable-changed", onVarChanged)
+			workspace.variables.off("variable-renamed", onVarRenamed)
+
+			with varsFile.create() as fp:
+				fp.write(json.dumps(usedFiles))
 
 			try:
 				flushFilesLoop.stop()
@@ -218,8 +263,23 @@ class CompletedExperiment (object):
 		self.title = expt['sketch_title']
 		self.date = expt['started_date']
 		self.sketch_id = expt['sketch_guid']
-		# todo: expt should write a file containing all the variables and their types.
-		#self.data = yield defer.gatherResults(map(self._getData, experimentDir.globChildren('*.csv')))
+
+		varsFile = experimentDir.child("variables")
+		try:
+			content = yield threads.deferToThread(varsFile.getContent)
+			self.variables = [
+				{
+					"key": v["name"], 
+					"name": '.'.join(v["name"].split('::')[1:]), 
+					"type": v["type"],
+					"unit": v["unit"]
+				}
+				for v in json.loads(content).itervalues()
+				if "name" in v
+			]
+		except:
+			log.err()
+			self.variables = []
 
 	@defer.inlineCallbacks
 	def loadData (self, variables, start, interval, step):
@@ -287,17 +347,12 @@ class CompletedExperiment (object):
 			defer.returnValue({})
 
 		lines = content.split('\n')
-		var_name = lines[0].split(':')[1]
-		var_type = lines[1].split(':')[1]
-		data = map(lambda l: l.split(','), lines[3:])
+		var_name = lines[0].split(':', 1)[1].strip()
+		var_type = lines[1].split(':', 1)[1].strip()
+		data = map(lambda l: l.split(','), filter(None, lines[3:]))
 
 		# Make a readable variable name
-		name_split = var_name.split('::')
-		if len(name_split) > 2:
-			# Name with an attribute
-			var_name = name_split[1] + '.' + name_split[2]
-		else:
-			var_name = name_split[1]
+		var_name = '.'.join(var_name.split('::')[1:])
 
 		# Cast string to numbers if required
 		if var_type == 'int':
@@ -307,6 +362,7 @@ class CompletedExperiment (object):
 		else:
 			data = map(lambda x: [float(x[0]), x[1]], data)
 
+		# Select a certain portion of the data
 		if start is not None and interval is not None and step is not None:
 			data_a = np.array(data)
 			new_x = np.arange(start, start + interval, step, float)
