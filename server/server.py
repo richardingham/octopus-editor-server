@@ -254,10 +254,10 @@ class ExperimentData (resource.Resource):
 		self._id = id
 
 	def render_GET (self, request):
-		def getarg (arg):
+		def getfloatarg (arg):
 			try:
-				return request.args[arg]
-			except KeyError:
+				return float(request.args[arg][0])
+			except (TypeError, KeyError):
 				return None
 
 		def _done (result):
@@ -269,9 +269,9 @@ class ExperimentData (resource.Resource):
 			request.finish()
 
 		variables = request.args['var']
-		start = getarg('start')
-		interval = getarg('interval')
-		step = getarg('step')
+		start = getfloatarg('start')
+		interval = getfloatarg('interval')
+		step = getfloatarg('step')
 
 		expt = experiment.CompletedExperiment(self._id)
 		expt.loadData(variables, start, interval, step).addCallbacks(_done, _error)

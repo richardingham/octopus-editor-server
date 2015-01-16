@@ -264,32 +264,34 @@ class CompletedExperiment (object):
 		self.date = expt['started_date']
 		self.sketch_id = expt['sketch_guid']
 
-		varsFile = experimentDir.child("variables")
-		try:
-			content = yield threads.deferToThread(varsFile.getContent)
-			self.variables = [
-				{
-					"key": v["name"], 
-					"name": '.'.join(v["name"].split('::')[1:]), 
-					"type": v["type"],
-					"unit": v["unit"]
-				}
-				for v in json.loads(content).itervalues()
-				if "name" in v
-			]
-		except:
-			log.err()
-			self.variables = []
+		variables = yield self._getVariables(experimentDir)
+		self.variables = [
+			{
+				"key": v["name"], 
+				"name": '.'.join(v["name"].split('::')[1:]), 
+				"type": v["type"],
+				"unit": v["unit"]
+			}
+			for v in variables.itervalues()
+			if "name" in v
+		]
 
 	@defer.inlineCallbacks
 	def loadData (self, variables, start, interval, step):
 		date = yield self._fetchDateFromDb(self.id)
 		experimentDir = self._getExperimentDir(self.id, date)
+		storedVariablesData = yield self._getVariables(experimentDir)
 
-		fileNames = map(lambda name: re.sub(r'[^a-z0-9\.]', '_', str(name)) + '.csv', variables)
-		data = yield defer.gatherResults(
-			map(lambda name: self._getData(experimentDir.child(name), start, interval, step), fileNames)
-		)
+		data = yield defer.gatherResults(map(
+			lambda variable: self._getData(
+				experimentDir.child(variable["file"]), 
+				variable["name"], 
+				variable["type"], 
+				start, 
+				interval
+			), 
+			map(lambda name: storedVariablesData[name], variables)
+		))
 
 		defer.returnValue(data)
 
@@ -340,36 +342,91 @@ class CompletedExperiment (object):
 		return experimentDir
 
 	@defer.inlineCallbacks
-	def _getData (self, dataFile, start = None, interval = None, step = None):
+	def _getVariables (self, experimentDir):
+		varsFile = experimentDir.child("variables")
 		try:
-			content = yield threads.deferToThread(dataFile.getContent)
+			content = yield threads.deferToThread(varsFile.getContent)
+			variables = json.loads(content)
 		except:
-			defer.returnValue({})
+			log.err()
+			variables = {}
 
-		lines = content.split('\n')
-		var_name = lines[0].split(':', 1)[1].strip()
-		var_type = lines[1].split(':', 1)[1].strip()
-		data = map(lambda l: l.split(','), filter(None, lines[3:]))
+		defer.returnValue(variables)
+
+	@defer.inlineCallbacks
+	def _getData (self, dataFile, name, var_type, start = None, interval = None):
+		if var_type == "int":
+			dtype = int
+		elif var_type == "float":
+			dtype = float
+		else:
+			dtype = str
+
+		try:
+			fp = dataFile.open()
+			data_a = yield threads.deferToThread(np.loadtxt, fp, dtype = dtype, delimiter = ',')
+		except:
+			log.err()
+			defer.returnValue({})
+		finally:
+			fp.close()
 
 		# Make a readable variable name
-		var_name = '.'.join(var_name.split('::')[1:])
-
-		# Cast string to numbers if required
-		if var_type == 'int':
-			data = map(lambda x: [float(x[0]), int(x[1])], data)
-		elif var_type == 'float':
-			data = map(lambda x: [float(x[0]), float(x[1])], data)
-		else:
-			data = map(lambda x: [float(x[0]), x[1]], data)
+		var_name = '.'.join(name.split('::')[1:])
 
 		# Select a certain portion of the data
-		if start is not None and interval is not None and step is not None:
-			data_a = np.array(data)
-			new_x = np.arange(start, start + interval, step, float)
-			data = zip(new_x.tolist(), np.interp(new_x, data_a[:,0], data_a[:,1]).toarray())
+		if start is not None and interval is not None:
+			data_a = data_a[np.where((start <= data_a[:,0]) * (data_a[:, 0] <= start + interval))]
+		else:
+			interval = data_a[-1][0] - data_a[0][0]
+
+		data = data_a.tolist()
+		if len(data) > 200 and var_type in ("int", "float"):
+			spread = np.ptp(data_a[:,1])
+			print "Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data)
+			print "Spread: %s" % spread
+			print "Epsilon: %s" % min(interval / 25., spread / 5.)
+			data = rdp(data, epsilon = min(interval / 25., spread / 5.))
+			print " -> %s points" % len(data)
 
 		defer.returnValue({
 			'name': var_name,
 			'type': var_type,
 			'data': data
 		})
+
+		
+from math import sqrt
+
+def distance(a, b):
+    return  sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
+def point_line_distance(point, start, end):
+    if (start == end):
+        return distance(point, start)
+    else:
+        n = abs(
+            (end[0] - start[0]) * (start[1] - point[1]) - (start[0] - point[0]) * (end[1] - start[1])
+        )
+        d = sqrt(
+            (end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2
+        )
+        return n / d
+
+def rdp(points, epsilon):
+    """
+    Reduces a series of points to a simplified version that loses detail, but
+    maintains the general shape of the series.
+    """
+    dmax = 0.0
+    index = 0
+    for i in range(1, len(points) - 1):
+        d = point_line_distance(points[i], points[0], points[-1])
+        if d > dmax:
+            index = i
+            dmax = d
+    if dmax >= epsilon:
+        results = rdp(points[:index+1], epsilon)[:-1] + rdp(points[index:], epsilon)
+    else:
+        results = [points[0], points[-1]]
+    return results
