@@ -63,6 +63,10 @@
 
 <div id="box" style="width: {{ width + 10 }}px;">
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
+	<div style="text-align: right">	
+		<core-icon icon="settings" on-click="{{ toggleOptions }}"></core-icon>
+		<core-icon icon="undo" on-click="{{ resetZoom }}"></core-icon>
+	</div>
 	<div id="options">
 		<div><strong>Variables:</strong></div>
 		<ul style="list-style-type: none;">
@@ -96,9 +100,14 @@ Polymer('octopus-chart-static', {
 		$(this.$.chart).on("plotselected", function (event, ranges) {
 			if (ranges.xaxis.to - ranges.xaxis.from > 1) {
 				_this.getData(ranges.xaxis);
+			} else {
+				_this._plot.clearSelection();
 			}
-			_this._plot.clearSelection();
 		})
+	},
+
+	resetZoom: function () {
+		this.getData();
 	},
 
 	toggleOptions: function (e) {
@@ -225,6 +234,7 @@ Polymer('octopus-chart-static', {
 		this._plot.setData(this._series);
 		this._plot.setupGrid();
 		this._plot.draw();
+		this._plot.clearSelection();
 	},
 
 	loadedData: function (e, detail) {
