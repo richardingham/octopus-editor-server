@@ -3,7 +3,7 @@
 
 <link rel="import" href="../../components/octopus-chart/octopus-chart-static.html">
 
-<polymer-element name="octopus-experiment-viewer" attributes="variables dataurl">
+<polymer-element name="octopus-experiment-viewer" attributes="variables dataurl timezero">
 <template>
 <style>
 
@@ -67,23 +67,23 @@ experiment-data.dragging .slot {
 	</ol>
 </variables-list>
 
-<core-splitter direction="left" allowOverflow="true"></core-splitter>
+<!--core-splitter direction="left" allowOverflow="true"></core-splitter-->
 
 <experiment-data id="displayarea" on-dragstart="{{ dragStart }}" on-dragend="{{ dragEnd }}">
 	<template repeat="{{ g in graphs }}">
 
-	<div class="slot" data-before="{{ g.index }}"
+	<!--div class="slot" data-before="{{ g.index }}"
 		on-dragover="{{ dragOverSlot }}"
 		on-dragenter="{{ dragEnterSlot }}"
 		on-dragleave="{{ dragLeaveSlot }}"
 		on-drop="{{ dropOnSlot }}"
-	></div>
+	></div-->
 
 	<octopus-chart-static
 		data-index="{{ g.index }}"
 		streams="{{ g.streams }}"
 		dataurl="{{ dataurl }}"
-		timezero="{{ timeZero }}"
+		timezero="{{ timezero }}"
 		_draggable="true"
 		on-dragover="{{ dragOverChart }}"
 		on-dragenter="{{ dragEnterChart }}"
@@ -100,7 +100,7 @@ experiment-data.dragging .slot {
 
 Polymer('octopus-experiment-viewer', {
 
-	timeZero: 0,
+	timezero: 0,
 	variables: [],
 	dataurl: '',
 	runtimeStreams: [],

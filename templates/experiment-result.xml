@@ -55,6 +55,7 @@
 
 <octopus-experiment-viewer id="viewer" flex="" horizontal="" layout="">
 	<t:attr name="dataurl"><t:slot name="data_url" /></t:attr>
+	<t:attr name="timezero"><t:slot name="date" /></t:attr>
 	<t:attr name="variables"><t:slot name="variables" /></t:attr>
 </octopus-experiment-viewer>
 

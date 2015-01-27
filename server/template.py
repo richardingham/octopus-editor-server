@@ -88,7 +88,7 @@ class ExperimentResult (Element):
 				id = self.expt.id,
 				title = self.expt.title,
 				sketch_id = self.expt.sketch_id,
-				date = self.expt.date,
+				date = str(self.expt.date),
 				variables = json.dumps(self.expt.variables)
 			)
 

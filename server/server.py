@@ -271,10 +271,9 @@ class ExperimentData (resource.Resource):
 		variables = request.args['var']
 		start = getfloatarg('start')
 		interval = getfloatarg('interval')
-		step = getfloatarg('step')
 
 		expt = experiment.CompletedExperiment(self._id)
-		expt.loadData(variables, start, interval, step).addCallbacks(_done, _error)
+		expt.loadData(variables, start, interval).addCallbacks(_done, _error)
 
 		return server.NOT_DONE_YET
 

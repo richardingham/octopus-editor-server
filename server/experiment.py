@@ -277,7 +277,7 @@ class CompletedExperiment (object):
 		]
 
 	@defer.inlineCallbacks
-	def loadData (self, variables, start, interval, step):
+	def loadData (self, variables, start, interval):
 		date = yield self._fetchDateFromDb(self.id)
 		experimentDir = self._getExperimentDir(self.id, date)
 		storedVariablesData = yield self._getVariables(experimentDir)
@@ -372,25 +372,29 @@ class CompletedExperiment (object):
 			fp.close()
 
 		# Make a readable variable name
-		var_name = '.'.join(name.split('::')[1:])
+		#var_name = '.'.join(name.split('::')[1:])
 
 		# Select a certain portion of the data
 		if start is not None and interval is not None:
+			print "Data start: %s" % data_a[0][0]
+			print "Data end: %s" % data_a[-1][0]
+			print "Req Start: %s" % start
 			data_a = data_a[np.where((start <= data_a[:,0]) * (data_a[:, 0] <= start + interval))]
 		else:
 			interval = data_a[-1][0] - data_a[0][0]
 
 		data = data_a.tolist()
-		if len(data) > 200 and var_type in ("int", "float"):
+		if len(data) > 400 and var_type in ("int", "float"):
 			spread = np.ptp(data_a[:,1])
 			print "Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data)
 			print "Spread: %s" % spread
-			print "Epsilon: %s" % min(interval / 25., spread / 5.)
-			data = rdp(data, epsilon = min(interval / 25., spread / 5.))
-			print " -> %s points" % len(data)
+			print "Epsilon: %s" % min(interval / 200., spread / 50.)
+			data = rdp(data, epsilon = min(interval / 200., spread / 50.))
+
+		print " -> %s points" % len(data)
 
 		defer.returnValue({
-			'name': var_name,
+			'name': name,
 			'type': var_type,
 			'data': data
 		})
