@@ -119,8 +119,8 @@ Polymer('octopus-experiment-viewer', {
 	},
 
 	variableClicked: function (e) {
-		if (e.srcElement.dataset.id) {
-			var id = e.srcElement.dataset.id;
+		if (e.target.dataset.id) {
+			var id = e.target.dataset.id;
 
 			// Find id in variables.
 			for (var i = 0, m = this.variables.length; i < m; i++) {
