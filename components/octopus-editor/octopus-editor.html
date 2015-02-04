@@ -193,7 +193,7 @@ octopus-blockly-toolbox core-item.core-selected {
 	</template>
 </div>
 
-<octopus-runtime 
+<octopus-runtime
 	id="runtime"
 	url="{{ websocketUrl }}"
 	experiment="{{ experiment }}"
@@ -376,7 +376,7 @@ octopus-blockly-toolbox core-item.core-selected {
 <iframe id="download" style="display:none"></iframe>
 
 </template>
-<script> 
+<script>
 
 Polymer('octopus-editor', {
 	ready: function () {
@@ -477,7 +477,7 @@ Polymer('octopus-editor', {
 
 		var blockEvents = [
 			"created", "disposed", "connected", "disconnected",
-			"set-position", "set-field-value", "set-disabled", 
+			"set-position", "set-field-value", "set-disabled",
 			"set-inputs-inline", "add-input", "remove-input",
 			"set-comment", "set-collapsed",
 			"set-mutation", "transaction"
@@ -496,7 +496,7 @@ Polymer('octopus-editor', {
 	onSketchRenamed: function (e, title) {
 		this.$['experiment-title'].value = title;
 	},
-	
+
 	onBlockChanged: function (e) {
 		var command = e.detail.command;
 		var payload = e.detail.payload;
@@ -622,7 +622,7 @@ Polymer('octopus-editor', {
 	},
 
 	closeLog: function (e) {
-		var experimentId = e.srcElement.dataset.experiment;
+		var experimentId = e.target.getAttribute('data-experiment');
 		var logMessages = this.logMessages;
 		for (var i = 0, m = logMessages.length; i < m; i++) {
 			if (logMessages[i].id === experimentId) {
@@ -717,9 +717,9 @@ Polymer('octopus-editor', {
 		// Iterate over each category.
 		var toolbox = [];
 
-		function filterChildNodesByTag (node, name) { 
-			return node.childNodes.array().filter(function (node) { 
-				return node.tagName && node.tagName.toLowerCase() == name; 
+		function filterChildNodesByTag (node, name) {
+			return node.childNodes.array().filter(function (node) {
+				return node.tagName && node.tagName.toLowerCase() == name;
 			});
 		}
 		var nodes = filterChildNodesByTag(xml, 'category');

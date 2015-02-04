@@ -80,7 +80,7 @@ experiment-data.dragging .slot {
 		on-drop="{{ dropOnSlot }}"
 	></div>
 
-	<octopus-chart 
+	<octopus-chart
 		data-index="{{ g.index }}"
 		streams="{{ g.streams }}"
 		timezero="{{ timeZero }}"
@@ -95,11 +95,11 @@ experiment-data.dragging .slot {
 	</template>
 
 	<template repeat="{{ p in properties }}">
-	<octopus-property data-name="{{ p.key }}" 
+	<octopus-property data-name="{{ p.key }}"
 		variable="{{ p }}"
 		draggable="true"
-		on-dragover="{{ dragOverProperty }}" 
-		on-dragenter="{{ dragEnterProperty }}" 
+		on-dragover="{{ dragOverProperty }}"
+		on-dragenter="{{ dragEnterProperty }}"
 		on-dragleave="{{ dragLeaveProperty }}"
 		on-drop="{{ dropOnProperty }}"
 		on-remove-property="{{ propertyRemove }}"
@@ -130,9 +130,9 @@ Polymer('octopus-experiment-interface', {
 	_dragSourceIndex: null,
 
 	variableClicked: function (e) {
-		if (e.srcElement.dataset.id) {
-			var id = e.srcElement.dataset.id;
+		var id = e.target.getAttribute("data-id");
 
+		if (id) {
 			// Check not already in properties.
 			for (var i = 0, m = this.properties.length; i < m; i++) {
 				if (this.properties[i].key === id) {
@@ -162,7 +162,7 @@ Polymer('octopus-experiment-interface', {
 	},
 
 	propertyRemove: function (e) {
-		var id = e.srcElement.dataset.name;
+		var id = e.target.getAttribute("data-name");
 
 		// Remove id from runtime properties.
 		for (var i = 0, m = this.runtimeProperties.length; i < m; i++) {
@@ -200,12 +200,12 @@ Polymer('octopus-experiment-interface', {
 			charts[i].addData(data);
 		};
 	},
-	
+
 	dragStart: function (e) {
 		var id, arr, propName;
 
 		if (e.target.tagName === "OCTOPUS-PROPERTY") {
-			id = e.target.dataset.name;
+			id = e.target.getAttribute('data-name');
 			arr = this.properties;
 			propName = "key";
 
@@ -213,7 +213,7 @@ Polymer('octopus-experiment-interface', {
 			this._dragSourceName = id;
 
 		} else if (e.target.tagName === "OCTOPUS-CHART") {
-			id = parseInt(e.target.dataset.index, 10);
+			id = parseInt(e.target.getAttribute('data-index'), 10);
 			arr = this.graphs;
 			propName = "index";
 
@@ -243,17 +243,17 @@ Polymer('octopus-experiment-interface', {
 
 	dragOverProperty: function (e) {
 		//console.log("over", e.target);
-		var id = e.target.dataset.name;
+		var id = e.target.getAttribute('data-name');
 
 		if (this._dragSourceType === "chart") {
-			e.dataTransfer.dropEffect = 'none'; 
+			e.dataTransfer.dropEffect = 'none';
 			return;
 		}
 
 		var target = this._targetAncestor(e.target, "octopus-property");
 
 		if (this._dragEnterCount > 0 && $(target).data("name") !== this.properties[this._dragSourceIndex].key) {
-			e.dataTransfer.dropEffect = 'move'; 
+			e.dataTransfer.dropEffect = 'move';
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
 			return false;
@@ -300,7 +300,7 @@ Polymer('octopus-experiment-interface', {
 
 	dropOnProperty: function (e) {
 		if (this._dragSourceType === "property") {
-			var i, m, name = e.currentTarget.dataset.name;
+			var i, m, name = e.currentTarget.getAttribute('data-name');
 
 			for (i = 0, m = this.properties.length; i < m; i++) {
 				if (this.properties[i].key === name) {
@@ -343,19 +343,19 @@ Polymer('octopus-experiment-interface', {
 		var target = this._targetAncestor(e.target, "octopus-chart");
 
 		if (this._validOverChart(target[0])) {
-			e.dataTransfer.dropEffect = 'move'; 
+			e.dataTransfer.dropEffect = 'move';
 			e.preventDefault();
 			return;
 		}
 
 		if (this._dragEnterCount > 0) {
-			e.dataTransfer.dropEffect = 'move'; 
+			e.dataTransfer.dropEffect = 'move';
 			//console.log("over:", id, this._dragSourceName);
 			e.preventDefault();
 			return false;
 		}
 	},
-	
+
 	dragEnterChart: function (e) {
 		var target = this._targetAncestor(e.target, "octopus-chart");
 
@@ -407,7 +407,7 @@ Polymer('octopus-experiment-interface', {
 		var target = this._targetAncestor(e.target, "div");
 
 		if (this._dragSourceType === "chart") {
-			e.dataTransfer.dropEffect = 'move'; 
+			e.dataTransfer.dropEffect = 'move';
 			e.preventDefault();
 			return;
 		}
