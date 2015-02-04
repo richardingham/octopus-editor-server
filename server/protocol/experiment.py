@@ -120,13 +120,13 @@ class ExperimentProtocol (object):
 				return None
 
 		return self.send(
-			'properties', 
+			'properties',
 			{
 				"sketch": sketch.id,
 				"experiment": experiment.id,
-				"data": { 
-					name: _value(name) 
-					for name in properties 
+				"data": {
+					name: _value(name)
+					for name in properties
 				}
 			},
 			context
@@ -142,23 +142,26 @@ class ExperimentProtocol (object):
 				return (round(point[0] - start, 1), round(point[1], 2))
 			except TypeError:
 				return 0
-				
+
 		payload = {
 			"sketch": sketch.id,
 			"experiment": experiment.id,
 			"zero": round(start, 1),
 			"max": round(start + interval, 1),
-			"data": { 
-				name: map(_compress, variables[name].get(start, interval)) 
-				for name in streams 
-			}
+			"data": [
+				{
+					"name": name,
+					"data": map(_compress, variables[name].get(start, interval))
+				}
+				for name in streams
+			]
 		}
 
 		if oneoff:
 			payload['oneoff'] = True
 
 		return self.send(
-			'streams', 
+			'streams',
 			payload,
 			context
 		)
@@ -166,4 +169,3 @@ class ExperimentProtocol (object):
 
 class Error (Exception):
 	pass
-
