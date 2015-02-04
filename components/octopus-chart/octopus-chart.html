@@ -3,58 +3,12 @@
 <link rel="import" href="../../bower_components/core-icon-button/core-icon-button.html" />
 <link rel="import" href="../../bower_components/core-icon/core-icon.html" />
 
-<!--script src="jquery.flot.min.js"></script>
-<script src="jintervals-0.7-min.js"></script-->
-<script src="vis.min.js"></script>
+<script src="../../bower_components/vis/dist/vis.min.js"></script>
 
 <polymer-element name="octopus-chart" attributes="streams width height time timezero">
 <template>
-<link rel="stylesheet" href="vis.min.css" />
-<style>
-
-:host {
-	display: block;
-	margin: 5px;
-}
-
-#box {
-	background-color: #D5DEED;
-	border-radius: 2px;
-	padding: 5px;
-}
-
-#chart {
-	background-color: #FFF;
-}
-
-#options {
-	display: none;
-	padding: 5px;
-	font-size: 0.8em;
-}
-
-#options.show {
-	display: block;
-}
-
-#box core-icon {
-	color: #3E57A1;
-	cursor: pointer;
-}
-
-#box core-icon.active,
-#box core-icon:hover {
-	color: #000;
-}
-
-#options core-icon-button {
-	color: #CD4848;
-}
-#options core-icon-button:hover {
-	color: #E22200
-}
-
-</style>
+<link rel="stylesheet" href="../../bower_components/vis/dist/vis.min.css" />
+<link rel="stylesheet" href="octopus-chart.css" />
 
 <div id="box" style="width: {{ width + 10 }}px;">
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>

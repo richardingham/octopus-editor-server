@@ -4,62 +4,12 @@
 <link rel="import" href="../../bower_components/core-icon/core-icon.html" />
 <link rel="import" href="../../bower_components/core-ajax/core-ajax.html" />
 
-<!--script src="jquery.offset.fix.js"></script>
-<script src="jquery.flot.min.js"></script>
-<script src="jquery.flot.selection.min.js"></script>
-<script src="jquery.flot.axislabels.js"></script>
-<script src="jintervals-0.7-min.js"></script-->
-
-<script src="vis.min.js"></script>
+<script src="../../bower_components/vis/dist/vis.min.js"></script>
 
 <polymer-element name="octopus-chart-static" attributes="streams width height timezero dataurl">
 <template>
-<link rel="stylesheet" href="vis.min.css" />
-<style>
-
-:host {
-	display: block;
-	margin: 5px;
-}
-
-#box {
-	background-color: #D5DEED;
-	border-radius: 2px;
-	padding: 5px;
-}
-
-#chart {
-	background-color: #FFF;
-}
-
-#options {
-	display: none;
-	padding: 5px;
-	font-size: 0.8em;
-}
-
-#options.show {
-	display: block;
-}
-
-#box core-icon {
-	color: #3E57A1;
-	cursor: pointer;
-}
-
-#box core-icon.active,
-#box core-icon:hover {
-	color: #000;
-}
-
-#options core-icon-button {
-	color: #CD4848;
-}
-#options core-icon-button:hover {
-	color: #E22200
-}
-
-</style>
+<link rel="stylesheet" href="../../bower_components/vis/dist/vis.min.css" />
+<link rel="stylesheet" href="octopus-chart.css" />
 
 <core-ajax
 	id="data"
@@ -70,7 +20,7 @@
 
 <div id="box" style="width: {{ width + 10 }}px;">
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
-	<div style="text-align: right">	
+	<div style="text-align: right">
 		<core-icon icon="settings" on-click="{{ toggleOptions }}"></core-icon>
 		<core-icon icon="undo" on-click="{{ resetZoom }}"></core-icon>
 	</div>
@@ -292,7 +242,7 @@ Polymer('octopus-chart-static', {
 						return item.x > min && item.x < max;
 					}
 				}));
-				
+
 				for (var j = 0, n = streamData.length; j < n; j++) {
 					this.seriesdata.add({
 						id: this._idCounter++,
