@@ -410,6 +410,7 @@ class Variables (EventEmitter):
 				onChange = _makeHandler(attrname)
 				attr.on('change', onChange)
 				handlers[attrname] = onChange
+                self._variables[attrname] = attr
 				self.emit('variable-added', name = attrname, variable = variable)
 
 			self._handlers[name] = handlers
@@ -437,6 +438,7 @@ class Variables (EventEmitter):
 					self._handlers[name][attrname]
 				)
 				self.emit('variable-removed', name = attrname, variable = variable)
+                del self._variables[attrname]
 
 		del self._variables[name]
 		del self._handlers[name]
