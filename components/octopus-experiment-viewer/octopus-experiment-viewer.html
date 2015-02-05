@@ -1,5 +1,4 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/core-splitter/core-splitter.html">
 
 <link rel="import" href="../../components/octopus-chart/octopus-chart-static.html">
 
@@ -7,39 +6,38 @@
 <template>
 <style>
 
-variables-list {
+div.variables-list {
 	overflow-y: scroll;
 }
 
-variables-list ol {
+div.variables-list ol {
 	list-style-type: none;
 	margin: 13px 0;
 	padding: 0;
 }
 
-variables-list ol li {
+div.variables-list ol li {
 	padding: 2px 15px;
 	cursor: pointer;
 }
-variables-list ol li:hover {
+div.variables-list ol li:hover {
 	color: #FFF;
 	background-color: #526E9C;
 }
 
-experiment-data {
-	flex: 1;
+div.experiment-data {
 	overflow-y: scroll;
 }
 
-experiment-data octopus-chart-static {
+div.experiment-data octopus-chart-static {
 	display: block;
 }
 
-experiment-data .over {
+div.experiment-data .over {
 	border: 2px solid black;
 }
 
-experiment-data .slot {
+div.experiment-data .slot {
 	display: none;
 	background: #none;
 	border: 2px dashed #555;
@@ -48,28 +46,26 @@ experiment-data .slot {
 	height: 15px;
 }
 
-experiment-data .slot.over {
+div.experiment-data .slot.over {
 	border: 2px dashed #000;
 	background-color: #DFDFDF;
 }
 
-experiment-data.dragging .slot {
+div.experiment-data.dragging .slot {
 	display: block;
 }
 
 </style>
 
-<variables-list on-click="{{ variableClicked }}">
+<div class="variables-list" on-click="{{ variableClicked }}">
 	<ol>
 	<template repeat="{{ variables as v }}">
 		<li data-id="{{ v.key }}">{{ v.name }}</li>
 	</template>
 	</ol>
-</variables-list>
+</div>
 
-<!--core-splitter direction="left" allowOverflow="true"></core-splitter-->
-
-<experiment-data id="displayarea" on-dragstart="{{ dragStart }}" on-dragend="{{ dragEnd }}">
+<div class="experiment-data" flex id="displayarea" on-dragstart="{{ dragStart }}" on-dragend="{{ dragEnd }}">
 	<template repeat="{{ g in graphs }}">
 
 	<!--div class="slot" data-before="{{ g.index }}"
@@ -93,7 +89,7 @@ experiment-data.dragging .slot {
 	>
 	</octopus-chart-static>
 	</template>
-</experiment-data>
+</div>
 
 </template>
 <script>
