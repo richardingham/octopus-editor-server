@@ -288,7 +288,12 @@ Tooltip.show_ = function() {
   Tooltip.visible = true;
   Tooltip.svgGroup_.style.display = 'block';
   // Resize the background and shadow to fit.
-  var bBox = Tooltip.svgText_.getBBox();
+  try {
+    // Causes an error when Polymer polyfills are used.
+    var bBox = Tooltip.svgText_.getBBox();
+  } catch (e) {
+    var bBox = Tooltip.svgText_.getBoundingClientRect();
+  }
   var width = 2 * Tooltip.MARGINS + bBox.width;
   var height = bBox.height;
   Tooltip.svgBackground_.setAttribute('width', width);
