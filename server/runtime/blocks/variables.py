@@ -1,5 +1,12 @@
 from ..workspace import Block, Disconnected, Cancelled
-import SimpleCV
+
+try:
+    import SimpleCV
+    SimpleCVImage = SimpleCV.ImageClass.Image
+except:
+    # If SimpleCV is not installed then no need
+    # to test whether variables are images.
+    SimpleCVImage = None
 
 from twisted.internet import defer
 from twisted.python import log
@@ -80,7 +87,10 @@ class global_declaration (Block):
 		if result is None:
 			raise Exception("Global declared value cannot be None")
 
-		if type(result).__name__ == "instance" and result.__class__ is SimpleCV.ImageClass.Image:
+        # Special handling if the variable is an image.
+		if SimpleCVImage is not None \
+        and type(result).__name__ == "instance" \
+        and result.__class__ is SimpleCVImage:
 			variable = DerivedImage()
 		else:
 			variable = data.Variable(type(result))

@@ -4,6 +4,7 @@ import os
 import json
 import time
 import re
+import numpy as np
 
 now = time.time # shortcut
 
@@ -94,7 +95,9 @@ class Experiment (EventEmitter):
 		eventFile = self._experimentDir.child("events.log").create()
 		sketchFile = self._experimentDir.child("sketch.log").create()
 		snapFile = self._experimentDir.child("sketch.snapshot.log")
+		varsFile = self._experimentDir.child("variables")
 		openFiles = { "_events": eventFile, "_sketch": sketchFile }
+		usedFiles = {}
 
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
@@ -140,18 +143,57 @@ class Experiment (EventEmitter):
 			self.logMessages.append(data)
 			sketch.notifySubscribers("experiment", "log", data, self)
 
+		# Files are only created when a variable actually gets data,
+		# not necessarily when it is created.
 		@workspace.variables.on("variable-changed")
 		def onVarChanged (data):
 			try:
 				logFile = openFiles[data['name']]
 			except KeyError:
-				fileName = re.sub(r'[^a-z0-9\.]', '_', data['name']) + '.csv'
+				varName = unusedVarName(data['name'])
+				fileName = fileNameFor(varName)
 				logFile = self._experimentDir.child(fileName).create()
-				openFiles[data['name']] = logFile
+				openFiles[varName] = logFile
+				addUsedFile(varName, fileName, workspace.variables.get(data['name']))
 
-				logFile.write("# {:s} start:{:.2f}\n".format(data['name'], self.startTime))
+				logFile.write(
+					"# name:{:s}\n# type:{:s} \n# start:{:.2f}\n".format(
+						data['name'], 
+						type(data['value']).__name__, 
+						self.startTime
+				))
 
 			logFile.write("{:.2f}, {:s}\n".format(data['time'] - self.startTime, str(data['value'])))
+
+		@workspace.variables.on("variable-renamed")
+		def onVarRenamed (data):
+			openFiles[data['newName']] = openFiles[data['oldName']]
+			del openFiles[data['oldName']]
+			addUsedFile(data['newName'], "", data['variable'])
+
+		def unusedVarName (varName):
+			if varName in usedFiles:
+				return unusedVarName(varName + "_")
+			return varName
+
+		def fileNameFor (varName):
+			return re.sub(r'[^a-z0-9\.]', '_', varName) + '.csv'
+
+		def addUsedFile (varName, fileName, variable):
+			try:
+				unit = str(variable.unit)
+			except AttributeError:
+				unit = ""
+
+			if fileName != "":
+				usedFiles[varName] = {
+					"name": varName,
+					"type": variable.type.__name__,
+					"unit": unit,
+					"file": fileName
+				}
+			else:
+				usedFiles[varName] = {}
 
 		def flushFiles ():
 			for file in openFiles:
@@ -168,6 +210,10 @@ class Experiment (EventEmitter):
 			workspace.off("block-state", onBlockStateChange)
 			workspace.off("log-message", onLogMessage)
 			workspace.variables.off("variable-changed", onVarChanged)
+			workspace.variables.off("variable-renamed", onVarRenamed)
+
+			with varsFile.create() as fp:
+				fp.write(json.dumps(usedFiles))
 
 			try:
 				flushFilesLoop.stop()
@@ -203,3 +249,188 @@ class Experiment (EventEmitter):
 				variables[name] = var
 
 		return variables
+
+
+class CompletedExperiment (object):
+	def __init__ (self, id):
+		self.id = id
+
+	@defer.inlineCallbacks
+	def load (self):
+		expt = yield self._fetchFromDb(self.id)
+		experimentDir = self._getExperimentDir(self.id, expt['started_date'])
+
+		self.title = expt['sketch_title']
+		self.date = expt['started_date']
+		self.sketch_id = expt['sketch_guid']
+
+		variables = yield self._getVariables(experimentDir)
+		self.variables = [
+			{
+				"key": v["name"], 
+				"name": '.'.join(v["name"].split('::')[1:]), 
+				"type": v["type"],
+				"unit": v["unit"]
+			}
+			for v in variables.itervalues()
+			if "name" in v
+		]
+
+	@defer.inlineCallbacks
+	def loadData (self, variables, start, interval):
+		date = yield self._fetchDateFromDb(self.id)
+		experimentDir = self._getExperimentDir(self.id, date)
+		storedVariablesData = yield self._getVariables(experimentDir)
+
+		data = yield defer.gatherResults(map(
+			lambda variable: self._getData(
+				experimentDir.child(variable["file"]), 
+				variable["name"], 
+				variable["type"], 
+				start, 
+				interval
+			), 
+			map(lambda name: storedVariablesData[name], variables)
+		))
+
+		defer.returnValue(data)
+
+	def _fetchFromDb (self, id):
+		def _done (rows):
+			try:
+				row = rows[0]
+			except KeyError:
+				return None
+
+			return {
+				'guid': str(row[0]),
+				'sketch_guid': str(row[1]),
+				'user_id': int(row[2]),
+				'started_date': int(row[3]),
+				'sketch_title': str(row[4])
+			}
+
+		return Experiment.db.runQuery("""
+			SELECT e.guid, e.sketch_guid, e.user_id, e.started_date, s.title
+			FROM experiments AS e 
+			LEFT JOIN sketches AS s ON (s.guid = e.sketch_guid)
+			WHERE e.guid = ?
+		""", (id, )).addCallback(_done)
+
+	def _fetchDateFromDb (self, id):
+		def _done (rows):
+			try:
+				return int(rows[0][0])
+			except KeyError:
+				return None
+
+		return Experiment.db.runQuery("""
+			SELECT started_date
+			FROM experiments
+			WHERE guid = ?
+		""", (id, )).addCallback(_done)
+
+	def _getExperimentDir (self, id, startTime):
+		stime = time.gmtime(startTime)
+
+		experimentDir = FilePath(Experiment.dataDir)
+		for segment in [stime.tm_year, stime.tm_mon, stime.tm_mday, id]:
+			experimentDir = experimentDir.child(str(segment))
+			if not experimentDir.exists():
+				return None
+
+		return experimentDir
+
+	@defer.inlineCallbacks
+	def _getVariables (self, experimentDir):
+		varsFile = experimentDir.child("variables")
+		try:
+			content = yield threads.deferToThread(varsFile.getContent)
+			variables = json.loads(content)
+		except:
+			log.err()
+			variables = {}
+
+		defer.returnValue(variables)
+
+	@defer.inlineCallbacks
+	def _getData (self, dataFile, name, var_type, start = None, interval = None):
+		if var_type == "int":
+			dtype = int
+		elif var_type == "float":
+			dtype = float
+		else:
+			dtype = str
+
+		try:
+			fp = dataFile.open()
+			data_a = yield threads.deferToThread(np.loadtxt, fp, dtype = dtype, delimiter = ',')
+		except:
+			log.err()
+			defer.returnValue({})
+		finally:
+			fp.close()
+
+		# Make a readable variable name
+		#var_name = '.'.join(name.split('::')[1:])
+
+		# Select a certain portion of the data
+		if start is not None and interval is not None:
+			print "Data start: %s" % data_a[0][0]
+			print "Data end: %s" % data_a[-1][0]
+			print "Req Start: %s" % start
+			data_a = data_a[np.where((start <= data_a[:,0]) * (data_a[:, 0] <= start + interval))]
+		else:
+			interval = data_a[-1][0] - data_a[0][0]
+
+		data = data_a.tolist()
+		if len(data) > 400 and var_type in ("int", "float"):
+			spread = np.ptp(data_a[:,1])
+			print "Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data)
+			print "Spread: %s" % spread
+			print "Epsilon: %s" % min(interval / 200., spread / 50.)
+			data = rdp(data, epsilon = min(interval / 200., spread / 50.))
+
+		print " -> %s points" % len(data)
+
+		defer.returnValue({
+			'name': name,
+			'type': var_type,
+			'data': data
+		})
+
+		
+from math import sqrt
+
+def distance(a, b):
+    return  sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
+def point_line_distance(point, start, end):
+    if (start == end):
+        return distance(point, start)
+    else:
+        n = abs(
+            (end[0] - start[0]) * (start[1] - point[1]) - (start[0] - point[0]) * (end[1] - start[1])
+        )
+        d = sqrt(
+            (end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2
+        )
+        return n / d
+
+def rdp(points, epsilon):
+    """
+    Reduces a series of points to a simplified version that loses detail, but
+    maintains the general shape of the series.
+    """
+    dmax = 0.0
+    index = 0
+    for i in range(1, len(points) - 1):
+        d = point_line_distance(points[i], points[0], points[-1])
+        if d > dmax:
+            index = i
+            dmax = d
+    if dmax >= epsilon:
+        results = rdp(points[:index+1], epsilon)[:-1] + rdp(points[index:], epsilon)
+    else:
+        results = [points[0], points[-1]]
+    return results

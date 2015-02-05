@@ -1,9 +1,8 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../components/octopus-property/octopus-property.html">
-<link rel="import" href="../../components/octopus-chart/octopus-chart.html">
+<link rel="import" href="../../components/octopus-chart/octopus-chart-static.html">
 
-<polymer-element name="octopus-experiment-interface" attributes="variables runtimeProperties runtimeStreams">
+<polymer-element name="octopus-experiment-viewer" attributes="variables dataurl timezero">
 <template>
 <style>
 
@@ -30,7 +29,7 @@ div.experiment-data {
 	overflow-y: scroll;
 }
 
-div.experiment-data octopus-chart {
+div.experiment-data octopus-chart-static {
 	display: block;
 }
 
@@ -69,53 +68,39 @@ div.experiment-data.dragging .slot {
 <div class="experiment-data" flex id="displayarea" on-dragstart="{{ dragStart }}" on-dragend="{{ dragEnd }}">
 	<template repeat="{{ g in graphs }}">
 
-	<div class="slot" data-before="{{ g.index }}"
+	<!--div class="slot" data-before="{{ g.index }}"
 		on-dragover="{{ dragOverSlot }}"
 		on-dragenter="{{ dragEnterSlot }}"
 		on-dragleave="{{ dragLeaveSlot }}"
 		on-drop="{{ dropOnSlot }}"
-	></div>
+	></div-->
 
-	<octopus-chart
+	<octopus-chart-static
 		data-index="{{ g.index }}"
 		streams="{{ g.streams }}"
-		timezero="{{ timeZero }}"
-		draggable="true"
+		dataurl="{{ dataurl }}"
+		timezero="{{ timezero }}"
+		_draggable="true"
 		on-dragover="{{ dragOverChart }}"
 		on-dragenter="{{ dragEnterChart }}"
 		on-dragleave="{{ dragLeaveChart }}"
 		on-drop="{{ dropOnChart }}"
 		on-remove-chart="{{ removeChart }}"
 	>
-	</octopus-chart>
-	</template>
-
-	<template repeat="{{ p in properties }}">
-	<octopus-property data-name="{{ p.key }}"
-		variable="{{ p }}"
-		draggable="true"
-		on-dragover="{{ dragOverProperty }}"
-		on-dragenter="{{ dragEnterProperty }}"
-		on-dragleave="{{ dragLeaveProperty }}"
-		on-drop="{{ dropOnProperty }}"
-		on-remove-property="{{ propertyRemove }}"
-		on-convert-graph="{{ propertyGraph }}"
-	>
-	</octopus-property>
+	</octopus-chart-static>
 	</template>
 </div>
 
 </template>
 <script>
 
-Polymer('octopus-experiment-interface', {
+Polymer('octopus-experiment-viewer', {
 
-	timeZero: 0,
+	timezero: 0,
 	variables: [],
-	runtimeProperties: [],
+	dataurl: '',
 	runtimeStreams: [],
 
-	properties: [],
 	graphs: [],
 
 	_itemIndex: 0,
@@ -125,90 +110,33 @@ Polymer('octopus-experiment-interface', {
 	_dragSourceType: null,
 	_dragSourceIndex: null,
 
+	ready: function () {
+		console.log("ready");
+	},
+
 	variableClicked: function (e) {
-		var id = e.target.getAttribute("data-id");
+		var id = e.target.getAttribute('data-id');
 
 		if (id) {
-			// Check not already in properties.
-			for (var i = 0, m = this.properties.length; i < m; i++) {
-				if (this.properties[i].key === id) {
-					return;
-				}
-			}
-
 			// Find id in variables.
 			for (var i = 0, m = this.variables.length; i < m; i++) {
 				if (this.variables[i].key === id) {
 					var variable = this.variables[i];
-					variable.value = null;
-					this.properties.push(variable);
-					this.runtimeProperties.push(id);
+					this.graphs.push({
+						index: this._itemIndex++,
+						streams: [variable],
+						unit: variable.unit
+					});
 					return;
 				}
 			}
 		}
-	},
-
-	onPropertiesData: function (data) {
-		this.properties.forEach(function (property) {
-			if (typeof data[property.key] !== "undefined") {
-				property.value = data[property.key];
-			}
-		});
-	},
-
-	propertyRemove: function (e) {
-		var id = e.target.getAttribute("data-name");
-
-		// Remove id from runtime properties.
-		for (var i = 0, m = this.runtimeProperties.length; i < m; i++) {
-			if (this.runtimeProperties[i] === id) {
-				this.runtimeProperties.splice(i, 1);
-				break;
-			}
-		}
-
-		// Remove id from properties.
-		for (var i = 0, m = this.properties.length; i < m; i++) {
-			if (this.properties[i].key === id) {
-				return this.properties.splice(i, 1);
-			}
-		}
-	},
-
-	propertyGraph: function (e) {
-		var property = this.propertyRemove(e);
-
-		if (property) {
-			this.graphs.push({
-				index: this._itemIndex++,
-				streams: property,
-				unit: property[0].unit
-			});
-
-			this.runtimeStreams.push(property[0].key);
-		}
-	},
-
-	onStreamData: function (data) {
-		var charts = this.$.displayarea.getElementsByTagName('octopus-chart');
-		for (var i = 0, m = charts.length; i < m; i++) {
-			charts[i].addData(data);
-		};
 	},
 
 	dragStart: function (e) {
 		var id, arr, propName;
 
-		if (e.target.tagName === "OCTOPUS-PROPERTY") {
-			id = e.target.getAttribute('data-name');
-			arr = this.properties;
-			propName = "key";
-
-			this._dragSourceType = "property";
-			this._dragSourceName = id;
-
-		} else if (e.target.tagName === "OCTOPUS-CHART") {
+		if (e.target.tagName === "OCTOPUS-CHART-STATIC") {
 			id = parseInt(e.target.getAttribute('data-index'), 10);
 			arr = this.graphs;
 			propName = "index";
@@ -237,77 +165,11 @@ Polymer('octopus-experiment-interface', {
 		}, 0);
 	},
 
-	dragOverProperty: function (e) {
-		//console.log("over", e.target);
-		var id = e.target.getAttribute('data-name');
-
-		if (this._dragSourceType === "chart") {
-			e.dataTransfer.dropEffect = 'none';
-			return;
-		}
-
-		var target = this._targetAncestor(e.target, "octopus-property");
-
-		if (this._dragEnterCount > 0 && $(target).data("name") !== this.properties[this._dragSourceIndex].key) {
-			e.dataTransfer.dropEffect = 'move';
-			//console.log("over:", id, this._dragSourceName);
-			e.preventDefault();
-			return false;
-		}
-	},
-
 	_targetAncestor: function (target, tag) {
 		if (target.tagName.toLowerCase() === tag) {
 			return $(target);
 		} else {
 			return $(target).parents(tag);
-		}
-	},
-
-	dragEnterProperty: function (e) {
-		if (this._dragSourceType === "chart") {
-			return;
-		}
-
-		var target = this._targetAncestor(e.target, "octopus-property");
-
-		if (target.hasClass("dragging") || $(target).data("name") === this.properties[this._dragSourceIndex].key) {
-			return;
-		}
-
-		if (this._dragEnterCount === 0) {
-			$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
-			target.addClass("over");
-		}
-		this._dragEnterCount++;
-	},
-
-	dragLeaveProperty: function (e) {
-		if (this._dragSourceType === "chart") {
-			return;
-		}
-
-		var target = this._targetAncestor(e.target, "octopus-property");
-
-		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
-			$("octopus-chart, octopus-property", this.$.displayarea).removeClass("over");
-		}
-	},
-
-	dropOnProperty: function (e) {
-		if (this._dragSourceType === "property") {
-			var i, m, name = e.currentTarget.getAttribute('data-name');
-
-			for (i = 0, m = this.properties.length; i < m; i++) {
-				if (this.properties[i].key === name) {
-					break;
-				}
-			}
-
-			if (i < m) {
-				var sourceProp = this.properties.splice(this._dragSourceIndex, 1)[0];
-				this.properties.splice(i, 0, sourceProp);
-			}
 		}
 	},
 
@@ -326,9 +188,6 @@ Polymer('octopus-experiment-interface', {
 		if (!target) {
 			return false;
 		}
-		if (this._dragSourceType === "property") {
-			return this.properties[this._dragSourceIndex].unit === target.unit;
-		}
 		if (this._dragSourceType === "chart") {
 			return this.graphs[this._dragSourceIndex].unit === target.unit && $(target).data("index") !== this._dragSourceName;
 		}
@@ -336,7 +195,7 @@ Polymer('octopus-experiment-interface', {
 	},
 
 	dragOverChart: function (e) {
-		var target = this._targetAncestor(e.target, "octopus-chart");
+		var target = this._targetAncestor(e.target, "octopus-chart-static");
 
 		if (this._validOverChart(target[0])) {
 			e.dataTransfer.dropEffect = 'move';
@@ -353,7 +212,7 @@ Polymer('octopus-experiment-interface', {
 	},
 
 	dragEnterChart: function (e) {
-		var target = this._targetAncestor(e.target, "octopus-chart");
+		var target = this._targetAncestor(e.target, "octopus-chart-static");
 
 		if (!this._validOverChart(target[0])) {
 			return;
@@ -367,13 +226,13 @@ Polymer('octopus-experiment-interface', {
 
 	dragLeaveChart: function (e) {
 		if (this._dragEnterCount > 0 && --this._dragEnterCount === 0) {
-			var target = this._targetAncestor(e.target, "octopus-chart");
+			var target = this._targetAncestor(e.target, "octopus-chart-static");
 			$(target).removeClass("over");
 		}
 	},
 
 	dropOnChart: function (e) {
-		var target = this._targetAncestor(e.target, "octopus-chart");
+		var target = this._targetAncestor(e.target, "octopus-chart-static");
 
 		// Combine streams of source chart with target chart
 		if (this._dragSourceType === "chart") {
@@ -386,14 +245,6 @@ Polymer('octopus-experiment-interface', {
 			var chart = this.graphs[this._dragSourceIndex];
 			Array.prototype.push.apply(target[0].streams, chart.streams);
 			this.graphs.splice(this._dragSourceIndex, 1);
-		}
-
-		// Add source property to target chart.
-		if (this._dragSourceType === "property") {
-			var property = this.properties[this._dragSourceIndex];
-			this.runtimeStreams.push(property.key);
-			target[0].streams.push(property);
-			this.properties.splice(this._dragSourceIndex, 1);
 		}
 
 		this.dragEnd();

@@ -43,10 +43,10 @@ Polymer('octopus-experiment-runtime', {
 			if (command === "streams") {
 				var a, p, z = payload.zero;
 				for (var key in payload.data) {
-					a = payload.data[key];
+					a = payload.data[key].data;
 					for (var i = 0, m = a.length; i < m; i++) {
 						p = a[i];
-						p[0] = (p[0] + z) * 1000;
+						p[0] = (p[0] + z);
 					};
 				}
 				return self.fire("streams", payload);
@@ -113,10 +113,10 @@ Polymer('octopus-experiment-runtime', {
 	},
 
 	requestOneOffStreamData: function (streams, start) {
-		this._socketSend("experiment", "get-streams", { 
-			start: start / 1000, 
-			streams: streams, 
-			oneoff: true 
+		this._socketSend("experiment", "get-streams", {
+			start: start / 1000,
+			streams: streams,
+			oneoff: true
 		});
 	},
 

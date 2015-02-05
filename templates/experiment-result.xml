@@ -1,10 +1,63 @@
-<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1"  flex="" vertical="" layout="">
 <head>
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+	<title>Experiment Results</title>
+
+	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
 	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
 	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
+
+	<link rel="import" href="/components/octopus-experiment-viewer/octopus-experiment-viewer.html" />
+
+	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
+	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
+	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
+
+	<style>
+	/* <![CDATA[ */
+	
+	html, body {
+		margin: 0;
+		padding: 0;
+		height: 100vh;
+	}
+
+	body {
+		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		color: #333;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+	}
+
+	core-toolbar {
+		background-color: #526E9C;
+		color: #FFF;
+	}
+
+	core-toolbar span {
+		color: #fff;
+		padding-bottom: 3px;
+		font-size: 24px;
+		margin-left: 15px;
+	}
+
+	/* ]]> */
+	</style>
 </head>
-<body unresolved="" t:render="editor_body">
-	Experiment <t:slot name="experiment_id" /> is not running.
+<body unresolved=""  flex="" vertical="" layout="" t:render="body">
+
+<core-toolbar>
+	<span id="experiment-title"><t:slot name="title" /></span>
+</core-toolbar>
+
+<octopus-experiment-viewer id="viewer" flex="" horizontal="" layout="">
+	<t:attr name="dataurl"><t:slot name="data_url" /></t:attr>
+	<t:attr name="timezero"><t:slot name="date" /></t:attr>
+	<t:attr name="variables"><t:slot name="variables" /></t:attr>
+</octopus-experiment-viewer>
+
 </body>
 </html>

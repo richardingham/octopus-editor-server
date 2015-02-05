@@ -2,23 +2,29 @@
 <link rel="import" href="../../bower_components/core-icons/core-icons.html" />
 <link rel="import" href="../../bower_components/core-icon-button/core-icon-button.html" />
 <link rel="import" href="../../bower_components/core-icon/core-icon.html" />
+<link rel="import" href="../../bower_components/core-ajax/core-ajax.html" />
 
 <script src="../../bower_components/vis/dist/vis.min.js"></script>
 
-<polymer-element name="octopus-chart" attributes="streams width height time timezero">
+<polymer-element name="octopus-chart-static" attributes="streams width height timezero dataurl">
 <template>
 <link rel="stylesheet" href="../../bower_components/vis/dist/vis.min.css" />
 <link rel="stylesheet" href="octopus-chart.css" />
+
+<core-ajax
+	id="data"
+    auto
+    url="{{fetchDataURL}}"
+    handleAs="json"
+    on-core-response="{{loadedData}}"></core-ajax>
 
 <div id="box" style="width: {{ width + 10 }}px;">
 	<div id="chart" style="width: {{ width }}px; height: {{ height }}px;"></div>
 	<div style="text-align: right">
 		<core-icon icon="settings" on-click="{{ toggleOptions }}"></core-icon>
+		<core-icon icon="undo" on-click="{{ resetZoom }}"></core-icon>
 	</div>
 	<div id="options">
-		<div>
-			Scale: <input type="text" value="{{ time }}" style="width: 50px;"> seconds
-		</div>
 		<div><strong>Variables:</strong></div>
 		<ul style="list-style-type: none;">
 		<template repeat="{{ s in streams }}">
@@ -34,11 +40,10 @@
 </template>
 <script>
 
-Polymer('octopus-chart', {
+Polymer('octopus-chart-static', {
 	width: 600, // Of the chart, in pixels
 	height: 400, // Of the chart, in pixels
-	time: 60, // In seconds
-	timezero: 0,
+	dataurl: '',
 	streams: [],
 
 	created: function () {
@@ -58,21 +63,52 @@ Polymer('octopus-chart', {
 		var graph = new vis.Graph2d(this.$.chart, this.seriesdata, this.groups, {
 			height: this.height,
 			width: this.width,
-			showCurrentTime: true,
+			showCurrentTime: false,
 			//min: vis.moment.unix(this.timezero),
 			defaultGroup: 'ungrouped',
-			legend: {
-				left: {
-					position: "bottom-left"
-				}
-			},
+			legend: true,
 			drawPoints: false,
 			catmullRom: false
 		});
 
-		var now = vis.moment();
-		graph.setWindow(now, now + 60 * 1000);
+		function debounce (func, wait, immediate) {
+			var timeout;
+			return function() {
+				var context = this, args = arguments;
+				var later = function() {
+					timeout = null;
+					if (!immediate) func.apply(context, args);
+				};
+				var callNow = immediate && !timeout;
+				clearTimeout(timeout);
+				timeout = setTimeout(later, wait);
+				if (callNow) func.apply(context, args);
+			};
+		};
 
+		graph.on('rangechanged', debounce(function (range) {
+			var mainRange = graph.getItemRange();
+
+			// Check there's a decent zoom
+			if ((range.end - range.start) / (mainRange.max - mainRange.min) > 0.9) {
+				return;
+			}
+
+			var newRange = (range.end - range.start);
+			var minRangeInArea = _this.seriesdata.get({
+				fields: ['density'],
+				filter: function (item) {
+					return item.x > range.start && item.x < range.end;
+				},
+				order: 'density'
+			});
+
+			if (minRangeInArea.length && newRange >= minRangeInArea[0].density) {
+				return;
+			}
+
+			_this.getData(range);
+		}, 500));
 		this.graph = graph;
 	},
 
@@ -81,7 +117,7 @@ Polymer('octopus-chart', {
 		$(this.$.options).toggleClass("show");
 	},
 
-	removeStream: function (e) {
+	/*removeStream: function (e) {
 		var key = $(e.target).data("name");
 
 		for (i = 0, m = this.streams.length; i < m; i++) {
@@ -90,7 +126,7 @@ Polymer('octopus-chart', {
 				break;
 			}
 		}
-	},
+	},*/
 
 	removeChart: function (e) {
 		this.fire("remove-chart");
@@ -163,7 +199,7 @@ Polymer('octopus-chart', {
 				key: stream.key
 			});
 
-			//series[i] = {
+			//series[i] = stream.name; //{
 				//color: stream.colour,
 				//data: this._data[stream.key] || [],
 				//label: stream.name
@@ -171,64 +207,82 @@ Polymer('octopus-chart', {
 		}
 
 		//this._series = series;
+		//this.groupNames = series;
 
-		// Request data for added streams.
-		if (addedStreams.length) {
-			this.fire("request-data", {
-				streams: addedStreams.map(function (s) { return s.key; }),
-				start: +(new Date()) - (this.time * 1000)
-			});
-		}
-
+		this.getData();
 	},
 
-	_idCounter: 0,
-	addData: function (data) {
-		var streamName, streamData, streamGroup;
-		var i, j, m, n;
-
-		// Loop over each stream in the provided data packet
-		for (var i = 0, m = data.length; i < m; i++) {
-			streamName = data[i].name;
-			streamGroup = this._findGroupIdByName(streamName);
-			if (typeof streamGroup !== "undefined") {
-				streamData = data[i].data;
-				for (var j = 0, n = streamData.length; j < n; j++) {
-					this.seriesdata.add({
-						id: ++this._idCounter,
-						x: vis.moment.unix(streamData[j][0]),
-						y: streamData[j][1],
-						group: streamGroup
-					});
-				}
-			}
-		}
-
-		var now = vis.moment();
-		var range = this.graph.getWindow();
-		var interval = range.end - range.start;
-		if (now > range.end) {
-			this.graph.setWindow(now - 0.1 * interval, now + 0.9 * interval);
-		}
-	},
-
-	/*widthChanged: function () {
+	widthChanged: function () {
 		this.redraw();
 	},
 
 	heightChanged: function () {
 		this.redraw();
-	},*/
-
-	timeChanged:  function () {
-		// Request data for added streams.
-		this.fire("request-data", {
-			streams: (self.streams && self.streams.map(function (s) { return s.key; })) || [],
-			start: (+(new Date()) / 1000) - this.time
-		});
 	},
 
 	redraw: function () {
+	},
+
+	_idCounter: 0,
+	_firstLoad: true,
+	loadedData: function (e, detail) {
+		var data = detail.response;
+		var id, name, density, streamData;
+		for (var i = 0, m = data.length; i < m; i++) {
+			name = data[i].name;
+			id = this._findGroupIdByName(name);
+			if (typeof id !== "undefined") {
+				streamData = data[i].data;
+				max = streamData[streamData.length - 1][0] * 1000;
+				min = streamData[0][0] * 1000;
+				density = max - min;
+
+				this.seriesdata.remove(this.seriesdata.getIds({
+					filter: function (item) {
+						return item.x > min && item.x < max;
+					}
+				}));
+
+				for (var j = 0, n = streamData.length; j < n; j++) {
+					this.seriesdata.add({
+						id: this._idCounter++,
+						x: vis.moment.unix(this.timezero + streamData[j][0]),
+						y: streamData[j][1],
+						group: id,
+						density: density
+					});
+				}
+			}
+		}
+
+		this.seriesdata.flush();
+		var graph = this.graph;
+		var range = graph.getItemRange();
+		graph.setOptions({
+			max: range.max,
+			min: range.min
+		});
+
+		if (this._firstLoad) {
+			graph.fit();
+			this._firstLoad = false;
+		}
+	},
+
+	getData: function (range) {
+		var url = [this.dataurl, '?'];
+		var params = [];
+
+		Array.prototype.push.apply(params, this.groups.map(
+			function (s) { return "var=" + encodeURIComponent(s.key); }
+		));
+
+		if (typeof range !== "undefined") {
+			params.push("start=" + (Math.round(range.start / 1000) - this.timezero));
+			params.push("interval=" + (Math.round((range.end - range.start) / 1000)));
+		}
+
+		this.$.data.url = url.join('') + params.join('&');
 	}
 });
 
