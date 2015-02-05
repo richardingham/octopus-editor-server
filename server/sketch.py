@@ -17,9 +17,9 @@ from experiment import Experiment
 
 
 class Sketch (EventEmitter):
-	""" This object is the representation of the persistent sketch, 
+	""" This object is the representation of the persistent sketch,
 	stored in the database and in the event store. """
-	
+
 	# We will use a file based event store for now, then migrate to EventStore later.
 
 	db = None
@@ -40,10 +40,10 @@ class Sketch (EventEmitter):
 			return id
 
 		return cls.db.runOperation("""
-				INSERT INTO sketches 
-				(guid, title, user_id, created_date, modified_date, deleted) 
+				INSERT INTO sketches
+				(guid, title, user_id, created_date, modified_date, deleted)
 				VALUES (?, ?, ?, ?, ?, 0)
-			""", 
+			""",
 			(id, "New Sketch", 1, created_date, created_date)
 		).addCallback(_done)
 
@@ -70,8 +70,8 @@ class Sketch (EventEmitter):
 			} for row in rows]
 
 		return cls.db.runQuery("""
-			SELECT guid, title, user_id, modified_date, created_date 
-			FROM sketches 
+			SELECT guid, title, user_id, modified_date, created_date
+			FROM sketches
 			WHERE deleted = 0
 			ORDER BY modified_date DESC
 		""").addCallback(_done)
@@ -104,7 +104,7 @@ class Sketch (EventEmitter):
 	@defer.inlineCallbacks
 	def _loadFrom (self, id, copy = False):
 		sketch = yield self.db.runQuery(
-			"SELECT title FROM sketches WHERE guid = ?", 
+			"SELECT title FROM sketches WHERE guid = ?",
 			(id, )
 		)
 
@@ -126,7 +126,7 @@ class Sketch (EventEmitter):
 
 			log.msg(
 				"Found snapshot {:d} for sketch {:s}".format(
-					max_snap, 
+					max_snap,
 					id
 				)
 			)
@@ -140,7 +140,7 @@ class Sketch (EventEmitter):
 			if max_snap > 0:
 				snapshot = yield threads.deferToThread(snapFile.getContent)
 				events = map(
-					json.loads, 
+					json.loads,
 					filter(lambda e: e.strip() != "", snapshot.split("\n"))
 				)
 				self.workspace.fromEvents(events)
@@ -171,8 +171,8 @@ class Sketch (EventEmitter):
 
 		# Set the modified date
 		self.db.runOperation('''
-			UPDATE sketches 
-			SET modified_date = ? 
+			UPDATE sketches
+			SET modified_date = ?
 			WHERE guid = ?
 		''', (now(), self.id))
 
@@ -189,7 +189,7 @@ class Sketch (EventEmitter):
 	#
 	# Subscribers
 	#
-	
+
 	def subscribe (self, subscriber, notifyFn):
 		self.subscribers[subscriber] = notifyFn
 
@@ -215,13 +215,13 @@ class Sketch (EventEmitter):
 
 		self.experiment = Experiment(self)
 
-		self.notifySubscribers("experiment", "state-started", { 
+		self.notifySubscribers("experiment", "state-started", {
 			"sketch": self.id,
 			"experiment": self.experiment.id
 		}, self.experiment)
 
 		def _done (result):
-			self.notifySubscribers("experiment", "state-stopped", { 
+			self.notifySubscribers("experiment", "state-stopped", {
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
@@ -237,7 +237,7 @@ class Sketch (EventEmitter):
 				_error("Stopped by user")
 
 		def _error (failure):
-			self.notifySubscribers("experiment", "state-error", { 
+			self.notifySubscribers("experiment", "state-error", {
 				"sketch": self.id,
 				"experiment": self.experiment.id,
 				"error": failure.getErrorMessage()
@@ -254,13 +254,13 @@ class Sketch (EventEmitter):
 			raise NoExperimentRunning
 
 		def _notify (result):
-			self.notifySubscribers("experiment", "state-paused", { 
+			self.notifySubscribers("experiment", "state-paused", {
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
 
 		def _error (failure):
-			self.notifySubscribers("experiment", "state-error", { 
+			self.notifySubscribers("experiment", "state-error", {
 				"sketch": self.id,
 				"experiment": self.experiment.id,
 				"error": str(failure)
@@ -273,13 +273,13 @@ class Sketch (EventEmitter):
 			raise NoExperimentRunning
 
 		def _notify (result):
-			self.notifySubscribers("experiment", "state-resumed", { 
+			self.notifySubscribers("experiment", "state-resumed", {
 				"sketch": self.id,
 				"experiment": self.experiment.id
 			}, self.experiment)
 
 		def _error (failure):
-			self.notifySubscribers("experiment", "state-error", { 
+			self.notifySubscribers("experiment", "state-error", {
 				"sketch": self.id,
 				"experiment": self.experiment.id,
 				"error": str(failure)
@@ -300,9 +300,9 @@ class Sketch (EventEmitter):
 	def renameSketch (self, payload, context):
 		self.rename(payload['title'])
 
-		self.notifySubscribers("sketch", "renamed", { 
-			"event": self._eventIndex, 
-			"title": payload['title'] 
+		self.notifySubscribers("sketch", "renamed", {
+			"event": self._eventIndex,
+			"title": payload['title']
 		}, context)
 
 	def processEvent (self, event, context):

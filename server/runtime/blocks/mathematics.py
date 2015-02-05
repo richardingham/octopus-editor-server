@@ -258,4 +258,3 @@ class math_framed (Block):
 			log.err()
 		else:
 			defer.returnValue(framedValue)
-

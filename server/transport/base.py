@@ -29,14 +29,14 @@ class BaseTransport (object):
 		"""
 
 		raise NotImplementedError
-	 
+
 	def receive (self, protocol, topic, payload, context):
 		"""Handle incoming message
 		This is the entry-point to actual protocol handlers. When receiving
 		a message, the runtime should call this to make the requested actions
 		happen
-		The context is originally received from the transport. For example, 
-		a specific socket connection. The context will be utilized when 
+		The context is originally received from the transport. For example,
+		a specific socket connection. The context will be utilized when
 		sending messages back to the requester.
 		@param [str] Name of the protocol
 		@param [str] Topic of the message
@@ -77,5 +77,3 @@ class BaseTransport (object):
 
 		for id, sketch in self.sketches.iteritems():
 			sketch.unsubscribe(context)
-
-

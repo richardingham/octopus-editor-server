@@ -122,4 +122,3 @@ class connection_cvcamera (Block):
 	def eval (self):
 		from octopus.image.source import cv_webcam
 		return cv_webcam(int(self.fields['ID']))
-

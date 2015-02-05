@@ -20,7 +20,7 @@ def populate_blocks ():
 	def subclasses (cls):
 		return cls.__subclasses__() + [
 			g for s in cls.__subclasses__()
-            for g in subclasses(s)
+			for g in subclasses(s)
 		]
 
 	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images
@@ -179,7 +179,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			d.addCallbacks(
 				callback = _blockComplete,
 				callbackArgs = [block],
-				errback = _blockError, 
+				errback = _blockError,
 				errbackArgs = [block]
 			)
 			d.addErrback(log.err)
@@ -209,7 +209,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 					toRun.append(item)
 
 			# _runBlock needs to be called in the next tick (done in _runBlock)
-			# so that the dependency graph is updated before any new blocks run. 
+			# so that the dependency graph is updated before any new blocks run.
 			for item in toRun:
 				dependencyGraph.remove(item)
 				_runBlock(item["block"])
@@ -257,7 +257,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			block = data['block']
 			print "Block #%s added to top blocks (%s)" % (block.id, block._complete)
 
-			if block._complete is not None and block._complete.called is False:	
+			if block._complete is not None and block._complete.called is False:
 				if block.externalStop:
 					externalStopBlocks.add(block)
 				else:
@@ -266,7 +266,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				block._complete.addCallbacks(
 					callback = _blockComplete,
 					callbackArgs = [block],
-					errback = _blockError, 
+					errback = _blockError,
 					errbackArgs = [block]
 				).addErrback(log.err)
 
@@ -410,7 +410,7 @@ class Variables (EventEmitter):
 				onChange = _makeHandler(attrname)
 				attr.on('change', onChange)
 				handlers[attrname] = onChange
-                self._variables[attrname] = attr
+				self._variables[attrname] = attr
 				self.emit('variable-added', name = attrname, variable = variable)
 
 			self._handlers[name] = handlers
@@ -426,7 +426,7 @@ class Variables (EventEmitter):
 
 		if isinstance(variable, BaseVariable):
 			variable.off(
-				'change', 
+				'change',
 				self._handlers[name]
 			)
 			self.emit('variable-removed', name = name, variable = variable)
@@ -438,7 +438,7 @@ class Variables (EventEmitter):
 					self._handlers[name][attrname]
 				)
 				self.emit('variable-removed', name = attrname, variable = variable)
-                del self._variables[attrname]
+				del self._variables[attrname]
 
 		del self._variables[name]
 		del self._handlers[name]
@@ -470,9 +470,9 @@ class Variables (EventEmitter):
 			del self._variables[name]
 			del self._handlers[name]
 
-			self.emit('variable-renamed', 
-				oldName = name, 
-				newName = newName, 
+			self.emit('variable-renamed',
+				oldName = name,
+				newName = newName,
 				variable = variable
 			)
 
@@ -620,7 +620,7 @@ class Block (BaseStep, EventEmitter):
 	def setFieldValue (self, fieldName, value):
 		oldValue = self.fields[fieldName]
 		self.fields[fieldName] = value
-		self.emit('value-changed', 
+		self.emit('value-changed',
 			block = self,
 			field = fieldName,
 			oldValue = oldValue,
@@ -936,7 +936,7 @@ class Block (BaseStep, EventEmitter):
 		events.append({ "type": "AddBlock", "data": { "id": self.id, "type": self.type, "fields": self.fields }})
 
 		if self.mutation != "":
-			events.append({ "type": "SetBlockMutation", "data": { "id": self.id, "mutation": self.mutation }})		
+			events.append({ "type": "SetBlockMutation", "data": { "id": self.id, "mutation": self.mutation }})
 
 		if self.comment != "":
 			events.append({ "type": "SetBlockComment", "data": { "id": self.id, "value": self.comment }})

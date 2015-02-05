@@ -10,7 +10,7 @@ class text_join (Block):
 	def eval (self):
 		def concatenate (results):
 			return "".join(map(str, results))
-		
+
 		d = []
 		i = 0
 
@@ -23,4 +23,3 @@ class text_join (Block):
 
 		self._complete = defer.gatherResults(d).addCallback(concatenate)
 		return self._complete
-

@@ -21,7 +21,7 @@ class controls_parallel (Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		inputs = [
-			input for name, input in self.inputs.iteritems() 
+			input for name, input in self.inputs.iteritems()
 			if name[:5] == "STACK" and input is not None
 		]
 
@@ -32,7 +32,7 @@ class controls_parallel (Block):
 				return failure
 
 		runResults = defer.gatherResults(
-			[input.run().addErrback(_error) for input in inputs], 
+			[input.run().addErrback(_error) for input in inputs],
 			consumeErrors = True
 		)
 
@@ -43,7 +43,7 @@ class controls_if (Block):
 	def _nextInput (self, i = -1):
 		# Find the next input after IF{i}
 		return next((
-			(int(name[2:]), input) for name, input in self.inputs.iteritems() 
+			(int(name[2:]), input) for name, input in self.inputs.iteritems()
 			if input is not None and name[:2] == "IF" and int(name[2:]) > i
 		), (None, None))
 
@@ -95,8 +95,8 @@ class controls_log (Block):
 		message = yield self.getInputValue("TEXT", "")
 
 		self.workspace.emit(
-			"log-message", 
-			level = "info", 
+			"log-message",
+			level = "info",
 			message = str(message)
 		)
 
@@ -159,7 +159,7 @@ class controls_wait (Block):
 			_update().addErrback(_error)
 
 		def _setListeners (data = None):
-			for v in self._variables:	
+			for v in self._variables:
 				v.off('change', _tryUpdate)
 
 			try:
@@ -167,7 +167,7 @@ class controls_wait (Block):
 			except (KeyError, AttributeError):
 				self._variables = []
 
-			for v in self._variables:	
+			for v in self._variables:
 				v.on('change', _tryUpdate)
 
 			_tryUpdate()
@@ -178,7 +178,7 @@ class controls_wait (Block):
 
 			for v in self._variables:
 				v.off('change', _tryUpdate)
-			
+
 		def _done ():
 			_removeListeners()
 			complete.callback(None)
@@ -262,7 +262,7 @@ class controls_wait_until (Block):
 					done()
 
 		def setListeners (data):
-			for v in self._variables:	
+			for v in self._variables:
 				v.off('change', runTest)
 
 			try:
@@ -270,14 +270,14 @@ class controls_wait_until (Block):
 			except AttributeError:
 				self._variables = []
 
-			for v in self._variables:	
+			for v in self._variables:
 				v.on('change', runTest)
 
 		def removeListeners ():
 			self.off("connectivity-changed", setListeners)
 			self.off("value-changed", runTest)
 
-			for v in self._variables:	
+			for v in self._variables:
 				v.off('change', runTest)
 
 		def done ():
@@ -317,7 +317,7 @@ class controls_repeat_ext (Block):
 		index = 0
 
 		while True:
-			# Recalculate count on each iteration. 
+			# Recalculate count on each iteration.
 			# I imagine this is expected if a simple number block is used,
 			# but if variables are involved it may turn out to lead to
 			# unexpected behaviour!

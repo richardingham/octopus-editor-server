@@ -43,24 +43,24 @@ class EventEmitter (object):
 			return lambda function: self.on(name, _once(function))
 		else:
 			self.on(name, _once(function))
-	
+
 	def off (self, name = None, function = None):
 		try:
 			self._events
 		except AttributeError:
 			return
-		
+
 		# If no name is passed, remove all handlers
 		if name is None:
 			self._events.clear()
-		
+
 		# If no function is passed, remove all functions
 		elif function is None:
 			try:
 				self._events[name] = []
 			except KeyError:
 				pass
-		
+
 		# Remove handler [function] from [name]
 		else:
 			self._events[name].remove(function)
@@ -70,7 +70,7 @@ class EventEmitter (object):
 			return self._events[event]
 		except (AttributeError, KeyError):
 			return []
-	
+
 	def emit (self, _event, **data):
 		handled = False
 

@@ -58,8 +58,8 @@ loaded_sketches = websocket_runtime.sketches
 
 def running_experiments ():
 	return [
-		sketch.experiment 
-		for sketch in loaded_sketches.itervalues() 
+		sketch.experiment
+		for sketch in loaded_sketches.itervalues()
 		if sketch.experiment is not None
 	]
 
@@ -207,7 +207,7 @@ class Experiment (resource.Resource):
 
 
 class ShowExperiment (resource.Resource):
-	
+
 	def __init__ (self, id):
 		resource.Resource.__init__(self)
 		self._id = id
@@ -248,7 +248,7 @@ class ShowExperiment (resource.Resource):
 
 
 class ExperimentData (resource.Resource):
-	
+
 	def __init__ (self, id):
 		resource.Resource.__init__(self)
 		self._id = id
@@ -314,7 +314,7 @@ def makeService (options):
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
 	root.putChild("experiment", Experiment())
-	
+
 	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
 	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
 	root.putChild("components", static.File(rootDir.child("components").path))
@@ -358,7 +358,7 @@ def run_server ():
 				return PerMessageDeflateOfferAccept(offer)
 
 	factory.setProtocolOptions(perMessageCompressionAccept = accept)
-	
+
 	reactor.listenTCP(ws_port, factory)
 	log.msg("WS listening on port %s" % ws_port)
 
@@ -366,7 +366,7 @@ def run_server ():
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
 	root.putChild("experiment", Experiment())
-	
+
 	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
 	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
 	root.putChild("components", static.File(rootDir.child("components").path))

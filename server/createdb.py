@@ -3,24 +3,24 @@ from os.path import join, dirname
 
 def createdb (dir):
 	print "Creating database " + join(dir, 'octopus.db')
-	
+
 	# Create Database
 	conn = sqlite3.connect(join(dir, 'octopus.db'))
 
 	# Create tables
 	conn.execute('''CREATE TABLE sketches (
-		guid text, 
-		title text, 
-		user_id integer, 
-		created_date datetime, 
+		guid text,
+		title text,
+		user_id integer,
+		created_date datetime,
 		modified_date datetime,
 		deleted integer DEFAULT 0
 	)''')
 
 	conn.execute('''CREATE TABLE experiments (
-		guid text, 
-		sketch_guid text, 
-		user_id integer, 
+		guid text,
+		sketch_guid text,
+		user_id integer,
 		started_date datetime
 	)''')
 

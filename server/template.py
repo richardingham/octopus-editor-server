@@ -34,7 +34,7 @@ class Root (Element):
 						url = "/experiment/{:s}".format(expt['guid']),
 						title = expt['sketch_title']
 					)
-			
+
 			return _render()
 
 		return self.past_experiments.addCallback(_done)
@@ -50,7 +50,7 @@ class Root (Element):
 						copy_url = "/sketch/{:s}/copy".format(sketch['guid']),
 						title = sketch['title']
 					)
-			
+
 			return _render()
 
 		return self.saved_sketches.addCallback(_done)
@@ -109,4 +109,3 @@ class ExperimentRunning (Element):
 			sketch_id = self.experiment.sketch.id,
 			experiment_id = self.experiment.id
 		)
-

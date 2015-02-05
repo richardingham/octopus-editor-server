@@ -36,7 +36,7 @@ class SketchProtocol (object):
 			payload['sketch'] = id
 			self.transport.send(protocol, topic, payload, context)
 
-		def _sendData (sketch):	
+		def _sendData (sketch):
 			blockStates = {
 				block.id: block.state.name.lower()
 				for block in sketch.workspace.allBlocks.itervalues()
@@ -77,8 +77,8 @@ class SketchProtocol (object):
 
 		@sketch.on("closed")
 		def onSketchClosed (data):
-			# This must be performed later to avoid an exception 
-			# in sketches.iteritems() in disconnected() 
+			# This must be performed later to avoid an exception
+			# in sketches.iteritems() in disconnected()
 			def _del ():
 				del self.transport.sketches[id]
 

@@ -1,12 +1,12 @@
 from ..workspace import Block, Disconnected, Cancelled
 
 try:
-    import SimpleCV
-    SimpleCVImage = SimpleCV.ImageClass.Image
+	import SimpleCV
+	SimpleCVImage = SimpleCV.ImageClass.Image
 except:
-    # If SimpleCV is not installed then no need
-    # to test whether variables are images.
-    SimpleCVImage = None
+	# If SimpleCV is not installed then no need
+	# to test whether variables are images.
+	SimpleCVImage = None
 
 from twisted.internet import defer
 from twisted.python import log
@@ -18,7 +18,7 @@ from octopus.image.data import DerivedImage
 
 def variableName (name):
 	split = name.split('::')
-	
+
 	if len(split) is 2:
 		return (split[0] + "::" + split[1], None)
 	elif len(split) is 3:
@@ -47,7 +47,7 @@ class global_declaration (Block):
 		self.on('connectivity-changed', self._onConnectivityChanged)
 		self._onConnectivityChanged()
 
-	# Set up event listeners whenever connections change 
+	# Set up event listeners whenever connections change
 	def _onConnectivityChanged (self, data = None):
 		for v in self._variables:
 			v.off('change', self._onChange)
@@ -87,10 +87,10 @@ class global_declaration (Block):
 		if result is None:
 			raise Exception("Global declared value cannot be None")
 
-        # Special handling if the variable is an image.
+		# Special handling if the variable is an image.
 		if SimpleCVImage is not None \
-        and type(result).__name__ == "instance" \
-        and result.__class__ is SimpleCVImage:
+		and type(result).__name__ == "instance" \
+		and result.__class__ is SimpleCVImage:
 			variable = DerivedImage()
 		else:
 			variable = data.Variable(type(result))

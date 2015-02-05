@@ -34,9 +34,9 @@ class controls_dependents (Block):
 
 			# Inputs may have changed
 			yield defer.gatherResults([
-				input.cancel() 
-				for name, input in self.inputs.iteritems() 
-				if input is not None 
+				input.cancel()
+				for name, input in self.inputs.iteritems()
+				if input is not None
 				and input.state in (State.RUNNING, State.PAUSED)
 				and name[:3] == "DEP"
 			], consumeErrors = True)
@@ -49,7 +49,7 @@ class controls_dependents (Block):
 			pass
 
 		for input in [
-			input for name, input in self.inputs.iteritems() 
+			input for name, input in self.inputs.iteritems()
 			if input is not None
 			and input.state is State.READY
 			and name[:3] == "DEP"
@@ -94,7 +94,7 @@ class controls_bind (lexical_variable, Block):
 			self._run_complete.errback(e)
 
 	def _setListeners (self, data = None):
-		for v in self._variables:	
+		for v in self._variables:
 			v.off('change', self._runUpdate)
 
 		try:
@@ -102,7 +102,7 @@ class controls_bind (lexical_variable, Block):
 		except (KeyError, AttributeError):
 			self._variables = []
 
-		for v in self._variables:	
+		for v in self._variables:
 			v.on('change', self._runUpdate)
 
 		self._runUpdate()
@@ -111,7 +111,7 @@ class controls_bind (lexical_variable, Block):
 		self.off("connectivity-changed", self._setListeners)
 		self.off("value-changed", self._setListeners)
 
-		for v in self._variables:	
+		for v in self._variables:
 			v.off('change', self._runUpdate)
 
 	def _cancel (self, abort = False):
@@ -146,8 +146,8 @@ class controls_statemonitor (Block):
 			defer.returnValue(None)
 
 		inputValues = [
-			input.eval() 
-			for name, input in self.inputs.iteritems() 
+			input.eval()
+			for name, input in self.inputs.iteritems()
 			if input is not None and name[:4] == "TEST"
 		]
 		results = yield defer.DeferredList(inputValues, consumeErrors = True)
@@ -201,13 +201,13 @@ class controls_statemonitor (Block):
 				return
 
 	def setListeners (self, data = None):
-		for v in self._variables:	
+		for v in self._variables:
 			v.off('change', self.runUpdate)
 
 		self._variables = []
 		inputs = [
-			input 
-			for name, input in self.inputs.iteritems() 
+			input
+			for name, input in self.inputs.iteritems()
 			if input is not None and name[:4] == "TEST"
 		]
 		for input in inputs:
@@ -226,10 +226,9 @@ class controls_statemonitor (Block):
 		self.off("connectivity-changed", self.setListeners)
 		self.off("value-changed", self.setListeners)
 
-		for v in self._variables:	
+		for v in self._variables:
 			v.off('change', self.runUpdate)
 
 	def _cancel (self, abort = False):
 		self.removeListeners()
 		self._run_complete.callback(None)
-

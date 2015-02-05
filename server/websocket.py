@@ -37,7 +37,7 @@ class WebSocketRuntime (BaseTransport):
 		context.sendMessage(json.dumps(response))
 
 
-class OctopusEditorProtocol (WebSocketServerProtocol): 
+class OctopusEditorProtocol (WebSocketServerProtocol):
 	def onConnect (self, request):
 		return 'octopus'
 
@@ -58,9 +58,9 @@ class OctopusEditorProtocol (WebSocketServerProtocol):
 		# log.msg("Command", cmd)
 
 		self.factory.runtime.receive(
-			cmd['protocol'], 
-			cmd['command'], 
-			cmd["payload"], 
+			cmd['protocol'],
+			cmd['command'],
+			cmd["payload"],
 			self
 		)
 
