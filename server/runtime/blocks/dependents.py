@@ -170,15 +170,15 @@ class controls_statemonitor (Block):
 			# Cancel reset_step
 			try:
 				if self.cancel_on_trigger:
-					self.inputs['RESET'].cancel(propagate = True)
+					self.getInput('RESET').cancel(propagate = True)
 			except (KeyError, AttributeError, NotRunning) as e:
 				print e.__class__.__name__
 				pass
 
 			# Run trigger_step
 			try:
-				self.inputs['TRIGGER'].reset()
-				self.inputs['TRIGGER'].run()
+				self.getInput('TRIGGER').reset()
+				self.getInput('TRIGGER').run()
 			except (KeyError, AttributeError, AlreadyRunning):
 				return
 
@@ -189,14 +189,14 @@ class controls_statemonitor (Block):
 
 		if self.cancel_on_reset:
 			try:
-				self.inputs['TRIGGER'].cancel(propagate = True)
+				self.getInput('TRIGGER').cancel(propagate = True)
 			except (KeyError, AttributeError, NotRunning):
 				pass
 
 		if run_reset_step:
 			try:
-				self.inputs['RESET'].reset()
-				self.inputs['RESET'].run()
+				self.getInput('RESET').reset()
+				self.getInput('RESET').run()
 			except (KeyError, AttributeError, AlreadyRunning):
 				return
 
