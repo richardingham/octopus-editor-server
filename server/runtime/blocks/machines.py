@@ -170,23 +170,23 @@ class machine_phidgets_phsensor (machine_declaration):
 
 class connection_tcp (Block):
 	def eval (self):
-		return octopus.transport.basic.tcp(
+		return defer.succeed(octopus.transport.basic.tcp(
 			str(self.fields['HOST']),
 			int(self.fields['PORT'])
-		)
+		))
 
 
 class connection_serial (Block):
 	def eval (self):
-		return octopus.transport.basic.serial(
+		return defer.succeed(octopus.transport.basic.serial(
 			str(self.fields['PORT']),
 			baudrate = int(self.fields['BAUD'])
-		)
+		))
 
 
 class connection_phidget (Block):
 	def eval (self):
 		from octopus.transport.phidgets import Phidget
-		return Phidget(
+		return defer.succeed(Phidget(
 			int(self.fields['ID']),
-		)
+		))
