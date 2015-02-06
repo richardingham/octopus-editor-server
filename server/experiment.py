@@ -365,7 +365,7 @@ class CompletedExperiment (object):
 		if var_type == "int":
 			cast = int
 		elif var_type == "float":
-			cast = float32
+			cast = float
 		else:
 			cast = str
 
