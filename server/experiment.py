@@ -196,9 +196,12 @@ class Experiment (EventEmitter):
 				usedFiles[varName] = {}
 
 		def flushFiles ():
-			for file in openFiles:
-				file.flush()
-				os.fsync(file.fileno())
+			try:
+				for file in openFiles.itervalues():
+					file.flush()
+					os.fsync(file.fileno())
+			except:
+				log.err()
 
 		flushFilesLoop = task.LoopingCall(flushFiles)
 		flushFilesLoop.start(5 * 60, False).addErrback(log.err)
