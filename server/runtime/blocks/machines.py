@@ -25,15 +25,10 @@ class machine_declaration (Block):
 	def _run (self):
 		@defer.inlineCallbacks
 		def _connect ():
-			input = self.inputs['CONNECTION']
-
-			try:
-				connection = yield input.eval()
-			except Disconnected:
-				connection = None
+			connection = yield self.getInputValue('CONNECTION', None)
 
 			if connection is None:
-				raise Exception("Connection must be specified for machine {:s}".format(self.fields['NAME']))
+				raise Exception("No connection specified for machine '{:s}'".format(self.fields['NAME']))
 
 			cls = self.getMachineClass()
 			self.machine = cls(

@@ -234,13 +234,19 @@ class Sketch (EventEmitter):
 			if f is not Aborted:
 				_done(failure)
 			else:
-				_error("Stopped by user")
+				_error(Aborted("Manual stop"))
 
 		def _error (failure):
+			try:
+				errorMessage = failure.getErrorMessage()
+			except AttributeError:
+				log.err("Sketch.runExperiment: Received error message  %s" % failure)
+				errorMessage = str(failure)
+
 			self.notifySubscribers("experiment", "state-error", {
 				"sketch": self.id,
 				"experiment": self.experiment.id,
-				"error": failure.getErrorMessage()
+				"error": errorMessage
 			}, self.experiment)
 
 			self.experiment = None
