@@ -669,11 +669,26 @@ Polymer('octopus-editor', {
 	},
 	downloadXML: function (e) {
 		var xmlDom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
+
+		// Perform webcomponents unwrap if polyfilled
+		if (window.ShadowDOMPolyfill) {
+		    xmlDom = window.ShadowDOMPolyfill.unwrapIfNeeded(xmlDom);
+		}
+
 		var xmlText = Blockly.Xml.domToPrettyText(xmlDom);
 
+		// Create an <a> element to contain the download.
 		var a = window.document.createElement('a');
 		a.href = window.URL.createObjectURL(new Blob([xmlText], {type: 'text/xml'}));
-		a.download = 'experiment.xml';
+
+		// Give the download an appropriate name.
+		a.download =
+			'experiment__' +
+			this.$['experiment-title'].value.trim()
+			.replace(/[^a-z0-9]/ig, '_') + '__' +
+			(new Date().toJSON().substring(0, 19)
+				.replace('T', '_').replace(/:/g, '-')
+			) + '.xml'
 
 		// Append anchor to body.
 		document.body.appendChild(a)
