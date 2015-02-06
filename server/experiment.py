@@ -265,10 +265,10 @@ class CompletedExperiment (object):
 		self.sketch_id = expt['sketch_guid']
 
 		def _varName (name):
-		if '::' in name:
-			return '.'.join(v["name"].split('::')[1:])
-		else:
-			return name
+			if '::' in name:
+				return '.'.join(v["name"].split('::')[1:])
+			else:
+				return name
 
 		variables = yield self._getVariables(experimentDir)
 		self.variables = [
