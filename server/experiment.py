@@ -361,37 +361,57 @@ class CompletedExperiment (object):
 
 	@defer.inlineCallbacks
 	def _getData (self, dataFile, name, var_type, start = None, interval = None):
+
 		if var_type == "int":
-			dtype = int
+			cast = int
 		elif var_type == "float":
-			dtype = float
+			cast = float32
 		else:
-			dtype = str
+			cast = str
+
+		if start is not None and interval is not None:
+			end = start + interval
+		else:
+			start = None
+
+		def _readFile ():
+			data = []
+			with dataFile.open() as fp:
+				for line in fp:
+					# Skip comments
+					if line[0] == '#':
+						continue
+
+					time, value = line.split(',')
+					time = float(time)
+
+					if start is not None:
+						if time < start:
+							continue
+						if time > end:
+							break
+
+					data.append((time, cast(value)))
+
+			return data
 
 		try:
-			fp = dataFile.open()
-			data_a = yield threads.deferToThread(np.loadtxt, fp, dtype = dtype, delimiter = ',')
+			data = yield threads.deferToThread(_readFile)
 		except:
 			log.err()
 			defer.returnValue({})
-		finally:
-			fp.close()
 
 		# Make a readable variable name
 		#var_name = '.'.join(name.split('::')[1:])
 
-		# Select a certain portion of the data
-		if start is not None and interval is not None:
-			print "Data start: %s" % data_a[0][0]
-			print "Data end: %s" % data_a[-1][0]
-			print "Req Start: %s" % start
-			data_a = data_a[np.where((start <= data_a[:,0]) * (data_a[:, 0] <= start + interval))]
-		else:
-			interval = data_a[-1][0] - data_a[0][0]
+		if len(data) > 400 and cast in (int, float):
+			if interval is None:
+				try:
+					interval = data[-1][0] - data[0][0]
+				except IndexError:
+					interval = 0
 
-		data = data_a.tolist()
-		if len(data) > 400 and var_type in ("int", "float"):
-			spread = np.ptp(data_a[:,1])
+			spread = max(data, key = lambda x: x[1])[1] - min(data, key = lambda x: x[1])[1]
 			print "Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data)
 			print "Spread: %s" % spread
 			print "Epsilon: %s" % min(interval / 200., spread / 50.)
