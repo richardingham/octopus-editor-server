@@ -302,12 +302,12 @@ Blockly.Msg.MATH_NUMBER_TOOLTIP = 'A number.';
 Blockly.Msg.MATH_ADDITION_SYMBOL = '+';
 /// math - The symbol for the binary operation indicating that the right operand should be
 /// subtracted from the left operand.
-Blockly.Msg.MATH_SUBTRACTION_SYMBOL = '-';
+Blockly.Msg.MATH_SUBTRACTION_SYMBOL = '\u2212';
 /// math - The binary operation indicating that the left operand should be divided by
 /// the right operand.
-Blockly.Msg.MATH_DIVISION_SYMBOL = '÷';
+Blockly.Msg.MATH_DIVISION_SYMBOL = '\u00F7';
 /// math - The symbol for the binary operation multiplication.
-Blockly.Msg.MATH_MULTIPLICATION_SYMBOL = '×';
+Blockly.Msg.MATH_MULTIPLICATION_SYMBOL = '\u00D7';
 /// math - The symbol for the binary operation exponentiation.  Specifically, if the
 /// value of the left operand is L and the value of the right operand (the exponent) is
 /// R, multiply L by itself R times.  (Fractional and negative exponents are also legal.)
