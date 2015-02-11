@@ -141,9 +141,9 @@ Comment.prototype.resizeBubble_ = function() {
 };
 
 var _foreignObjectSupported = (
-  typeof document !== "undefined" && 
-  typeof  document.implementation !== "undefined" && 
-  document.implementation.hasFeature("www.http://w3.org/TR/SVG11/feature#Extensibility","1.1")
+  typeof document !== "undefined" &&
+  typeof  document.implementation !== "undefined" &&
+  document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#Extensibility","1.1")
 );
 
 /**
@@ -272,4 +272,3 @@ Comment.prototype.dispose = function() {
 return Comment;
 
 });
-
