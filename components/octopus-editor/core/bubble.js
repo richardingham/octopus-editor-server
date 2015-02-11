@@ -55,7 +55,15 @@ var Bubble = function(workspace, content, shape,
 
   this.setAnchorLocation(anchorX, anchorY);
   if (!bubbleWidth || !bubbleHeight) {
-    var bBox = /** @type {SVGLocatable} */ (this.content_).getBBox();
+
+    // getBBox gives an error in polyfilled browser.
+    var bBox;
+    if (window.ShadowDOMPolyfill) {
+      bBox = window.ShadowDOMPolyfill.unwrapIfNeeded(this.content_).getBBox();
+    } else {
+      bBox = (this.content_).getBBox();
+    }
+
     bubbleWidth = bBox.width + 2 * Bubble.BORDER_WIDTH;
     bubbleHeight = bBox.height + 2 * Bubble.BORDER_WIDTH;
   }
