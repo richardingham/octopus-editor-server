@@ -424,10 +424,10 @@ Blockly.Blocks['math_framed'] = {
     this.setColour(Blockly.MATH_CATEGORY_HUE);
 
     var OPERATORS =
-        [['Maximum', 'MAX'],
-         ['Minimum', 'MIN'],
-         ['Average', 'AVERAGE'],
-         ['Change', 'CHANGE']];
+        [['Maximum of', 'MAX'],
+         ['Minimum of', 'MIN'],
+         ['Average of', 'AVERAGE'],
+         ['Change in', 'CHANGE']];
 
     function validator (text) {
       text = text.replace(/O/ig, '0');
@@ -465,4 +465,3 @@ Blockly.Blocks['math_framed'] = {
     });*/
   }
 };
-
