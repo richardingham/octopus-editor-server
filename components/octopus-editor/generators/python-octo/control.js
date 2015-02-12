@@ -75,12 +75,12 @@ Blockly.PythonOcto['controls_run'] = function(block) {
 
 Blockly.PythonOcto['controls_parallel'] = function(block) {
   var code = [];
-  var block;
+  var stackCode;
 
   for (var n = 1; n <= block.mutation_.stacks; n++) {
-    block = Blockly.PythonOcto.statementToCode(block, 'STACK' + n);
-    if (block) {
-      code.push(block);
+    stackCode = Blockly.PythonOcto.statementToCode(block, 'STACK' + n);
+    if (stackCode) {
+      code.push(stackCode);
     }
   }
 
