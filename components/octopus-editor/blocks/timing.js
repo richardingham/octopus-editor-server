@@ -58,3 +58,35 @@ Blockly.Blocks['controls_wait_until'] = {
     this.setTooltip('Pause the sequence until the passed condition is met'); //Blockly.Msg.CONTROLS_WAIT_TOOLTIP);
   }
 };
+
+Blockly.Blocks['controls_maketime'] = {
+  /**
+   * Block for time value.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.fieldHour_ = new Blockly.FieldTextInput(
+      '0',
+      Blockly.FieldTextInput.numberValidator
+    );
+    this.fieldMinute_ = new Blockly.FieldTextInput(
+      '0',
+      Blockly.FieldTextInput.numberValidator
+    );
+    this.fieldSecond_ = new Blockly.FieldTextInput(
+      '0',
+      Blockly.FieldTextInput.numberValidator
+    );
+    //this.setHelpUrl(Blockly.Msg.MATH_NUMBER_HELPURL);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.appendDummyInput()
+        .appendField(this.fieldHour_, 'HOUR')
+        .appendField('h')
+        .appendField(this.fieldMinute_, 'MINUTE')
+        .appendField('m')
+        .appendField(this.fieldSecond_, 'SECOND')
+        .appendField('s');
+    this.setOutput(true, 'Number');
+    this.setTooltip('Calculates a time in seconds'); // Blockly.Msg.CONTROLS_TIME_TOOLTIP);
+  }
+};

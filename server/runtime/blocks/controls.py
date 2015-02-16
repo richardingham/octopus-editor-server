@@ -292,6 +292,15 @@ class controls_wait_until (Block):
 		return complete
 
 
+class controls_maketime (Block):
+	def eval (self):
+		hour = float(self.getFieldValue('HOUR'))
+		minute = float(self.getFieldValue('MINUTE'))
+		second = float(self.getFieldValue('SECOND'))
+
+		return defer.succeed(hour * 3600 + minute * 60 + second)
+
+
 class controls_whileUntil (Block):
 	@defer.inlineCallbacks
 	def _run (self):
