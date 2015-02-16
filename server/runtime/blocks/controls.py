@@ -311,7 +311,9 @@ class controls_whileUntil (Block):
 
 			if condition:
 				try:
-					yield self.getInput('DO').run()
+					input = self.getInput('DO')
+					yield input.reset()
+					yield input.run()
 				except Disconnected:
 					pass
 				except Cancelled:
