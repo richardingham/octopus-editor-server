@@ -66,6 +66,15 @@ Blockly.PythonOcto['controls_wait_until'] = function(block) {
   return code;
 };
 
+Blockly.PythonOcto['controls_maketime'] = function(block) {
+  var h = parseFloat(Blockly.FieldTextInput.numberValidator(block.getFieldValue('HOUR'))) || 0;
+  var m = parseFloat(Blockly.FieldTextInput.numberValidator(block.getFieldValue('MINUTE'))) || 0;
+  var s = parseFloat(Blockly.FieldTextInput.numberValidator(block.getFieldValue('SECOND'))) || 0;
+  var code = 3600 * h + 60 * m + s;
+
+  return [code, Blockly.PythonOcto.ORDER_ATOMIC];
+};
+
 Blockly.PythonOcto['controls_run'] = function(block) {
   var later = block.getFieldValue('MODE') === 'PAUSED';
   var branch = Blockly.PythonOcto.statementToCode(block, 'STACK') || 'sequence()';
