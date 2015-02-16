@@ -32,7 +32,7 @@ class Root (Element):
 				for expt in expts:
 					yield tag.clone().fillSlots(
 						url = "/experiment/{:s}".format(expt['guid']),
-						title = expt['sketch_title']
+						title = expt['title']
 					)
 
 			return _render()

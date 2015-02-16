@@ -20,6 +20,7 @@ def createdb (dir):
 	conn.execute('''CREATE TABLE experiments (
 		guid text,
 		sketch_guid text,
+		title text,
 		user_id integer,
 		started_date datetime
 	)''')

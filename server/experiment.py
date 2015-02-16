@@ -40,16 +40,15 @@ class Experiment (EventEmitter):
 			return [{
 				"guid": str(row[0]),
 				"sketch_guid": str(row[1]),
-				"user_id": int(row[2]),
-				"started_date": int(row[3]),
-				"sketch_title": str(row[4])
+				"title": str(row[2]),
+				"user_id": int(row[3]),
+				"started_date": int(row[4])
 			} for row in rows]
 
 		return cls.db.runQuery("""
-			SELECT e.guid, e.sketch_guid, e.user_id, e.started_date, s.title
-			FROM experiments AS e
-			LEFT JOIN sketches AS s ON (s.guid = e.sketch_guid)
-			ORDER BY e.started_date DESC
+			SELECT guid, sketch_guid, title, user_id, started_date
+			FROM experiments
+			ORDER BY started_date DESC
 			LIMIT ?
 		""", (limit, )).addCallback(_done)
 
@@ -78,10 +77,10 @@ class Experiment (EventEmitter):
 		# Insert the new experiment into the DB
 		yield self.db.runOperation("""
 				INSERT INTO experiments
-				(guid, sketch_guid, user_id, started_date)
-				VALUES (?, ?, ?, ?)
+				(guid, sketch_guid, title, user_id, started_date)
+				VALUES (?, ?, ?, ?, ?)
 			""",
-			(id, sketch_id, 1, self.startTime)
+			(id, sketch_id, sketch.title, 1, self.startTime)
 		)
 
 		stime = time.gmtime(self.startTime)
@@ -104,8 +103,17 @@ class Experiment (EventEmitter):
 
 		def onSketchEvent (protocol, topic, data):
 			print "Sketch event: %s %s %s" % (protocol, topic, data)
+
+			# Don't log block state events (there will be lots)
 			if protocol == "block" and topic == "state":
 				return
+
+			# If the sketch is renamed whilst the experiment is
+			# running, update the experiment title.
+			elif protocol == "sketch" and topic == "renamed":
+				self.db.runOperation("""
+					UPDATE experiments SET title = ? WHERE guid = ?
+				""", (data['title'], id)).addErrback(log.err)
 
 			writeEvent(sketchFile, protocol, topic, data)
 
