@@ -2,7 +2,6 @@
 <head>
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
 	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
-	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
 
 	<link rel="import" href="/components/octopus-experiment-interface/octopus-experiment-interface.html" />
 	<link rel="import" href="/components/octopus-experiment-runtime/octopus-experiment-runtime.html" />
@@ -13,7 +12,7 @@
 
 	<style>
 	/* <![CDATA[ */
-	
+
 	html, body {
 		margin: 0;
 		padding: 0;
@@ -21,7 +20,7 @@
 	}
 
 	body {
-		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 		color: #333;
 		-webkit-user-select: none;
 		-moz-user-select: none;
@@ -55,8 +54,8 @@
 </core-toolbar>
 
 <octopus-experiment-interface flex="" horizontal="" layout=""
-	id="interface" 
-	on-request-data="{{ requestStreamData }}" 
+	id="interface"
+	on-request-data="{{ requestStreamData }}"
 	on-set-value="{{ propertySetValue }}"
 	variables="{{ experimentVariables }}"
 	runtimeProperties="{{ runtimeProperties }}"
@@ -64,7 +63,7 @@
 	>
 </octopus-experiment-interface>
 
-<octopus-experiment-runtime 
+<octopus-experiment-runtime
 	id="runtime"
 	properties="{{ runtimeProperties }}"
 	streams="{{ runtimeStreams }}"
@@ -76,7 +75,7 @@
 	<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
 	<t:attr name="experiment"><t:slot name="experiment_id" /></t:attr>
 </octopus-experiment-runtime>
-	
+
 </template>
 <script>
 // <![CDATA[

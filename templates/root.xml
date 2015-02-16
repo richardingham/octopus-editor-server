@@ -1,7 +1,6 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
 
 	<style>
 
@@ -11,7 +10,7 @@
 	}
 
 	body {
-		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 		color: #333;
 		-webkit-tap-highlight-color: rgba(0,0,0,0);
 		-webkit-touch-callout: none;
@@ -24,7 +23,7 @@
 	</style>
 
 	<title>Octopus</title>
-	  
+
 </head>
 <body>
 	<section id="header">

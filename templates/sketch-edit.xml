@@ -4,7 +4,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
 	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
-	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
 	<link rel="import" href="/components/octopus-editor/octopus-editor.html" />
 
 	<link rel="stylesheet" href="/components/octopus-editor/global.css" />
@@ -20,7 +19,7 @@
 	}
 
 	body {
-		font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 		color: #333;
 		-webkit-user-select: none;
 		-moz-user-select: none;
