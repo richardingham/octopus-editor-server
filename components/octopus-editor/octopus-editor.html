@@ -403,7 +403,7 @@ Polymer('octopus-editor', {
 
 	// Received initial load data from the server
 	onSketchLoaded: function (e, sketch) {
-		this.$['experiment-title'].value = sketch.title;
+		this.onSketchRenamed(e, sketch.title);
 
 		var workspace = Blockly.mainWorkspace;
 		var moveBlocks = {};
@@ -499,6 +499,7 @@ Polymer('octopus-editor', {
 
 	onSketchRenamed: function (e, title) {
 		this.$['experiment-title'].value = title;
+		document.title = title + " | Edit Sketch"
 	},
 
 	onBlockChanged: function (e) {

@@ -1,5 +1,6 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" flex="" vertical="" layout="">
 <head>
+	<title>Edit Sketch</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
 	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
@@ -11,7 +12,7 @@
 
 	<style>
 	/* <![CDATA[ */
-	
+
 	html, body {
 		margin: 0;
 		padding: 0;
@@ -31,8 +32,8 @@
 
 	/* ]]> */
 	</style>
-	
-  
+
+
 </head>
 <body unresolved="" t:render="editor_body" flex="" vertical="" layout="">
 
