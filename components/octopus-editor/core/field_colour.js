@@ -29,8 +29,9 @@
 
 var util = require('util');
 
-// Insert CSS into body.
-$('head').append('<link rel="stylesheet" href="/components/octopus-editor/colpick/colpick.css" type="text/css" />');
+// Insert JS and CSS into body.
+$('head').append('<link rel="stylesheet" href="/bower_components/colpick/css/colpick.css" type="text/css" />');
+$('head').append('<script src="/bower_components/colpick/js/colpick.js" type="text/javascript" />');
 
 module.exports = (function (Blockly) {
 
