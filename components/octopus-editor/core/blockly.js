@@ -78,8 +78,8 @@ Blockly.SPRITE = {
  */
 Blockly.makeColour = function(hue) {
   if (typeof hue === "number") {
-    return new tinycolor({ 
-      h: hue, 
+    return new tinycolor({
+      h: hue,
       s: Blockly.HSV_SATURATION,
       v: Blockly.HSV_VALUE
     });
@@ -788,7 +788,7 @@ Blockly.Flydown = require('./flydown')(Blockly);
 // Fields
 Blockly.Field = require('./field')(Blockly);
 Blockly.FieldCheckbox = require('./field_checkbox')(Blockly);
-// Blockly.FieldColour = require('./field_colour')(Blockly);
+Blockly.FieldColour = require('./field_colour')(Blockly);
 Blockly.FieldDropdown = require('./field_dropdown')(Blockly);
 Blockly.FieldImage = require('./field_image')(Blockly);
 Blockly.FieldLabel = require('./field_label')(Blockly);

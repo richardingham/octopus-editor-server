@@ -23,7 +23,7 @@ def populate_blocks ():
 			for g in subclasses(s)
 		]
 
-	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images
+	from .blocks import mathematics, text, logic, controls, variables, machines, dependents, images, colour
 
 	Workspace.blocks = { c.__name__: c for c in subclasses(Block) }
 

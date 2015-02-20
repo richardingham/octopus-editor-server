@@ -17,19 +17,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
- // TODO: implement with https://github.com/josedvq/colpick-jQuery-Color-Picker/
 
 /**
  * @fileoverview Colour input field.
  * @author fraser@google.com (Neil Fraser)
+ * @author mail@richardingham.net (Richard Ingham)
  */
 'use strict';
 
 // goog.require('Blockly.Field');
-// goog.require('goog.ui.ColorPicker');
 
 var util = require('util');
+
+// Insert CSS into body.
+$('head').append('<link rel="stylesheet" href="/components/octopus-editor/colpick/colpick.css" type="text/css" />');
 
 module.exports = (function (Blockly) {
 
@@ -92,99 +93,90 @@ FieldColour.prototype.setValue = function(colour) {
   this.colour_ = colour;
   this.borderRect_.style.fill = colour;
   if (this.sourceBlock_ && this.sourceBlock_.rendered) {
-    // Since we're not re-rendering we need to explicitly call
-    // Blockly.Realtime.blockChanged()
-    Blockly.Realtime.blockChanged(this.sourceBlock_);
     this.sourceBlock_.workspace.fireChangeEvent();
   }
 };
-
-/**
- * An array of colour strings for the palette.
- * See bottom of this page for the default:
- * http://docs.closure-library.googlecode.com/git/closure_goog_ui_colorpicker.js.source.html
- * @type {!Array.<string>}
- */
-FieldColour.COLOURS = goog.ui.ColorPicker.SIMPLE_GRID_COLORS;
-
-/**
- * Number of columns in the palette.
- */
-FieldColour.COLUMNS = 7;
 
 /**
  * Create a palette under the colour field.
  * @private
  */
 FieldColour.prototype.showEditor_ = function() {
-  Blockly.WidgetDiv.show(this, FieldColour.widgetDispose_);
-  // Create the palette using Closure.
-  var picker = new goog.ui.ColorPicker();
-  picker.setSize(FieldColour.COLUMNS);
-  picker.setColors(FieldColour.COLOURS);
+  var thisObj = this;
+  var oldValue = this.getValue();
+
+  Blockly.WidgetDiv.show(this, function() {
+    if (oldValue !== thisObj.getValue()) {
+      thisObj.emit("changed", thisObj.getValue());
+    }
+  });
+  var $window = $(window);
+
+
+  // Create the colour picker widget
+  var options = {
+    flat: true,
+    submit: false,
+    color: this.getValue().substring(1),
+    onChange: function (hsb, hex) {
+      var colour = '#' + (hex || '000000');
+      if (thisObj.changeHandler_) {
+        // Call any change handler, and allow it to override.
+        var override = thisObj.changeHandler_(colour);
+        if (override !== undefined) {
+          colour = override;
+        }
+      }
+      if (colour !== null) {
+        thisObj.setValue(colour);
+      }
+    }
+  };
+
+  var $widget = $('<div>').colpick(options).appendTo($(Blockly.WidgetDiv.DIV));
 
   // Position the palette to line up with the field.
   // Record windowSize and scrollOffset before adding the palette.
-  var windowSize = goog.dom.getViewportSize();
-  var scrollOffset = goog.style.getViewportPageOffset(document);
-  var xy = Blockly.getAbsoluteXY_(/** @type {!Element} */ (this.borderRect_));
-  var borderBBox = this.borderRect_.getBBox();
-  var div = Blockly.WidgetDiv.DIV;
-  picker.render(div);
-  picker.setSelectedColor(this.getValue());
-  // Record paletteSize after adding the palette.
-  var paletteSize = goog.style.getSize(picker.getElement());
+  var boundsX = $window.width();
+  var boundsY = $window.height();
+  //var scrollOffset = goog.style.getViewportPageOffset(document);
+  var offsetX = $window.scrollLeft();
+  var offsetY = $window.scrollTop();
+  var pickerWidth = $widget.outerWidth()
+  var pickerHeight = $widget.outerHeight()
+
+  var xy = Blockly.getAbsoluteXY_(this.borderRect_);
+
+  // getBBox gives an error in polyfilled browser.
+  var borderBBox;
+  if (window.ShadowDOMPolyfill) {
+    borderBBox = window.ShadowDOMPolyfill.unwrapIfNeeded(this.borderRect_).getBBox();
+  } else {
+    borderBBox = (this.borderRect_).getBBox();
+  }
 
   // Flip the palette vertically if off the bottom.
-  if (xy.y + paletteSize.height + borderBBox.height >=
-      windowSize.height + scrollOffset.y) {
-    xy.y -= paletteSize.height - 1;
+  if (xy.y + pickerHeight + borderBBox.height >=
+      boundsY + offsetY) {
+    xy.y -= pickerHeight - 1;
   } else {
     xy.y += borderBBox.height - 1;
   }
   if (Blockly.RTL) {
     xy.x += borderBBox.width;
-    xy.x -= paletteSize.width;
+    xy.x -= pickerWidth;
     // Don't go offscreen left.
-    if (xy.x < scrollOffset.x) {
-      xy.x = scrollOffset.x;
+    if (xy.x < offsetX) {
+      xy.x = offsetX;
     }
   } else {
     // Don't go offscreen right.
-    if (xy.x > windowSize.width + scrollOffset.x - paletteSize.width) {
-      xy.x = windowSize.width + scrollOffset.x - paletteSize.width;
+    if (xy.x > boundsX + offsetX - pickerWidth) {
+      xy.x = boundsX + offsetX - pickerWidth;
     }
   }
-  Blockly.WidgetDiv.position(xy.x, xy.y, windowSize, scrollOffset);
+  Blockly.WidgetDiv.position(xy.x, xy.y, { height: boundsY, width: boundsX }, { height: offsetY, width: offsetX });
 
-  // Configure event handler.
-  var thisObj = this;
-  FieldColour.changeEventKey_ = goog.events.listen(picker,
-      goog.ui.ColorPicker.EventType.CHANGE,
-      function(event) {
-        var colour = event.target.getSelectedColor() || '#000000';
-        Blockly.WidgetDiv.hide();
-        if (thisObj.changeHandler_) {
-          // Call any change handler, and allow it to override.
-          var override = thisObj.changeHandler_(colour);
-          if (override !== undefined) {
-            colour = override;
-          }
-        }
-        if (colour !== null) {
-          thisObj.setValue(colour);
-        }
-      });
-};
-
-/**
- * Hide the colour palette.
- * @private
- */
-FieldColour.widgetDispose_ = function() {
-  if (FieldColour.changeEventKey_) {
-    goog.events.unlistenByKey(FieldColour.changeEventKey_);
-  }
 };
 
 return FieldColour;
