@@ -279,12 +279,25 @@ FieldTextInput.numberValidator = function(text) {
 };
 
 /**
+ * Ensure that only an integer may be entered.
+ * @param {string} text The user's text.
+ * @return {?string} A string representing a valid number, or null if invalid.
+ */
+FieldTextInput.integerValidator = function(text) {
+  // 'O' is sometimes mistaken for '0' by inexperienced users.
+  text = text.replace(/O/ig, '0');
+  // Strip out thousands separators.
+  text = text.replace(/,/g, '');
+  return String(parseInt(text || 0));
+};
+
+/**
  * Ensure that only a nonnegative integer may be entered.
  * @param {string} text The user's text.
  * @return {?string} A string representing a valid int, or null if invalid.
  */
 FieldTextInput.nonnegativeIntegerValidator = function(text) {
-  var n = FieldTextInput.numberValidator(text);
+  var n = FieldTextInput.integerValidator(text);
   if (n) {
     n = String(Math.max(0, Math.floor(n)));
   }
@@ -294,4 +307,3 @@ FieldTextInput.nonnegativeIntegerValidator = function(text) {
 return FieldTextInput;
 
 });
-
