@@ -14,54 +14,99 @@ import octopus.transport.basic
 
 # Python Imports
 from time import time as now
+import os
+
+# Numpy
+import numpy
 
 
-class image_findcolour (Block):
+class _image_block (Block):
+	def _calculate (self, result):
+		return result
+
+	def eval (self):
+		def calculate (result):
+			if result is None:
+				return None
+
+			return self._calculate(result)
+
+		self._complete = self.getInputValue('INPUT').addCallback(calculate)
+		return self._complete
+
+
+class image_findcolour (_image_block):
 	_map = {
 		"RED": lambda r, g, b: r - g,
 		"GREEN": lambda r, g, b: g - r,
 		"BLUE": lambda r, g, b: b - r,
 	}
 
+	def _calculate (self, result):
+		op = self._map[self.fields['OP']]
+		return op(*result.splitChannels())
+
+		# Emit a warning if bad op given
+
+
+class image_threshold (_image_block):
+	def _calculate (self, result):
+		return result.threshold(int(self.fields['THRESHOLD']))
+
+
+class image_erode (_image_block):
+	def _calculate (self, result):
+		return result.erode()
+
+
+class image_invert (_image_block):
+	def _calculate (self, result):
+		return result.invert()
+
+
+class image_colourdistance (Block):
+	def _calculate (self, input, colour):
+		return input.colorDistance(color = colour)
+
 	def eval (self):
-		def calculate (result):
-			if result is None:
+		def calculate (results):
+			input, colour = results
+
+			if input is None or colour is None:
 				return None
 
-			op = self._map[self.fields['OP']]
-			return op(*result.splitChannels())
+			return self._calculate(input, colour)
 
-			# Emit a warning if bad op given
+		self._complete = defer.gatherResults([
+			self.getInputValue('INPUT'),
+			self.getInputValue('COLOUR', (0, 0, 0))
+		]).addCallback(calculate)
 
-		self._complete = self.getInputValue('INPUT').addCallback(calculate)
 		return self._complete
 
 
-class image_threshold (Block):
-	def eval (self):
-		def calculate (result):
-			if result is None:
-				return None
-
-			return result.threshold(int(self.fields['THRESHOLD']))
-
-		self._complete = self.getInputValue('INPUT').addCallback(calculate)
-		return self._complete
+class image_huedistance (image_colourdistance):
+	def _calculate (self, input, colour):
+		return input.hueDistance(colour)
 
 
-class image_erode (Block):
-	def eval (self):
-		def calculate (result):
-			if result is None:
-				return None
+class image_crop (_image_block):
+	def _calculate (self, result):
+		x = int(self.fields['X'])
+		y = int(self.fields['Y'])
+		w = int(self.fields['W'])
+		h = int(self.fields['H'])
 
-			return result.erode()
-
-		self._complete = self.getInputValue('INPUT').addCallback(calculate)
-		return self._complete
+		return result.crop(x, y, w, h)
 
 
-class image_tonumber (Block):
+class image_maxvalue (_image_block):
+	def _calculate (self, result):
+		# maxValue implemented after SimpleCV 1.3
+		return int(numpy.max(result.getGrayNumpy()))
+
+
+class image_tonumber (_image_block):
 	_map = {
 		"CENTROIDX": lambda blob: blob.centroid()[0],
 		"CENTROIDY": lambda blob: blob.centroid()[1],
@@ -69,26 +114,19 @@ class image_tonumber (Block):
 		"SIZEY": lambda blob: blob.minRectHeight(),
 	}
 
-	def eval (self):
-		def calculate (result):
-			if result is None:
-				return None
+	def calculate (self, result):
+		blobs = result.findBlobs(100) # min_size
 
-			blobs = result.findBlobs(100) # min_size
+		if blobs is not None:
+			blob = blobs.sortArea()[-1]
 
-			if blobs is not None:
-				blob = blobs.sortArea()[-1]
+		else:
+			return None
 
-			else:
-				return None
+		op = self._map[self.fields['OP']]
+		return op(blob)
 
-			op = self._map[self.fields['OP']]
-			return op(blob)
-
-			# Emit a warning if bad op given
-
-		self._complete = self.getInputValue('INPUT').addCallback(calculate)
-		return self._complete
+		# Emit a warning if bad op given
 
 
 class machine_imageprovider (machine_declaration):
@@ -120,5 +158,10 @@ class machine_multitracker (machine_declaration):
 
 class connection_cvcamera (Block):
 	def eval (self):
-		from octopus.image.source import cv_webcam
-		return cv_webcam(int(self.fields['ID']))
+		if os.name == 'nt':
+			from octopus.image.source import webcam_nothread
+			cv_webcam = webcam_nothread
+		else:
+			from octopus.image.source import cv_webcam
+
+		return defer.succeed(cv_webcam(int(self.fields['ID'])))

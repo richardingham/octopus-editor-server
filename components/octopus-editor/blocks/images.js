@@ -79,6 +79,104 @@ Blockly.Blocks['image_erode'] = {
   }
 };
 
+Blockly.Blocks['image_invert'] = {
+  /**
+   * Block for eroding an image
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setOutput(true, 'Image');
+    this.appendValueInput('INPUT')
+        .setCheck('Image')
+        .appendField('invert');
+  }
+};
+
+Blockly.Blocks['image_colourdistance'] = {
+  /**
+   * Block for colourDistance function
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setOutput(true, 'Image');
+    this.appendValueInput('INPUT')
+        .setCheck('Image')
+        .appendField('Colour distance of');
+    this.appendValueInput('COLOUR')
+        .setCheck('Colour')
+        .appendField('from colour:');
+  }
+};
+
+Blockly.Blocks['image_huedistance'] = {
+  /**
+   * Block for colourDistance function
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setOutput(true, 'Image');
+    this.appendValueInput('INPUT')
+        .setCheck('Image')
+        .appendField('Hue distance of');
+    this.appendValueInput('COLOUR')
+        .setCheck('Colour')
+        .appendField('from colour:');
+  }
+};
+
+Blockly.Blocks['image_maxvalue'] = {
+  /**
+   * Block for finding max pixel value of a grayscale image
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setOutput(true, 'Number');
+    this.appendValueInput('INPUT')
+        .setCheck('Image')
+        .appendField('Max Value of');
+  }
+};
+
+Blockly.Blocks['image_crop'] = {
+  /**
+   * Block for cropping an image
+   * @this Blockly.Block
+   */
+  init: function() {
+    var iv = Blockly.FieldTextInput.integerValidator;
+    this.fieldX_ = new Blockly.FieldTextInput('0', iv);
+    this.fieldY_ = new Blockly.FieldTextInput('0', iv);
+    this.fieldH_ = new Blockly.FieldTextInput('0', iv);
+    this.fieldW_ = new Blockly.FieldTextInput('0', iv);
+
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    this.setTooltip('Crop an image, from top-left coordinate (x, y) to create an image size (w, h)')
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setOutput(true, 'Image');
+    this.appendValueInput('INPUT')
+        .setCheck('Image')
+        .appendField('Crop');
+    this.appendDummyInput()
+        .appendField('x:')
+        .appendField(this.fieldX_, 'X')
+        .appendField('y:')
+        .appendField(this.fieldY_, 'Y');
+    this.appendDummyInput()
+        .appendField('w:')
+        .appendField(this.fieldH_, 'W')
+        .appendField('h:')
+        .appendField(this.fieldW_, 'H');
+  }
+};
+
 Blockly.Blocks['image_tonumber'] = {
   /**
    * Block for getting a number from an image
