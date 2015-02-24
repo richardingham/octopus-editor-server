@@ -33,33 +33,15 @@ Blockly.PythonOcto['text'] = function(block) {
 
 Blockly.PythonOcto['text_join'] = function(block) {
   // Create a string made up of any number of elements of any type.
-  //Should we allow joining by '-' or ',' or any other characters?
-  var code;
-  if (block.itemCount_ == 0) {
+  if (block.mutation_.items === 0) {
     return ['\'\'', Blockly.PythonOcto.ORDER_ATOMIC];
-  } else if (block.itemCount_ == 1) {
-    var argument0 = Blockly.PythonOcto.valueToCode(block, 'ADD0',
-        Blockly.PythonOcto.ORDER_NONE) || '\'\'';
-    code = 'str(' + argument0 + ')';
-    return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
-  } else if (block.itemCount_ == 2) {
-    var argument0 = Blockly.PythonOcto.valueToCode(block, 'ADD0',
-        Blockly.PythonOcto.ORDER_NONE) || '\'\'';
-    var argument1 = Blockly.PythonOcto.valueToCode(block, 'ADD1',
-        Blockly.PythonOcto.ORDER_NONE) || '\'\'';
-    var code = 'str(' + argument0 + ') + str(' + argument1 + ')';
-    return [code, Blockly.PythonOcto.ORDER_UNARY_SIGN];
   } else {
     var code = [];
-    for (var n = 0; n < block.itemCount_; n++) {
+    for (var n = 0; n < block.mutation_.items; n++) {
       code[n] = Blockly.PythonOcto.valueToCode(block, 'ADD' + n,
           Blockly.PythonOcto.ORDER_NONE) || '\'\'';
     }
-    var tempVar = Blockly.PythonOcto.variableDB_.getDistinctName('temp_value',
-        Blockly.Variables.NAME_TYPE);
-    code = '\'\'.join([str(' + tempVar + ') for ' + tempVar + ' in [' +
-        code.join(', ') + ']])';
-    return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+    return [code.join(' + '), Blockly.PythonOcto.ORDER_FUNCTION_CALL];
   }
 };
 
@@ -228,4 +210,3 @@ Blockly.PythonOcto['controls_log'] = function(block) {
       Blockly.PythonOcto.ORDER_NONE) || '\'\'';
   return 'log(' + argument0 + ')';
 };
-

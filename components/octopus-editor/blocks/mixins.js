@@ -29,7 +29,7 @@ function withVariableDropdown (field, fieldName) {
   this.on("parent-changed", changeParent_);
 
   /**
-   * Get the variable currently referenced by this block, 
+   * Get the variable currently referenced by this block,
    * accounting for scope.
    * @return {Blockly.Variable} variable The variable.
    * @this Blockly.Block
@@ -134,6 +134,49 @@ function withMutation (mutationDefault) {
       }
     }
     this.update(mutation);
+  };
+
+  this.updatePart_ = function (mutation, key, inputKey, inputType, newConnections) {
+    var newCount = mutation[key];
+
+    // Add / remove inputs as necessary
+    if (newCount > this.mutation_[key]) {
+      for (var x = this.mutation_[key]; x < newCount; x++) {
+        if (inputType === 'statement') {
+          this.appendStatementInput(inputKey + x);
+        } else {
+          this.appendValueInput(inputKey + x);
+        }
+      }
+    } else {
+      for (var x = this.mutation_[key]; x > newCount; x--) {
+        this.removeInput(inputKey + (x - 1));
+      }
+    }
+
+    if (newConnections) {
+      var input, inputName, connect = {};
+
+      // Disconnections
+      for (var x = 0; x < newCount; x++) {
+        inputName = inputKey + x;
+        if (newConnections[inputName] != this.connections_[inputName]) {
+          input = this.getInput(inputName);
+          if (input && input.connection.targetConnection) {
+            input.connection.targetBlock().setParent();
+          }
+          connect[inputName] = newConnections[inputName];
+        }
+      }
+
+      // Connections.
+      var targetConnection;
+      for (var inputName in connect) {
+        targetConnection = connect[inputName];
+        input = this.getInput(inputName);
+        input && targetConnection && input.connection.connect(targetConnection);
+      }
+    }
   };
 }
 

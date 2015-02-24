@@ -60,6 +60,18 @@ util.inherits(Input, EventEmitter);
  * @return {!Input} The input being append to (to allow chaining).
  */
 Input.prototype.appendField = function(field, opt_name) {
+  return this.insertField(this.fieldRow.length, field, opt_name);
+};
+
+/**
+ * Insert an item into the input's field row.
+ * @param {integer} position Position to insert the field. If -1, place at the end.
+ * @param {string|!Blockly.Field} field Something to add as a field.
+ * @param {string} opt_name Language-neutral identifier which may used to find
+ *     this field again.  Should be unique to the host block.
+ * @return {!Input} The input being append to (to allow chaining).
+ */
+Input.prototype.insertField = function(position, field, opt_name) {
   // Empty string, Null or undefined generates no field, unless field is named.
   if (!field && !opt_name) {
     return this;
@@ -73,15 +85,15 @@ Input.prototype.appendField = function(field, opt_name) {
   }
   field.name = opt_name;
 
+  // Add the field to the field row.
   if (field.prefixField) {
     // Add any prefix.
-    this.appendField(field.prefixField);
+    this.insertField(position, field.prefixField);
   }
-  // Add the field to the field row.
-  this.fieldRow.push(field);
+  this.fieldRow.splice(position, 0, field);
   if (field.suffixField) {
     // Add any suffix.
-    this.appendField(field.suffixField);
+    this.insertField(position, field.suffixField);
   }
 
   field.on("changed", function (value) {
