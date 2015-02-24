@@ -130,18 +130,26 @@ Blockly.Blocks['image_huedistance'] = {
   }
 };
 
-Blockly.Blocks['image_maxvalue'] = {
+Blockly.Blocks['image_intensityfn'] = {
   /**
    * Block for finding max pixel value of a grayscale image
    * @this Blockly.Block
    */
   init: function() {
+    var OPERATORS =
+        [['maximum', 'MAX'],
+         ['minimum', 'MIN'],
+         ['mean', 'MEAN'],
+         ['median', 'MEDIAN']];
     //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
     this.setColour(Blockly.MATH_CATEGORY_HUE);
     this.setOutput(true, 'Number');
     this.appendValueInput('INPUT')
         .setCheck('Image')
-        .appendField('Max Value of');
+        .appendField('Calculate')
+        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP')
+        .appendField('intensity');
+    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
   }
 };
 

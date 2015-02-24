@@ -100,10 +100,19 @@ class image_crop (_image_block):
 		return result.crop(x, y, w, h)
 
 
-class image_maxvalue (_image_block):
+class image_intensityfn (_image_block):
+	_map = {
+		"MAX": numpy.max,
+		"MIN": numpy.min,
+		"MEAN": numpy.mean,
+		"MEDIAN": numpy.median
+	}
+
 	def _calculate (self, result):
-		# maxValue implemented after SimpleCV 1.3
-		return int(numpy.max(result.getGrayNumpy()))
+		op = self._map[self.fields['OP']]
+		return int(op(result.getGrayNumpy()))
+
+		# Emit a warning if bad op given
 
 
 class image_tonumber (_image_block):

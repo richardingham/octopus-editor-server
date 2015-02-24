@@ -62,9 +62,9 @@ Blockly.PythonOcto['image_huedistance'] = function(block) {
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_maxvalue'] = function(block) {
+Blockly.PythonOcto['image_intensityfn'] = function(block) {
   var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
-  var code = 'image.maxValue(' + input + ')';
+  var code = 'image.intensity(' + input + ', \'' + block.getFieldValue('OP') + '\')';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
 
