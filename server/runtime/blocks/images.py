@@ -114,7 +114,7 @@ class image_tonumber (_image_block):
 		"SIZEY": lambda blob: blob.minRectHeight(),
 	}
 
-	def calculate (self, result):
+	def _calculate (self, result):
 		blobs = result.findBlobs(100) # min_size
 
 		if blobs is not None:
