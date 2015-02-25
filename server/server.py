@@ -242,9 +242,13 @@ class ShowExperiment (resource.Resource):
 
 		return server.NOT_DONE_YET
 
-	def getChild (self, id, request):
-		if id == "data":
+	def getChild (self, action, request):
+		if action == "data":
 			return ExperimentData(self._id)
+		elif action == "delete":
+			return DeleteExperiment(self._id)
+
+		return NoResource()
 
 
 class ExperimentData (resource.Resource):
@@ -276,6 +280,30 @@ class ExperimentData (resource.Resource):
 		expt.loadData(variables, start, interval).addCallbacks(_done, _error)
 
 		return server.NOT_DONE_YET
+
+
+class DeleteExperiment (resource.Resource):
+
+	isLeaf = True
+
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_POST (self, request):
+		def _redirect (id):
+			url = request.URLPath().parent().parent()
+			request.redirect(url)
+			request.finish()
+
+		def _error (failure):
+			request.write("There was an error: " + failure)
+			request.finish()
+
+		experiment.Experiment.delete(self._id).addCallbacks(_redirect, _error)
+
+		return server.NOT_DONE_YET
+
 
 def makeService (options):
 	"""

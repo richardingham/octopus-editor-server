@@ -3,6 +3,7 @@ from twisted.python.filepath import FilePath
 
 import os
 import json
+import time, datetime
 
 templatesDir = FilePath(os.path.join(os.path.basename(__file__), "..", "templates"))
 
@@ -32,7 +33,15 @@ class Root (Element):
 				for expt in expts:
 					yield tag.clone().fillSlots(
 						url = "/experiment/{:s}".format(expt['guid']),
-						title = expt['title']
+						delete_url = "/experiment/{:s}/delete".format(expt['guid']),
+						title = expt['title'],
+						finished_date = time.strftime(
+							'%d %b %Y, %H:%M:%S',
+							time.gmtime(expt['finished_date'])
+						),
+						duration = str(datetime.timedelta(seconds = int(
+							expt['finished_date'] - expt['started_date']
+						)))
 					)
 
 			return _render()

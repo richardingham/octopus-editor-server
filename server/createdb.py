@@ -12,8 +12,8 @@ def createdb (dir):
 		guid text,
 		title text,
 		user_id integer,
-		created_date datetime,
-		modified_date datetime,
+		created_date integer,
+		modified_date integer,
 		deleted integer DEFAULT 0
 	)''')
 
@@ -22,7 +22,9 @@ def createdb (dir):
 		sketch_guid text,
 		title text,
 		user_id integer,
-		started_date datetime
+		started_date integer,
+		finished_date integer DEFAULT 0,
+		deleted integer DEFAULT 0
 	)''')
 
 # By default, create in the ../data directory.

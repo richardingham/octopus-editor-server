@@ -35,6 +35,10 @@ class Experiment (EventEmitter):
 		return d
 
 	@classmethod
+	def delete (cls, id):
+		return cls.db.runOperation("UPDATE experiments SET deleted = 1 WHERE guid = ?", (id, ))
+
+	@classmethod
 	def list (cls, limit = 10):
 		def _done (rows):
 			return [{
@@ -42,13 +46,15 @@ class Experiment (EventEmitter):
 				"sketch_guid": str(row[1]),
 				"title": str(row[2]),
 				"user_id": int(row[3]),
-				"started_date": int(row[4])
+				"started_date": int(row[4]),
+				"finished_date": int(row[5])
 			} for row in rows]
 
 		return cls.db.runQuery("""
-			SELECT guid, sketch_guid, title, user_id, started_date
+			SELECT guid, sketch_guid, title, user_id, started_date, finished_date
 			FROM experiments
-			ORDER BY started_date DESC
+			WHERE finished_date > 0 AND deleted == 0
+			ORDER BY finished_date DESC
 			LIMIT ?
 		""", (limit, )).addCallback(_done)
 
@@ -217,12 +223,14 @@ class Experiment (EventEmitter):
 		try:
 			yield workspace.run()
 		finally:
+			# Remove event handlers
 			sketch.unsubscribe(self)
 			workspace.off("block-state", onBlockStateChange)
 			workspace.off("log-message", onLogMessage)
 			workspace.variables.off("variable-changed", onVarChanged)
 			workspace.variables.off("variable-renamed", onVarRenamed)
 
+			# Close file pointers
 			with varsFile.create() as fp:
 				fp.write(json.dumps(usedFiles))
 
@@ -233,6 +241,11 @@ class Experiment (EventEmitter):
 
 			for file in openFiles.itervalues():
 				file.close()
+
+			# Store completed time for experiment.
+			self.db.runOperation("""
+				UPDATE experiments SET finished_date = ? WHERE guid = ?
+			""", (now(), id)).addErrback(log.err)
 
 	def pause (self):
 		return self.sketch.workspace.pause()

@@ -16,7 +16,8 @@
 		-webkit-touch-callout: none;
 	}
 
-	#stored ul li form {
+	#stored ul li form,
+	#past ul li form {
 		display: inline;
 	}
 
@@ -63,6 +64,12 @@
 		<ul>
 			<li t:render="past_experiment">
 				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
+				Completed: <t:slot name="finished_date" />
+				Duration: <t:slot name="duration" />
+				<form method="post">
+					<t:attr name="action"><t:slot name="delete_url" /></t:attr>
+					<button type="submit">Delete</button>
+				</form>
 			</li>
 		</ul>
 	</section>
