@@ -67,11 +67,37 @@ class Experiment (EventEmitter):
 
 	@defer.inlineCallbacks
 	def run (self):
+		""" Run the experiment.
+
+		Main method to run an experiment. Returns a Deferred which
+		calls back when the experiment is complete, or errs back
+		if there is an error in the experiment.
+
+		Whilst the experiment is running, the pause(), resume() and
+		stop() methods can be used to interact with it. (Note: stop()
+		will cause the Deferred returned by run() to errback).
+
+		This method:
+
+		1. Inserts an entry for the experiment into the database.
+		2. Creates a directory for the experiment data.
+		3. Takes a snapshot of the sketch and stores it in the directory.
+		4. Sets event listeners to record any sketch changes during the
+		   experiment.
+		5. Records all changes to variables in the workspace
+		   during the experiment.
+
+
+		"""
+
 		id = self.id
 		sketch = self.sketch
 		sketch_id = sketch.id
 		workspace = sketch.workspace
 
+		# If the workspace is already running, we can't run another
+		# experiment on top of it. No experiment entry in the database
+		# will be created.
 		try:
 			yield workspace.reset()
 		except AlreadyRunning:
@@ -80,7 +106,7 @@ class Experiment (EventEmitter):
 
 		self.startTime = now()
 
-		# Insert the new experiment into the DB
+		# Insert the new experiment into the DB.
 		yield self.db.runOperation("""
 				INSERT INTO experiments
 				(guid, sketch_guid, title, user_id, started_date)
@@ -89,6 +115,7 @@ class Experiment (EventEmitter):
 			(id, sketch_id, sketch.title, 1, self.startTime)
 		)
 
+		# Create a directory to store the experiment logs and data.
 		stime = time.gmtime(self.startTime)
 
 		self._experimentDir = FilePath(self.dataDir)
@@ -97,6 +124,7 @@ class Experiment (EventEmitter):
 			if not self._experimentDir.exists():
 				self._experimentDir.createDirectory()
 
+		# Create files for the sketch logs, snapshot, variables etc.
 		eventFile = self._experimentDir.child("events.log").create()
 		sketchFile = self._experimentDir.child("sketch.log").create()
 		snapFile = self._experimentDir.child("sketch.snapshot.log")
@@ -104,13 +132,20 @@ class Experiment (EventEmitter):
 		openFiles = { "_events": eventFile, "_sketch": sketchFile }
 		usedFiles = {}
 
+		# Write a snapshot of the sketch.
 		with snapFile.create() as fp:
 			fp.write("\n".join(map(json.dumps, workspace.toEvents())))
 
+		# Log events emitted by the sketch (block changes, etc.)
+		# The idea is that with the snapshot and change log, the
+		# layout of the sketch could be replayed over the period
+		# of the experiment.
 		def onSketchEvent (protocol, topic, data):
 			print "Sketch event: %s %s %s" % (protocol, topic, data)
 
-			# Don't log block state events (there will be lots)
+			# Don't log block state events to the sketch log
+			# (there will be lots, and they are not relevant to the
+			# structure of the sketch)
 			if protocol == "block" and topic == "state":
 				return
 
@@ -123,6 +158,7 @@ class Experiment (EventEmitter):
 
 			writeEvent(sketchFile, protocol, topic, data)
 
+		# Helper function to format an event and write it to the file.
 		def writeEvent (file, protocol, topic, data):
 			time = now()
 
@@ -138,7 +174,8 @@ class Experiment (EventEmitter):
 
 		sketch.subscribe(self, onSketchEvent)
 
-		# Subscribe to workspace events
+		# Subscribe to workspace events. Block states are written to
+		# the events log.
 		@workspace.on("block-state")
 		def onBlockStateChange (data):
 			writeEvent(eventFile, "block", "state", data)
@@ -147,6 +184,9 @@ class Experiment (EventEmitter):
 			data['experiment'] = id
 			sketch.notifySubscribers("block", "state", data, self)
 
+		# Log messages are written to the events log, and also
+		# broadcast to subscribers. The experiment keeps a record
+		# of events so that new clients can get a historical log.
 		@workspace.on("log-message")
 		def onLogMessage (data):
 			writeEvent(eventFile, "experiment", "log", data)
@@ -157,8 +197,13 @@ class Experiment (EventEmitter):
 			self.logMessages.append(data)
 			sketch.notifySubscribers("experiment", "log", data, self)
 
-		# Files are only created when a variable actually gets data,
-		# not necessarily when it is created.
+		# Log changes to variable data.
+		#
+		# Note: files are only created when a variable actually gets data,
+		# not necessarily when the variable is created.
+		#
+		# The relative time is written, to save filesize. The absolute
+		# time can be calculated using the start time at the top of the file.
 		@workspace.variables.on("variable-changed")
 		def onVarChanged (data):
 			try:
@@ -179,20 +224,31 @@ class Experiment (EventEmitter):
 
 			logFile.write("{:.2f}, {:s}\n".format(data['time'] - self.startTime, str(data['value'])))
 
+		# Update the open files list if a variable is renamed.
+		#
+		# TODO: Variable renaming during experiment run is a bit dodgy.
+		# Which variable to display in the results? It might be better to
+		# disallow renaming during runtime.
 		@workspace.variables.on("variable-renamed")
 		def onVarRenamed (data):
 			openFiles[data['newName']] = openFiles[data['oldName']]
 			del openFiles[data['oldName']]
 			addUsedFile(data['newName'], "", data['variable'])
 
+		# Ensure that renaming vars doesn't lead to any overwriting.
+		# (see TODO above).
 		def unusedVarName (varName):
 			if varName in usedFiles:
 				return unusedVarName(varName + "_")
 			return varName
 
+		# Format a variable name into a file name
 		def fileNameFor (varName):
 			return re.sub(r'[^a-z0-9\.]', '_', varName) + '.csv'
 
+		# Build a list of files and variables to be written to the variables
+		# list file, which is used to generate the var list
+		# when the experiment results are being displayed.
 		def addUsedFile (varName, fileName, variable):
 			try:
 				unit = str(variable.unit)
@@ -209,6 +265,10 @@ class Experiment (EventEmitter):
 			else:
 				usedFiles[varName] = {}
 
+		# Write all file data. This is called periodically during the
+		# experiment so that data variables that do not change very
+		# often is still written to disk, and will not be lost if the
+		# program crashes.
 		def flushFiles ():
 			try:
 				for file in openFiles.itervalues():
@@ -220,6 +280,8 @@ class Experiment (EventEmitter):
 		flushFilesLoop = task.LoopingCall(flushFiles)
 		flushFilesLoop.start(5 * 60, False).addErrback(log.err)
 
+		# Attempt to run the experiment. Make sure that eveything is
+		# cleaned up after the experiment, even in the event of an error.
 		try:
 			yield workspace.run()
 		finally:
@@ -248,12 +310,26 @@ class Experiment (EventEmitter):
 			""", (now(), id)).addErrback(log.err)
 
 	def pause (self):
+		"""Pause the experiment if it is running.
+
+		Throws an error if called when the experiment is not running.
+		"""
 		return self.sketch.workspace.pause()
 
 	def resume (self):
+		"""Resume the experiment if it is paused.
+
+		Throws an error if called when the experiment is not paused.
+		"""
 		return self.sketch.workspace.resume()
 
 	def stop (self):
+		"""Abort the experiment.
+
+		Causes the Deferred returned from run() to errback.
+		
+		Throws an error if called when the experiment is not running.
+		"""
 		return self.sketch.workspace.abort()
 
 	#
