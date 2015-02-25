@@ -47,6 +47,26 @@ var Mutator = function(quarkNames) {
     element.setAttribute('type', quarkNames[x]);
     this.quarkXml_[x] = element;
   }
+
+  // Function for emitting an event when there is a change in the mutator.
+  var thisObj = this;
+  this.storeWorkspaceJSON = function () {
+    if (thisObj.block_.mutationToJSON) {
+      thisObj.storedMutatorJSON_ = thisObj.block_.mutationToJSON();
+    }
+  };
+  this.emitWorkspaceChangeEvent = function () {
+    // Fire mutator changed event
+    if (thisObj.block_.mutationToJSON) {
+      var newMutatorJSON = thisObj.block_.mutationToJSON();
+      if (newMutatorJSON != thisObj.storedMutatorJSON_) {
+        thisObj.block_.workspaceEmit("block-set-mutation", {
+          id: thisObj.block_.id,
+          mutation: newMutatorJSON
+        });
+      }
+    }
+  };
 };
 util.inherits(Mutator, Blockly.Icon);
 
@@ -203,6 +223,7 @@ Mutator.prototype.setVisible = function(visible) {
     for (var i = 0, child; child = blocks[i]; i++) {
       child.render();
     }
+
     // The root block should not be dragable or deletable.
     this.rootBlock_.setMovable(false);
     this.rootBlock_.setDeletable(false);
@@ -212,6 +233,7 @@ Mutator.prototype.setVisible = function(visible) {
       x = -x;
     }
     this.rootBlock_.moveBy(x, margin);
+
     // Save the initial connections, then listen for further changes.
     if (this.block_.saveConnections) {
       this.block_.saveConnections(this.rootBlock_);
@@ -221,12 +243,23 @@ Mutator.prototype.setVisible = function(visible) {
           function() {thisObj.block_.saveConnections(thisObj.rootBlock_)});
     }
     this.resizeBubble_();
+
     // When the mutator's workspace changes, update the source block.
     Blockly.bindEvent_(this.workspace_.getCanvas(), 'blocklyWorkspaceChange',
         this.block_, function() {thisObj.workspaceChanged_();});
+
+    // When the mutator is changed, emit a mutator-changed event.
+    this.workspace_.on('block-connected', this.emitWorkspaceChangeEvent);
+    this.workspace_.on('block-disconnected', this.emitWorkspaceChangeEvent);
+    this.workspace_.on('block-set-field-value', this.emitWorkspaceChangeEvent);
     this.updateColour();
+
   } else {
     // Dispose of the bubble.
+    this.workspace_.removeListener('block-connected', this.emitWorkspaceChangeEvent);
+    this.workspace_.removeListener('block-disconnected', this.emitWorkspaceChangeEvent);
+    this.workspace_.removeListener('block-set-field-value', this.emitWorkspaceChangeEvent);
+
     this.svgDialog_ = null;
     this.flyout_.dispose();
     this.flyout_ = null;
@@ -271,23 +304,21 @@ Mutator.prototype.workspaceChanged_ = function() {
 
   // When the mutator's workspace changes, update the source block.
   if (this.rootBlock_.workspace == this.workspace_) {
+
     // Switch off rendering while the source block is rebuilt.
     var savedRendered = this.block_.rendered;
     this.block_.rendered = false;
-    var oldMutatorJSON = this.block_.mutationToJSON && this.block_.mutationToJSON();
+
     // Allow the source block to rebuild itself.
     this.block_.compose(this.rootBlock_);
-    // Fire mutator changed event
-    var newMutatorJSON = this.block_.mutationToJSON && this.block_.mutationToJSON();
-    if (newMutatorJSON != oldMutatorJSON) {
-      this.block_.workspaceEmit("block-set-mutation", { id: this.block_.id, mutation: newMutatorJSON });
-    }
+
     // Restore rendering and show the changes.
     this.block_.rendered = savedRendered;
     if (this.block_.rendered) {
       this.block_.render();
     }
     this.resizeBubble_();
+    
     // The source block may have changed, notify its workspace.
     this.block_.workspace.fireChangeEvent();
   }
