@@ -327,7 +327,7 @@ class Experiment (EventEmitter):
 		"""Abort the experiment.
 
 		Causes the Deferred returned from run() to errback.
-		
+
 		Throws an error if called when the experiment is not running.
 		"""
 		return self.sketch.workspace.abort()
@@ -362,11 +362,13 @@ class CompletedExperiment (object):
 
 		self.title = expt['sketch_title']
 		self.date = expt['started_date']
+		self.started_date = expt['started_date']
+		self.finished_date = expt['finished_date']
 		self.sketch_id = expt['sketch_guid']
 
 		def _varName (name):
 			if '::' in name:
-				return '.'.join(v["name"].split('::')[1:])
+				return '.'.join(name.split('::')[1:])
 			else:
 				return name
 
@@ -401,6 +403,68 @@ class CompletedExperiment (object):
 
 		defer.returnValue(data)
 
+	@defer.inlineCallbacks
+	def buildExcelFile (self, variables, time_divisor, time_dp):
+		import pandas as pd
+		from StringIO import StringIO
+
+		date = yield self._fetchDateFromDb(self.id)
+		experimentDir = self._getExperimentDir(self.id, date)
+		storedVariablesData = yield self._getVariables(experimentDir)
+		io = StringIO()
+
+		# http://stackoverflow.com/questions/28058563/write-to-stringio-object-using-pandas-excelwriter
+		writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
+		writer.book.filename = io
+
+		def format_time (x):
+			if x is not "":
+				return round(float(x) / time_divisor, time_dp)
+
+		def getColumn (file, title):
+			data = pd.read_csv(
+				experimentDir.child(file).path,
+				comment = '#',
+				index_col = 0,
+				usecols = [0, 1],
+				converters = {0: format_time},
+				names = ["Time", title]
+			)
+			return data.groupby(data.index).first()
+
+		def varName (variable):
+			if variable["unit"] != '':
+				unit = ' (' + variable["unit"] + ')'
+			else:
+				unit = ''
+
+			if '::' in variable["name"]:
+				name = '.'.join(variable["name"].split('::')[1:])
+			else:
+				name = variable["name"]
+
+			return name + unit
+
+		cols = yield defer.gatherResults(map(
+			lambda variable: threads.deferToThread(
+				getColumn,
+				variable["file"],
+				varName(variable)
+			),
+			map(lambda name: storedVariablesData[name], variables)
+		))
+
+		# Convert the columns into a single DataFrame
+		# Ensure there is a datapoint at each time point
+		dataframe = pd.concat(cols, axis = 1)
+		dataframe.apply(pd.Series.interpolate)
+
+		# Generate excel file
+		dataframe.to_excel(writer, sheet_name = self.title)
+		writer.save()
+
+		defer.returnValue(io.getvalue())
+
 	def _fetchFromDb (self, id):
 		def _done (rows):
 			try:
@@ -413,14 +477,14 @@ class CompletedExperiment (object):
 				'sketch_guid': str(row[1]),
 				'user_id': int(row[2]),
 				'started_date': int(row[3]),
-				'sketch_title': str(row[4])
+				'finished_date': int(row[4]),
+				'sketch_title': str(row[5])
 			}
 
 		return Experiment.db.runQuery("""
-			SELECT e.guid, e.sketch_guid, e.user_id, e.started_date, s.title
-			FROM experiments AS e
-			LEFT JOIN sketches AS s ON (s.guid = e.sketch_guid)
-			WHERE e.guid = ?
+			SELECT guid, sketch_guid, user_id, started_date, finished_date, title
+			FROM experiments
+			WHERE guid = ?
 		""", (id, )).addCallback(_done)
 
 	def _fetchDateFromDb (self, id):

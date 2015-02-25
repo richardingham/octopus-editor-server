@@ -70,6 +70,7 @@
 					<t:attr name="action"><t:slot name="delete_url" /></t:attr>
 					<button type="submit">Delete</button>
 				</form>
+				<a><t:attr name="href"><t:slot name="download_url" /></t:attr>Download Data</a>
 			</li>
 		</ul>
 	</section>

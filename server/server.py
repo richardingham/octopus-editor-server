@@ -20,7 +20,6 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 from autobahn.websocket.compress import PerMessageDeflateOffer, PerMessageDeflateOfferAccept
 
 # Sibling Imports
-# import template
 import sketch
 import experiment
 import websocket
@@ -31,7 +30,10 @@ import os
 import uuid
 import sqlite3
 import json
-from time import time as now
+import time
+import re
+
+now = time.time
 
 ##
 ## Database
@@ -236,7 +238,6 @@ class ShowExperiment (resource.Resource):
 			request.write("There was an error: " + str(failure))
 			request.finish()
 
-		print "Fetch for experiment id " + str(self._id)
 		d = experiment.Experiment.exists(self._id)
 		d.addCallbacks(_done, _error)
 
@@ -244,14 +245,16 @@ class ShowExperiment (resource.Resource):
 
 	def getChild (self, action, request):
 		if action == "data":
-			return ExperimentData(self._id)
+			return GetExperimentData(self._id)
+		elif action == "download":
+			return DownloadExperimentData(self._id)
 		elif action == "delete":
 			return DeleteExperiment(self._id)
 
 		return NoResource()
 
 
-class ExperimentData (resource.Resource):
+class GetExperimentData (resource.Resource):
 
 	def __init__ (self, id):
 		resource.Resource.__init__(self)
@@ -280,6 +283,93 @@ class ExperimentData (resource.Resource):
 		expt.loadData(variables, start, interval).addCallbacks(_done, _error)
 
 		return server.NOT_DONE_YET
+
+
+class DownloadExperimentData (resource.Resource):
+
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	@defer.inlineCallbacks
+	def _getExperiment (self, id):
+		exists = yield experiment.Experiment.exists(self._id)
+
+		if not exists:
+			raise Exception("Experiment not found")
+
+		expt = next((expt for expt in running_experiments() if expt.id == id), None)
+
+		if expt is not None:
+			raise Exception("Cannot download from running experiment.")
+
+		defer.returnValue(experiment.CompletedExperiment(self._id))
+
+	def render_GET (self, request):
+		self._render_GET(request)
+		return server.NOT_DONE_YET
+
+	@defer.inlineCallbacks
+	def _render_GET (self, request):
+		request.write("<!DOCTYPE html>\n")
+
+		try:
+			expt = yield self._getExperiment(self._id)
+		except Exception as e:
+			request.write("There was an error: " + str(e))
+			request.finish()
+			return
+
+		tpl = template.ExperimentDownload(
+			experiment.CompletedExperiment(self._id)
+		)
+
+		yield flatten(request, tpl, request.write)
+
+		request.finish()
+
+	def render_POST (self, request):
+		self._render_POST(request)
+		return server.NOT_DONE_YET
+
+	@defer.inlineCallbacks
+	def _render_POST (self, request):
+		def getintarg (arg, default = None):
+			try:
+				return int(request.args[arg][0])
+			except (TypeError, KeyError):
+				return default
+
+		try:
+			expt = yield self._getExperiment(self._id)
+
+			yield expt.load()
+
+			variables = request.args['vars']
+			time_divisor = getintarg('time_divisor')
+			time_dp = getintarg('time_dp')
+			filename = '.'.join([
+				re.sub(r'[^a-zA-Z0-9]+', '_', expt.title).strip('_'),
+				time.strftime(
+					'%Y%m%d_%H%M%S',
+					time.gmtime(expt.finished_date)
+				),
+				'xlsx'
+			])
+
+			xlsxdata = yield expt.buildExcelFile(variables, time_divisor, time_dp)
+
+		except Exception as e:
+			request.write("<!DOCTYPE html>\n")
+			request.write("There was an error: " + str(e))
+			request.finish()
+			return
+
+		request.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+		request.setHeader('Content-Disposition', 'attachment; filename=' + filename + ';')
+
+		request.write(xlsxdata)
+		request.finish()
 
 
 class DeleteExperiment (resource.Resource):

@@ -34,6 +34,7 @@ class Root (Element):
 					yield tag.clone().fillSlots(
 						url = "/experiment/{:s}".format(expt['guid']),
 						delete_url = "/experiment/{:s}/delete".format(expt['guid']),
+						download_url = "/experiment/{:s}/download".format(expt['guid']),
 						title = expt['title'],
 						finished_date = time.strftime(
 							'%d %b %Y, %H:%M:%S',
@@ -100,6 +101,31 @@ class ExperimentResult (Element):
 				date = str(self.expt.date),
 				variables = json.dumps(self.expt.variables)
 			)
+
+		return self._load.addCallback(_done)
+
+
+class ExperimentDownload (Element):
+	loader = XMLFile(templatesDir.child('experiment-download.xml'))
+
+	def __init__ (self, expt):
+		Element.__init__(self)
+		self.expt = expt
+		self._load = expt.load()
+
+	@renderer
+	def variable (self, request, tag):
+		def _done (_):
+			def _render ():
+				for v in self.expt.variables:
+					yield tag.clone().fillSlots(
+						key = v['key'],
+						name = v['name'],
+						type = v['type'],
+						unit = v['unit'],
+					)
+
+			return _render()
 
 		return self._load.addCallback(_done)
 

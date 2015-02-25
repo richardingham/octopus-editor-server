@@ -1,0 +1,81 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+<head>
+	<title>Experiment Download</title>
+
+	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
+
+	<style>
+	/* <![CDATA[ */
+
+	html, body {
+		margin: 0;
+		padding: 0;
+	}
+
+	body {
+		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+		color: #333;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+	}
+
+	/* ]]> */
+	</style>
+</head>
+<body>
+
+<form method="POST">
+<div>
+	Time units:
+	<select name="time_divisor">
+		<option value="1">seconds</option>
+		<option value="60">minutes</option>
+		<option value="3600">hours</option>
+	</select>
+</div>
+<div>
+	Time decimal places:
+	<input type="number" value="2" name="time_dp" />
+</div>
+
+<table>
+<thead>
+	<tr>
+		<td></td>
+		<td>Variable</td>
+		<td>Type</td>
+		<td>Unit</td>
+	</tr>
+</thead>
+<tbody>
+	<tr t:render="variable">
+	<td>
+		<input type="checkbox" name="vars"><t:attr name="value"><t:slot name="key" /></t:attr></input>
+	</td>
+	<td>
+		<span>
+			<t:attr name="title"><t:slot name="key" /></t:attr>
+			<t:slot name="name" />
+		</span>
+	</td>
+	<td>
+		<t:slot name="type" />
+	</td>
+	<td>
+		<t:slot name="unit" />
+	</td>
+	</tr>
+</tbody>
+</table>
+
+<div>
+	<button type="submit">Download</button>
+</div>
+</form>
+
+</body>
+</html>
