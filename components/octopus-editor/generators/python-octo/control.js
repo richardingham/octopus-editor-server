@@ -4,15 +4,15 @@
  */
 'use strict';
 
-function stringFill (x, n) { 
-  var s = ''; 
-  for (;;) { 
-    if (n & 1) s += x; 
-    n >>= 1; 
-    if (n) x += x; 
-    else break; 
-  } 
-  return s; 
+function stringFill (x, n) {
+  var s = '';
+  for (;;) {
+    if (n & 1) s += x;
+    n >>= 1;
+    if (n) x += x;
+    else break;
+  }
+  return s;
 }
 
 function indent (code, times) {
@@ -32,15 +32,15 @@ Blockly.PythonOcto['controls_if'] = function(block) {
   var branch = Blockly.PythonOcto.statementToCode(block, 'DO' + n) || '[]';
   var code = 'do_if(' + argument + ', \n';
   code += indent(branch);
-  
-  for (n = 1; n <= block.elseifCount_; n++) {
+
+  for (n = 1; n <= block.mutation_.elseif; n++) {
     argument = Blockly.PythonOcto.valueToCode(block, 'IF' + n,
         Blockly.PythonOcto.ORDER_NONE) || 'False';
     branch = Blockly.PythonOcto.statementToCode(block, 'DO' + n) || '[]';
     code += ',\n';
     code += indent('do_if(' + argument + ', \n' + indent(branch), n);
   }
-  if (block.elseCount_) {
+  if (block.mutation_.else) {
     branch = Blockly.PythonOcto.statementToCode(block, 'ELSE') || '[]';
     code += ',\n' + indent(indent(branch) + '\n)', n - 1);
   } else {
@@ -143,10 +143,10 @@ Blockly.PythonOcto['controls_statemonitor'] = function(block) {
   }
 
   var n = code.length ? '\n' : '';
-  code = 'control.StateMonitor(\n' + 
+  code = 'control.StateMonitor(\n' +
     indent('tests = [' + n + indent(code.join(',\n')) + n + '],\n' +
-    'trigger_step = ' + triggerBranch + ',\n' + 
-    'reset_step = ' + resetBranch) + 
+    'trigger_step = ' + triggerBranch + ',\n' +
+    'reset_step = ' + resetBranch) +
     '\n)';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };

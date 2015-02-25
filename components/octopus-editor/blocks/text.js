@@ -66,173 +66,46 @@ Blockly.Blocks['text_join'] = {
   init: function() {
     this.setHelpUrl(Blockly.Msg.TEXT_JOIN_HELPURL);
     this.setColour(Blockly.TEXT_CATEGORY_HUE);
-    this.appendValueInput('ADD0')
-        .appendField(Blockly.Msg.TEXT_JOIN_TITLE_CREATEWITH);
-    this.appendValueInput('ADD1');
     this.setOutput(true, 'String');
     this.setTooltip(Blockly.Msg.TEXT_JOIN_TOOLTIP);
-    this.setMutator(new Blockly.Mutator(['text_create_join_item']));
-    //this.itemCount_ = 2;
-    this.mutation_ = {
-      items: 2
-    };
+
     this.mutationConfig = {
-      parts: [
-        { name: 'items', default: 2, inputName: 'ADD', block: 'text_create_join_item' }
-      ]
-    };
-    withMutation.call(this, function () {
-      var part;
-      for (var i = 0, m = this.mutationConfig.parts.length; i < m; i++) {
-        part = this.mutationConfig.parts[i];
-        if (this.mutation_[part.name] !== part.default) {
-          return false;
+      parts: [{
+        name: 'items',
+        default: 2,
+        input: {
+          name: 'ADD',
+          type: 'value'
+        },
+        editor: {
+          //block: 'text_create_join_item',
+          text: Blockly.Msg.TEXT_CREATE_JOIN_ITEM_TITLE_ITEM,
+          tooltip: Blockly.Msg.TEXT_CREATE_JOIN_ITEM_TOOLTIP
+        }
+      }],
+      editor: {
+        //block: 'text_create_join_container',
+        text: Blockly.Msg.TEXT_CREATE_JOIN_TITLE_JOIN,
+        tooltip: Blockly.Msg.TEXT_CREATE_JOIN_TOOLTIP
+      },
+      postUpdate: function (newMutation, oldMutation) {
+        var wasEmpty = (oldMutation.items === 0);
+
+        if (newMutation.items === 0 && !wasEmpty) {
+          this.appendDummyInput('EMPTY')
+              .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
+              'media/quote0.png', 12, 12, '"'))
+              .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
+              'media/quote1.png', 12, 12, '"'));
+        } else if (newMutation.items > 0 && wasEmpty) {
+          this.removeInput('EMPTY', true);
+          this.getInput('ADD0').insertField(0, Blockly.Msg.TEXT_JOIN_TITLE_CREATEWITH);
         }
       }
-      return true;
-    });
+    };
+    withMutation.call(this, this.mutationConfig);
   },
-
-  update: function (mutation, newConnections) {
-    var wasEmpty = (this.mutation_.items === 0);
-
-    var part, parts = this.mutationConfig.parts;
-    for (var i = 0, m = parts.length; i < m; i++) {
-      part = parts[i];
-      this.updatePart_(mutation, part.name, part.inputName, 'value', newConnections);
-    }
-    this.mutation_ = mutation;
-
-    if (this.mutation_.items === 0 && !wasEmpty) {
-      this.appendDummyInput('EMPTY')
-          .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
-          'media/quote0.png', 12, 12, '"'))
-          .appendField(new Blockly.FieldImage(Blockly.pathToBlockly +
-          'media/quote1.png', 12, 12, '"'));
-    } else if (this.mutation_.items > 0 && wasEmpty) {
-      this.removeInput('EMPTY');
-      this.getInput('ADD0').insertField(0, Blockly.Msg.TEXT_JOIN_TITLE_CREATEWITH);
-    }
-  },
-
-  /**
-   * Populate the mutator's dialog with this block's components.
-   * @param {!Blockly.Workspace} workspace Mutator's workspace.
-   * @return {!Blockly.Block} Root block in mutator.
-   * @this Blockly.Block
-   */
-  decompose: function(workspace) {
-    var containerBlock = Blockly.Block.obtain(workspace,
-                                           'text_create_join_container');
-    containerBlock.initSvg();
-    var connection = containerBlock.getInput('STACK').connection;
-
-    var part, parts = this.mutationConfig.parts;
-    for (var i = 0, m = parts.length; i < m; i++) {
-      part = parts[i];
-
-      for (var x = 0; x < this.mutation_[part.name]; x++) {
-        var itemBlock = Blockly.Block.obtain(workspace, part.block);
-        itemBlock.initSvg();
-        connection.connect(itemBlock.previousConnection);
-        connection = itemBlock.nextConnection;
-      }
-    }
-
-    return containerBlock;
-  },
-
-  /**
-   * Reconfigure this block based on the mutator dialog's components.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this Blockly.Block
-   */
-  compose: function(containerBlock) {
-    var clauseBlock = containerBlock.getInputTargetBlock('STACK');
-    var mutation = {}, connections = {}, types = {};
-    var parts = this.mutationConfig.parts, part;
-
-    // Set empty mutation, store types map.
-    for (var i = 0, m = parts.length; i < m; i++) {
-      part = parts[i];
-      mutation[part.name] = 0;
-      types[part.block] = i;
-    }
-
-    // Calculate changes
-    while (clauseBlock) {
-      if (typeof types[clauseBlock.type] === 'undefined') {
-        throw 'Unknown block type.';
-      }
-      part = parts[types[clauseBlock.type]];
-
-      connections[part.inputName + (part.isFinal ? mutation[part.name] : '')] = clauseBlock.connection_
-      mutation[part.name]++;
-
-      clauseBlock = clauseBlock.nextConnection &&
-          clauseBlock.nextConnection.targetBlock();
-    }
-
-    this.update(mutation, connections);
-  },
-
-  /**
-   * Store pointers to any connected child blocks.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this Blockly.Block
-   */
-  saveConnections: function(containerBlock) {
-    var parts = this.mutationConfig.parts, part, input;
-    var counters = {}, types = {};
-
-    this.connections_ = {};
-
-    // Store types map.
-    for (var i = 0, m = parts.length; i < m; i++) {
-      part = parts[i];
-      types[part.block] = i;
-      counters[part.name] = 0;
-    }
-
-    var itemBlock = containerBlock.getInputTargetBlock('STACK');
-    while (itemBlock) {
-      part = parts[types[itemBlock.type]];
-
-      if (!part) {
-        throw 'Unknown block type.';
-      }
-
-      input = this.getInput(
-        part.inputName + (part.isFinal ? counters[part.name] : '')
-      );
-      counters[part.name]++;
-
-      itemBlock.valueConnection_ = input && input.connection.targetConnection;
-      itemBlock = itemBlock.nextConnection &&
-          itemBlock.nextConnection.targetBlock();
-    }
-  }
 };
-
-/**
- * Mutator block for container.
- * @this Blockly.Block
- */
-Blockly.Blocks['text_create_join_container'] = mutator_stack(
-  Blockly.TEXT_CATEGORY_HUE,
-  Blockly.Msg.TEXT_CREATE_JOIN_TITLE_JOIN,
-  Blockly.Msg.TEXT_CREATE_JOIN_TOOLTIP
-);
-
-/**
- * Mutator block for add items.
- * @this Blockly.Block
- */
-Blockly.Blocks['text_create_join_item'] = mutator_child(
-  Blockly.TEXT_CATEGORY_HUE,
-  Blockly.Msg.TEXT_CREATE_JOIN_ITEM_TITLE_ITEM,
-  Blockly.Msg.TEXT_CREATE_JOIN_ITEM_TOOLTIP
-);
 
 
 Blockly.Blocks['text_append'] = {

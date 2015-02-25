@@ -25,27 +25,6 @@
  */
 'use strict';
 
-
-/*Blockly.PythonOcto['controls_if'] = function(block) {
-  // If/elseif/else condition.
-  var n = 0;
-  var argument = Blockly.PythonOcto.valueToCode(block, 'IF' + n,
-      Blockly.PythonOcto.ORDER_NONE) || 'False';
-  var branch = Blockly.PythonOcto.statementToCode(block, 'DO' + n) || '  pass\n';
-  var code = 'if ' + argument + ':\n' + branch;
-  for (n = 1; n <= block.elseifCount_; n++) {
-    argument = Blockly.PythonOcto.valueToCode(block, 'IF' + n,
-        Blockly.PythonOcto.ORDER_NONE) || 'False';
-    branch = Blockly.PythonOcto.statementToCode(block, 'DO' + n) || '  pass\n';
-    code += 'elif ' + argument + ':\n' + branch;
-  }
-  if (block.elseCount_) {
-    branch = Blockly.PythonOcto.statementToCode(block, 'ELSE') || '  pass\n';
-    code += 'else:\n' + branch;
-  }
-  return code;
-};*/
-
 Blockly.PythonOcto['logic_compare'] = function(block) {
   // Comparison operator.
   var OPERATORS = {
