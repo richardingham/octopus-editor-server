@@ -1,7 +1,11 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" /> 
+	<script src="/bower_components/datatables/media/js/jquery.dataTables.min.js"></script>
+	<script src="/bower_components/datatables-bootstrap3-plugin/media/js/datatables-bootstrap3.min.js"></script>
+	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
+	<link rel="stylesheet" href="/bower_components/datatables-bootstrap3-plugin/media/css/datatables-bootstrap3.min.css" />
 
 	<style>
 
@@ -11,38 +15,38 @@
 		-webkit-tap-highlight-color: rgba(0,0,0,0);
 		-webkit-touch-callout: none;
 	}
-	
+
 	#header {
 		background-color: #337ab7;
 		color: #FFF;
-		padding: 10px 0 35px;	
+		padding: 10px 0 35px;
 	}
 	#header h1 {
 		font-size: 60px;
 	}
-	
+
 	#action {
 		margin: 40px 0;
 	}
-	
+
 	#create form {
 		text-align: center;
 	}
-	
+
 	#create .btn-lg {
 		padding: 20px 36px;
 		font-size: 30px;
 		border-radius: 8px;
 	}
-	
+
 	#running h2 {
 		font-size: 20px;
 	}
-	
+
 	#stored {
 		background-color: rgb(247, 247, 252)
 	}
-	
+
 	#stored table tr td,
 	#past table tr td {
 		white-space: nowrap;
@@ -63,7 +67,7 @@
 	#past td:first-child {
 		padding: 8px;
 	}
-	
+
 	#past {
 		margin: 20px 0;
 	}
@@ -75,6 +79,33 @@
 
 	</style>
 
+	<script type="text/javascript">
+	// <![CDATA[
+	$(function ($) {
+		$('#stored table').DataTable({
+			order: [[1, 'desc']],
+			columns: [
+				null,
+				null,
+				{ orderable: false }
+			]
+		});
+	});
+
+	$(function ($) {
+		$('#past table').DataTable({
+			order: [[1, 'desc']],
+			columns: [
+				null,
+				null,
+				null,
+				{ orderable: false }
+			]
+		});
+	});
+	// ]]>
+	</script>
+
 	<title>Octopus</title>
 
 </head>
@@ -84,7 +115,7 @@
 		<h1>Octopus</h1>
 	</div>
 	</section>
-	
+
 	<section id="action">
 	<div class="container">
 	<div class="row">
@@ -131,6 +162,7 @@
 				<a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a>
 			</td>
 			<td>
+				<t:attr name="data-sort"><t:slot name="modified_date_raw" /></t:attr>
 				<t:slot name="modified_date" />
 			</td>
 			<td>
@@ -164,8 +196,8 @@
 		<tbody>
 		<tr t:render="past_experiment">
 			<td><a><t:attr name="href"><t:slot name="url" /></t:attr><t:slot name="title" /></a></td>
-			<td><t:slot name="finished_date" /></td>
-			<td><t:slot name="duration" /></td>
+			<td><t:attr name="data-sort"><t:slot name="finished_date_raw" /></t:attr><t:slot name="finished_date" /></td>
+			<td><t:attr name="data-sort"><t:slot name="duration_raw" /></t:attr><t:slot name="duration" /></td>
 			<td>
 				<a class="btn btn-sm btn-default"><t:attr name="href"><t:slot name="download_url" /></t:attr>Download Data</a>
 				<form method="post">

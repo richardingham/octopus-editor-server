@@ -39,7 +39,7 @@ class Experiment (EventEmitter):
 		return cls.db.runOperation("UPDATE experiments SET deleted = 1 WHERE guid = ?", (id, ))
 
 	@classmethod
-	def list (cls, limit = 10):
+	def list (cls):
 		def _done (rows):
 			return [{
 				"guid": str(row[0]),
@@ -55,8 +55,7 @@ class Experiment (EventEmitter):
 			FROM experiments
 			WHERE finished_date > 0 AND deleted == 0
 			ORDER BY finished_date DESC
-			LIMIT ?
-		""", (limit, )).addCallback(_done)
+		""").addCallback(_done)
 
 	def __init__ (self, sketch):
 		id = str(uuid.uuid4())

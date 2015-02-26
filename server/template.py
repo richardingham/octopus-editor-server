@@ -40,12 +40,14 @@ class Root (Element):
 						download_url = "/experiment/{:s}/download".format(expt['guid']),
 						title = expt['title'],
 						finished_date = time.strftime(
-							'%d %b %Y, %H:%M:%S',
+							'%d %b %Y, %H:%M',
 							time.gmtime(expt['finished_date'])
 						),
+						finished_date_raw = str(expt['finished_date']),
 						duration = str(datetime.timedelta(seconds = int(
 							expt['finished_date'] - expt['started_date']
-						)))
+						))),
+						duration_raw = str(expt['finished_date'] - expt['started_date'])
 					)
 
 			return _render()
@@ -63,9 +65,10 @@ class Root (Element):
 						copy_url = "/sketch/{:s}/copy".format(sketch['guid']),
 						title = sketch['title'],
 						modified_date = time.strftime(
-							'%d %b %Y, %H:%M:%S',
+							'%d %b %Y, %H:%M',
 							time.gmtime(sketch['modified_date'])
-						)
+						),
+						modified_date_raw = str(sketch['modified_date'])
 					)
 
 			return _render()
