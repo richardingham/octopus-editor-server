@@ -15,6 +15,7 @@ from octopus.sequence.error import NotRunning
 
 # Package Imports
 from util import EventEmitter
+from dbutil import makeFinder
 from runtime.workspace import Workspace, Aborted, Cancelled
 from experiment import Experiment
 
@@ -62,26 +63,13 @@ class Sketch (EventEmitter):
 		return cls.db.runOperation("UPDATE sketches SET deleted = 1 WHERE guid = ?", (id, ))
 
 	@classmethod
-	def list (cls):
-		def _done (rows):
-			return [{
-				"guid": str(row[0]),
-				"title": str(row[1]),
-				"user_id": int(row[2]),
-				"modified_date": int(row[3]),
-				"created_date": int(row[4])
-			} for row in rows]
-
-		return cls.db.runQuery("""
-			SELECT guid, title, user_id, modified_date, created_date
-			FROM sketches
-			WHERE deleted = 0
-			ORDER BY modified_date DESC
-		""").addCallback(_done)
+	def restore (cls, id):
+		return cls.db.runOperation("UPDATE sketches SET deleted = 0 WHERE guid = ?", (id, ))
 
 	def __init__ (self, id):
 		self.id = id
 		self.title = ""
+		self.user_id = 1
 		self.loaded = False
 		self.workspace = Workspace()
 		self.experiment = None
@@ -348,6 +336,24 @@ class Sketch (EventEmitter):
 		self._eventsLog.write(json.dumps(event) + "\n")
 
 		return self._eventIndex
+
+
+find = makeFinder(
+	Sketch,
+	'sketches',
+	{
+		'guid': { 'type': str },
+		'title': {
+			'type': str,
+			'modifier': lambda x: '%' + x + '%',
+			'operator': ' LIKE ?' 
+		},
+		'user_id': { 'type': int },
+		'created_date': { 'type': int },
+		'modified_date': { 'type': int },
+		'deleted': { 'type': bool }
+	}
+)
 
 
 class Error (Exception):

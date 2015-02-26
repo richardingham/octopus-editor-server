@@ -66,23 +66,90 @@ def running_experiments ():
 	]
 
 ##
+## Helper functions
+##
+
+def _redirectOrJSON (result, request, url, data):
+	try:
+		if request.getHeader('x-requested-with') == 'XMLHttpRequest':
+			request.write(json.dumps(data))
+			request.finish()
+			return
+	except:
+		pass
+
+	request.redirect(url)
+	request.finish()
+
+def _respondWithJSON (result, request):
+	request.write(json.dumps(result))
+	request.finish()
+
+def _error (failure, request):
+	try:
+		if request.getHeader('x-requested-with') == 'XMLHttpRequest':
+			request.setResponseCode(500)
+			request.write(json.dumps({ "error": str(failure) }))
+			request.finish()
+			return
+	except:
+		pass
+
+	log.err(failure)
+	request.write("There was an error: " + failure)
+	request.finish()
+
+def _getArg (request, arg, cast = None, default = None):
+	try:
+		if cast is not None:
+			return cast(request.args[arg][0])
+		else:
+			return request.args[arg][0]
+	except (TypeError, KeyError):
+		return default
+
+def _getIntArg (request, arg):
+	return _getArg(request, arg, int, 0)
+
+def _getFloatArg (request, arg):
+	return _getArg(request, arg, float, 0.)
+
+def _getJSONArg (request, arg, default = None):
+	return _getArg(request, arg, json.loads, default or {})
+
+##
 ## HTTP Server - Home Page
 ##
 
 class Root (resource.Resource):
 	def render_GET (self, request):
-		def _error (failure):
-			request.write("There was an error: " + str(failure))
-			request.finish()
+		saved_sketches = sketch.find(
+			default_search = {
+				'deleted': { 'value': 0 }
+			}, order = [
+				{ 'column': 'modified_date', 'dir': 'desc' }
+			],
+			fetch_columns = ['guid', 'title', 'user_id', 'modified_date'],
+			return_counts = False,
+		)
 
-		saved_sketches = sketch.Sketch.list()
-		past_experiments = experiment.Experiment.list()
+		past_experiments = experiment.find(
+			default_search = {
+				'deleted': { 'value': 0 },
+				'finished_date': { 'value': 0, 'operator': 'gt' }
+			}, order = [
+				{ 'column': 'finished_date', 'dir': 'desc' }
+			],
+			fetch_columns = ['guid', 'title', 'user_id', 'finished_date', 'duration'],
+			return_counts = False,
+			limit = 10
+		)
 
 		tpl = template.Root(running_experiments(), past_experiments, saved_sketches)
 		request.write("<!DOCTYPE html>\n")
 		d = flatten(request, tpl, request.write)
 		d.addCallbacks(lambda _: request.finish())
-		d.addErrback(_error)
+		d.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -96,6 +163,21 @@ class Sketch (resource.Resource):
 		return EditSketch(id)
 
 
+class SketchFind (resource.Resource):
+
+	def render_GET (self, request):
+		start = _getIntArg(request, 'start')
+		limit = _getIntArg(request, 'limit')
+		sorts = _getJSONArg(request, 'sort', [])
+		filters = _getJSONArg(request, 'filter', [])
+
+		sketch.find(filters, sorts, start, limit)\
+			.addCallback(_respondWithJSON, request)\
+			.addErrback(_error, request)
+
+		return server.NOT_DONE_YET
+
+
 class NewSketch (resource.Resource):
 
 	isLeaf = True
@@ -103,14 +185,11 @@ class NewSketch (resource.Resource):
 	def render_POST (self, request):
 		def _redirect (id):
 			url = request.URLPath().sibling(id)
-			request.redirect(url)
-			request.finish()
+			_redirectOrJSON(None, request, url, {"created": id})
 
-		def _error (failure):
-			request.write("There was an error: " + failure)
-			request.finish()
-
-		sketch.Sketch.createId().addCallbacks(_redirect, _error)
+		sketch.Sketch.createId()\
+			.addCallback(_redirect)\
+			.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -133,12 +212,9 @@ class EditSketch (resource.Resource):
 			d = flatten(request, tpl, request.write)
 			d.addCallbacks(lambda _: request.finish())
 
-		def _error (failure):
-			request.write("There was an error: " + str(failure))
-			request.finish()
-
 		d = sketch.Sketch.exists(self._id)
-		d.addCallbacks(_done, _error)
+		d.addCallback(_done)
+		d.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -147,6 +223,8 @@ class EditSketch (resource.Resource):
 			return CopySketch(self._id)
 		elif action == "delete":
 			return DeleteSketch(self._id)
+		elif action == "restore":
+			return UndeleteSketch(self._id)
 
 		return NoResource()
 
@@ -168,14 +246,11 @@ class CopySketch (resource.Resource):
 			yield s.close()
 
 			url = request.URLPath().parent().sibling(id)
-			request.redirect(url)
-			request.finish()
+			_redirectOrJSON(None, request, url, {"created": id})
 
-		def _error (failure):
-			request.write("There was an error: " + failure)
-			request.finish()
-
-		sketch.Sketch.createId().addCallbacks(_copy, _error)
+		sketch.Sketch.createId()\
+			.addCallback(_copy)\
+			.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -189,16 +264,29 @@ class DeleteSketch (resource.Resource):
 		self._id = id
 
 	def render_POST (self, request):
-		def _redirect (id):
-			url = request.URLPath().parent().parent()
-			request.redirect(url)
-			request.finish()
+		redirect_url = request.URLPath().parent().parent()
 
-		def _error (failure):
-			request.write("There was an error: " + failure)
-			request.finish()
+		sketch.Sketch.delete(self._id)\
+			.addCallback(_redirectOrJSON, request, redirect_url, { "deleted": str(self._id) })\
+			.addErrback(_error, request)
 
-		sketch.Sketch.delete(self._id).addCallbacks(_redirect, _error)
+		return server.NOT_DONE_YET
+
+
+class UndeleteSketch (resource.Resource):
+
+	isLeaf = True
+
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_POST (self, request):
+		redirect_url = request.URLPath().parent().parent()
+
+		sketch.Sketch.restore(self._id)\
+			.addCallback(_redirectOrJSON, request, redirect_url, { "restored": str(self._id) })\
+			.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -206,6 +294,51 @@ class DeleteSketch (resource.Resource):
 class Experiment (resource.Resource):
 	def getChild (self, id, request):
 		return ShowExperiment(id)
+
+
+class ExperimentFind (resource.Resource):
+
+	def __init__ (self):
+		resource.Resource.__init__(self)
+
+	def render_GET (self, request):
+		draw = _getIntArg(request, 'draw')
+		start = _getIntArg(request, 'start')
+		limit = _getIntArg(request, 'length')
+		sorts = _getJSONArg(request, 'sort', [])
+		filters = _getJSONArg(request, 'filter', [])
+
+		def _done (result):
+			result['draw'] = draw
+			_respondWithJSON(result, request)
+
+		experiment.find(
+			filters, sorts, start, limit, {
+				'deleted': { 'value': 0 },
+				'finished_date': { 'value': 0, 'operator': 'gt' }
+			},
+			['guid', 'title', 'user_id', 'finished_date', 'duration']
+		).addCallback(_done).addErrback(_error, request)
+
+		return server.NOT_DONE_YET
+
+
+class ExperimentsRunning (resource.Resource):
+
+	def __init__ (self):
+		resource.Resource.__init__(self)
+
+	def render_GET (self, request):
+		result = [{
+			'guid': expt.id,
+			'sketch_guid': expt.sketch.id,
+			'title': expt.sketch.title,
+			'user_id': expt.sketch.title,
+			'started_date': expt.startTime
+		} for expt in running_experiments()]
+
+		_respondWithJSON(result, request)
+		return server.NOT_DONE_YET
 
 
 class ShowExperiment (resource.Resource):
@@ -234,12 +367,9 @@ class ShowExperiment (resource.Resource):
 			d = flatten(request, tpl, request.write)
 			d.addCallbacks(lambda _: request.finish())
 
-		def _error (failure):
-			request.write("There was an error: " + str(failure))
-			request.finish()
-
 		d = experiment.Experiment.exists(self._id)
-		d.addCallbacks(_done, _error)
+		d.addCallbacks(_done)
+		d.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -250,6 +380,8 @@ class ShowExperiment (resource.Resource):
 			return DownloadExperimentData(self._id)
 		elif action == "delete":
 			return DeleteExperiment(self._id)
+		elif action == "restore":
+			return UndeleteExperiment(self._id)
 
 		return NoResource()
 
@@ -261,26 +393,14 @@ class GetExperimentData (resource.Resource):
 		self._id = id
 
 	def render_GET (self, request):
-		def getfloatarg (arg):
-			try:
-				return float(request.args[arg][0])
-			except (TypeError, KeyError):
-				return None
-
-		def _done (result):
-			request.write(json.dumps(result))
-			request.finish()
-
-		def _error (failure):
-			request.write("There was an error: " + str(failure))
-			request.finish()
-
-		variables = request.args['var']
-		start = getfloatarg('start')
-		interval = getfloatarg('interval')
+		variables = _getArg(request, 'var', list, [])
+		start = _getFloatArg(request, 'start')
+		interval = _getFloatArg(request, 'interval')
 
 		expt = experiment.CompletedExperiment(self._id)
-		expt.loadData(variables, start, interval).addCallbacks(_done, _error)
+		expt.loadData(variables, start, interval)\
+			.addCallback(_respondWithJSON)\
+			.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -334,20 +454,14 @@ class DownloadExperimentData (resource.Resource):
 
 	@defer.inlineCallbacks
 	def _render_POST (self, request):
-		def getintarg (arg, default = None):
-			try:
-				return int(request.args[arg][0])
-			except (TypeError, KeyError):
-				return default
-
 		try:
 			expt = yield self._getExperiment(self._id)
 
 			yield expt.load()
 
 			variables = request.args['vars']
-			time_divisor = getintarg('time_divisor')
-			time_dp = getintarg('time_dp')
+			time_divisor = _getArg(request, 'time_divisor', int, None)
+			time_dp = _getArg(request, 'time_dp', int, None)
 			filename = '.'.join([
 				re.sub(r'[^a-zA-Z0-9]+', '_', expt.title).strip('_'),
 				time.strftime(
@@ -361,8 +475,7 @@ class DownloadExperimentData (resource.Resource):
 
 		except Exception as e:
 			request.write("<!DOCTYPE html>\n")
-			request.write("There was an error: " + str(e))
-			request.finish()
+			_error(e, request)
 			return
 
 		request.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -381,16 +494,29 @@ class DeleteExperiment (resource.Resource):
 		self._id = id
 
 	def render_POST (self, request):
-		def _redirect (id):
-			url = request.URLPath().parent().parent()
-			request.redirect(url)
-			request.finish()
+		redirect_url = request.URLPath().parent().parent()
 
-		def _error (failure):
-			request.write("There was an error: " + failure)
-			request.finish()
+		experiment.Experiment.delete(self._id)\
+			.addCallback(_redirectOrJSON, request, redirect_url, { "deleted": str(self._id) })\
+			.addErrback(_error, request)
 
-		experiment.Experiment.delete(self._id).addCallbacks(_redirect, _error)
+		return server.NOT_DONE_YET
+
+
+class UndeleteExperiment (resource.Resource):
+
+	isLeaf = True
+
+	def __init__ (self, id):
+		resource.Resource.__init__(self)
+		self._id = id
+
+	def render_POST (self, request):
+		redirect_url = request.URLPath().parent().parent()
+
+		experiment.Experiment.restore(self._id)\
+			.addCallback(_redirectOrJSON, request, redirect_url, { "restored": str(self._id) })\
+			.addErrback(_error, request)
 
 		return server.NOT_DONE_YET
 
@@ -432,6 +558,9 @@ def makeService (options):
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
 	root.putChild("experiment", Experiment())
+
+	root.putChild("sketches.json", SketchFind())
+	root.putChild("experiments.json", ExperimentFind())
 
 	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
 	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))

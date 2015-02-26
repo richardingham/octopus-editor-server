@@ -1,4 +1,4 @@
-from twisted.web.template import Element, renderer, XMLFile
+from twisted.web.template import Element, renderer, XMLFile, Tag
 from twisted.python.filepath import FilePath
 
 import os
@@ -20,13 +20,21 @@ class Root (Element):
 
 	@renderer
 	def running_experiment (self, request, tag):
-		for expt in self.running_experiments:
-			yield tag.clone().fillSlots(
-				url = "/experiment/{:s}".format(expt.id),
-				title = expt.sketch.title,
-				duration = str(datetime.timedelta(seconds = int(
-					time.time() - expt.startTime
-				)))
+		if len(self.running_experiments):
+			for expt in self.running_experiments:
+				yield tag.clone().fillSlots(
+					url = "/experiment/{:s}".format(expt.id),
+					title = expt.sketch.title,
+					duration = str(datetime.timedelta(seconds = int(
+						time.time() - expt.startTime
+					)))
+				)
+		else:
+			yield Tag('div',
+				children = ['No running experiments'],
+				attributes = {
+				'class': 'list-group-item'
+				}
 			)
 
 	@renderer
@@ -35,6 +43,7 @@ class Root (Element):
 			def _render ():
 				for expt in expts:
 					yield tag.clone().fillSlots(
+						guid = expt['guid'],
 						url = "/experiment/{:s}".format(expt['guid']),
 						delete_url = "/experiment/{:s}/delete".format(expt['guid']),
 						download_url = "/experiment/{:s}/download".format(expt['guid']),
@@ -45,9 +54,9 @@ class Root (Element):
 						),
 						finished_date_raw = str(expt['finished_date']),
 						duration = str(datetime.timedelta(seconds = int(
-							expt['finished_date'] - expt['started_date']
+							expt['duration']
 						))),
-						duration_raw = str(expt['finished_date'] - expt['started_date'])
+						duration_raw = str(expt['duration'])
 					)
 
 			return _render()
@@ -60,6 +69,7 @@ class Root (Element):
 			def _render ():
 				for sketch in sketches:
 					yield tag.clone().fillSlots(
+						guid = sketch['guid'],
 						url = "/sketch/{:s}".format(sketch['guid']),
 						delete_url = "/sketch/{:s}/delete".format(sketch['guid']),
 						copy_url = "/sketch/{:s}/copy".format(sketch['guid']),

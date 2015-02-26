@@ -23,6 +23,8 @@
     "colpick": "~2.0.2",
     "bootstrap": "~3.3.2",
     "datatables": "~1.10.5",
-    "datatables-bootstrap3-plugin": "~0.3.0"
+    "datatables-bootstrap3-plugin": "~0.3.0",
+    "moment": "~2.9.0",
+    "bootstrap-datepicker": "~1.4.0"
   }
 }

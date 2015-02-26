@@ -18,6 +18,7 @@ from octopus.sequence.error import AlreadyRunning, NotRunning
 
 # Package Imports
 from util import EventEmitter
+from dbutil import makeFinder
 
 
 class Experiment (EventEmitter):
@@ -39,23 +40,8 @@ class Experiment (EventEmitter):
 		return cls.db.runOperation("UPDATE experiments SET deleted = 1 WHERE guid = ?", (id, ))
 
 	@classmethod
-	def list (cls):
-		def _done (rows):
-			return [{
-				"guid": str(row[0]),
-				"sketch_guid": str(row[1]),
-				"title": str(row[2]),
-				"user_id": int(row[3]),
-				"started_date": int(row[4]),
-				"finished_date": int(row[5])
-			} for row in rows]
-
-		return cls.db.runQuery("""
-			SELECT guid, sketch_guid, title, user_id, started_date, finished_date
-			FROM experiments
-			WHERE finished_date > 0 AND deleted == 0
-			ORDER BY finished_date DESC
-		""").addCallback(_done)
+	def restore (cls, id):
+		return cls.db.runOperation("UPDATE experiments SET deleted = 0 WHERE guid = ?", (id, ))
 
 	def __init__ (self, sketch):
 		id = str(uuid.uuid4())
@@ -348,6 +334,29 @@ class Experiment (EventEmitter):
 				variables[name] = var
 
 		return variables
+
+
+find = makeFinder(
+	Experiment,
+	'experiments',
+	{
+		'guid': { 'type': str },
+		'sketch_guid': { 'type': str },
+		'title': {
+			'type': str,
+			'modifier': lambda x: '%' + x + '%',
+			'operator': ' LIKE ?'
+		},
+		'user_id': { 'type': int },
+		'started_date': { 'type': int },
+		'finished_date': { 'type': int },
+		'duration': {
+			'type': int,
+			'sql': '(finished_date - started_date) AS duration'
+		},
+		'deleted': { 'type': bool }
+	}
+)
 
 
 class CompletedExperiment (object):
