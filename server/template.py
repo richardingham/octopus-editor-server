@@ -23,7 +23,10 @@ class Root (Element):
 		for expt in self.running_experiments:
 			yield tag.clone().fillSlots(
 				url = "/experiment/{:s}".format(expt.id),
-				title = expt.sketch.title
+				title = expt.sketch.title,
+				duration = str(datetime.timedelta(seconds = int(
+					time.time() - expt.startTime
+				)))
 			)
 
 	@renderer
@@ -58,7 +61,11 @@ class Root (Element):
 						url = "/sketch/{:s}".format(sketch['guid']),
 						delete_url = "/sketch/{:s}/delete".format(sketch['guid']),
 						copy_url = "/sketch/{:s}/copy".format(sketch['guid']),
-						title = sketch['title']
+						title = sketch['title'],
+						modified_date = time.strftime(
+							'%d %b %Y, %H:%M:%S',
+							time.gmtime(sketch['modified_date'])
+						)
 					)
 
 			return _render()
