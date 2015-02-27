@@ -459,7 +459,7 @@ class CompletedExperiment (object):
 		dataframe.apply(pd.Series.interpolate)
 
 		# Generate excel file
-		dataframe.to_excel(writer, sheet_name = self.title)
+		dataframe.to_excel(writer, sheet_name = self.title[0:30])
 		writer.save()
 
 		defer.returnValue(io.getvalue())
