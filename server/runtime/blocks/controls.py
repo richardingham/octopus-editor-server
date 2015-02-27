@@ -246,6 +246,7 @@ class controls_wait_until (Block):
 		@defer.inlineCallbacks
 		def runTest (data = None):
 			if self.state is State.PAUSED:
+				self._onResume = runTest
 				return
 			elif self.state in (State.CANCELLED, State.ERROR):
 				removeListeners()
@@ -261,7 +262,7 @@ class controls_wait_until (Block):
 				if result == True:
 					done()
 
-		def setListeners (data):
+		def setListeners (data = None):
 			for v in self._variables:
 				v.off('change', runTest)
 
@@ -272,6 +273,8 @@ class controls_wait_until (Block):
 
 			for v in self._variables:
 				v.on('change', runTest)
+
+			runTest()
 
 		def removeListeners ():
 			self.off("connectivity-changed", setListeners)
@@ -286,8 +289,8 @@ class controls_wait_until (Block):
 
 		self.on("connectivity-changed", setListeners)
 		self.on("value-changed", runTest)
-		setListeners(None)
-		runTest(None)
+
+		setListeners()
 
 		return complete
 
