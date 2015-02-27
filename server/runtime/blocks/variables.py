@@ -24,7 +24,10 @@ def variableName (name):
 	elif len(split) is 3:
 		return (split[0] + "::" + split[1], split[2].split('.'))
 	else:
-		raise Exception("Invalid variable name {:s}".format(name))
+		raise InvalidVariableNameError(name)
+
+class InvalidVariableNameError (Exception):
+	""" Raised by variableName """
 
 
 class global_declaration (Block):
@@ -125,8 +128,11 @@ class global_declaration (Block):
 
 class lexical_variable (object):
 	def _getVariable (self):
-		name, attr = variableName(self.fields['VAR'])
-		variable = self.workspace.variables[name]
+		try:
+			name, attr = variableName(self.fields['VAR'])
+			variable = self.workspace.variables[name]
+		except (InvalidVariableNameError, KeyError):
+			return None
 
 		try:
 			if attr is not None:
@@ -164,13 +170,22 @@ class lexical_variable_set (lexical_variable, Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		result = yield self.getInputValue("VALUE")
+		variable = self._getVariable()
+		yield self._setVariable(variable, result)
 
-		try:
-			variable = self._getVariable()
-		except KeyError:
+	@defer.inlineCallbacks
+	def _setVariable (self, variable, value):
+		if variable is None:
+			self.emitLogMessage(
+				"Cannot set unknown variable: " + str(self.fields['VAR']),
+				"error"
+			)
 			return
 
-		yield self._getVariable().set(result)
+		try:
+			yield variable.set(result)
+		except Exception as error:
+			self.emitLogMessage(str(error), "error")
 
 
 class lexical_variable_get (lexical_variable, Block):
@@ -179,17 +194,17 @@ class lexical_variable_get (lexical_variable, Block):
 			variable = self._getVariable()
 			self.outputType = variable.type
 			return defer.succeed(variable.value)
-		except (KeyError, AttributeError):
+		except (AttributeError):
+			self.emitLogMessage(
+				"Unknown variable: " + str(self.fields['VAR']),
+				"error"
+			)
+
 			return defer.succeed(None)
 
 
-class math_change (lexical_variable, Block):
+class math_change (lexical_variable_set, Block):
 	def _run (self):
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1
-
-		try:
-			variable = self._getVariable()
-		except KeyError:
-			return
-
-		return variable.set(variable.value + add)
+		variable = self._getVariable()
+		return self._setVariable(variable, variable.value + add)

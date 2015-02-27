@@ -93,12 +93,7 @@ class controls_log (Block):
 	@defer.inlineCallbacks
 	def _run (self):
 		message = yield self.getInputValue("TEXT", "")
-
-		self.workspace.emit(
-			"log-message",
-			level = "info",
-			message = str(message)
-		)
+		self.emitLogMessage(message, "info")
 
 
 class controls_wait (Block):

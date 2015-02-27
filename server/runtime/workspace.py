@@ -550,6 +550,14 @@ class Block (BaseStep, EventEmitter):
 	def disposed (self):
 		pass
 
+	def emitLogMessage (self, message, level):
+		self.workspace.emit(
+			"log-message",
+			level = level,
+			message = message,
+			block = self.id
+		)
+
 	def connectNextBlock (self, childBlock):
 		if self.nextBlock is not None:
 			raise Exception("Block.connectNextBlock (#%s): parent #%s already has a next Block" % (childBlock.id, self.id))
