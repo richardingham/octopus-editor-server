@@ -165,12 +165,12 @@ Block.prototype.fill = function(workspace, prototypeName) {
         'Error: "' + prototypeName + '" is an unknown language block.');
     util._extend(this, prototype);
   }
-  
+
   // Call an initialization function, if it exists.
   if (util.isFunction(this.init)) {
     this.init();
   }
-  
+
   // Create a VariableScope object if necessary
   if (this.definesScope) {
     this.variableScope_ = new Blockly.VariableScope(this);
@@ -350,7 +350,7 @@ Block.terminateDrag_ = function() {
       Blockly.fireUiEvent(window, 'resize');
     }
   }
-  if (selected) {
+  if (selected && selected.workspace) {
     selected.workspace.fireChangeEvent();
   }
   Block.dragMode_ = 0;
@@ -660,7 +660,7 @@ Block.prototype.onMouseUp_ = function(e) {
         // Don't throw an object in the trash can if it just got connected.
         this_.workspace.trashcan.close();
       }
-    } else if (this_.workspace.trashcan && this_.workspace.trashcan.isOpen) {
+    } else if (this_.workspace && this_.workspace.trashcan && this_.workspace.trashcan.isOpen) {
       var trashcan = this_.workspace.trashcan;
       window.setTimeout(trashcan.close.bind(trashcan), 100);
       Blockly.selected.dispose(false, true);
@@ -1077,7 +1077,7 @@ Block.prototype.getSurroundParent = function() {
 };
 
 /**
- * Return the first parent block of a particular block type, 
+ * Return the first parent block of a particular block type,
  * or null if none is found.
  * @param {string} type New parent block.
  * @return {Blockly.Block} The ancestor block.
@@ -1091,7 +1091,7 @@ Block.prototype.getAncestor = function(type) {
 };
 
 /**
- * Return the first parent block of the desired type that surrounds the current 
+ * Return the first parent block of the desired type that surrounds the current
  * block, or null if none is found. A parent block might just be the previous
  * statement, whereas the surrounding block is an if statement, while loop, etc.
  * @return {Blockly.Block} The block that surrounds the current block.
@@ -2040,7 +2040,7 @@ Block.prototype.render = function() {
 /**
  * Return the variable scope of this block. i.e. the scope of the first
  * surrounding ancestor of this that has a scope, unless thisBlockOnly
- * is true, in which case null is returned if this block does not have 
+ * is true, in which case null is returned if this block does not have
  * a scope.
  * @param {boolean} thisBlockOnly Only consider this block.
  * @return {Blockly.VariableScope} The variable scope.
@@ -2067,4 +2067,3 @@ Block.prototype.getVars = function () {
 return Block;
 
 });
-

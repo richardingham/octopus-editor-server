@@ -173,12 +173,13 @@ Connection.prototype.connect = function(otherConnection) {
     childBlock = this.sourceBlock_;
   }
 
-  this.emit("connect", childBlock, parentBlock);
-  otherConnection.emit("connect", childBlock, parentBlock);
-
   // Establish the connections.
   this.targetConnection = otherConnection;
   otherConnection.targetConnection = this;
+
+  // Emit connected events
+  this.emit("connect", childBlock, parentBlock);
+  otherConnection.emit("connect", childBlock, parentBlock);
 
   // Demote the inferior block so that one is a child of the superior one.
   childBlock.setParent(parentBlock);

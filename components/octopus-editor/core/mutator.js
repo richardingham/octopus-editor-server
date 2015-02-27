@@ -50,23 +50,29 @@ var Mutator = function(quarkNames) {
 
   // Function for emitting an event when there is a change in the mutator.
   var thisObj = this;
+  var changeEventPid;
+
   this.storeWorkspaceJSON = function () {
     if (thisObj.block_.mutationToJSON) {
       thisObj.storedMutatorJSON_ = thisObj.block_.mutationToJSON();
     }
   };
-  this.emitWorkspaceChangeEvent = function () {
-    // Fire mutator changed event
-    if (thisObj.block_.mutationToJSON) {
-      var newMutatorJSON = thisObj.block_.mutationToJSON();
-      if (newMutatorJSON != thisObj.storedMutatorJSON_) {
-        thisObj.block_.workspaceEmit("block-set-mutation", {
-          id: thisObj.block_.id,
-          mutation: newMutatorJSON
-        });
-      }
+
+  this.onWorkspaceChanged_ = function () {
+    if (changeEventPid) {
+      window.clearTimeout(changeEventPid);
     }
+
+    function emitChangeEvent () {
+      thisObj.workspaceChanged_();
+    }
+
+    changeEventPid = window.setTimeout(emitChangeEvent, 0);
   };
+
+  this.onBlockMoved_ = function (e) {
+    thisObj.blockMoved_(e.id);
+  }
 };
 util.inherits(Mutator, Blockly.Icon);
 
@@ -244,21 +250,21 @@ Mutator.prototype.setVisible = function(visible) {
     }
     this.resizeBubble_();
 
-    // When the mutator's workspace changes, update the source block.
-    Blockly.bindEvent_(this.workspace_.getCanvas(), 'blocklyWorkspaceChange',
-        this.block_, function() {thisObj.workspaceChanged_();});
-
     // When the mutator is changed, emit a mutator-changed event.
-    this.workspace_.on('block-connected', this.emitWorkspaceChangeEvent);
-    this.workspace_.on('block-disconnected', this.emitWorkspaceChangeEvent);
-    this.workspace_.on('block-set-field-value', this.emitWorkspaceChangeEvent);
+    this.workspace_.on('block-connected', this.onWorkspaceChanged_);
+    this.workspace_.on('block-disconnected', this.onWorkspaceChanged_);
+    this.workspace_.on('block-set-field-value', this.onWorkspaceChanged_);
+    this.workspace_.on('block-set-position', this.onBlockMoved_);
+    this.storeWorkspaceJSON();
+
     this.updateColour();
 
   } else {
     // Dispose of the bubble.
-    this.workspace_.removeListener('block-connected', this.emitWorkspaceChangeEvent);
-    this.workspace_.removeListener('block-disconnected', this.emitWorkspaceChangeEvent);
-    this.workspace_.removeListener('block-set-field-value', this.emitWorkspaceChangeEvent);
+    this.workspace_.removeListener('block-connected', this.onWorkspaceChanged_);
+    this.workspace_.removeListener('block-disconnected', this.onWorkspaceChanged_);
+    this.workspace_.removeListener('block-set-field-value', this.onWorkspaceChanged_);
+    this.workspace_.removeListener('block-set-position', this.onBlockMoved_);
 
     this.svgDialog_ = null;
     this.flyout_.dispose();
@@ -270,6 +276,7 @@ Mutator.prototype.setVisible = function(visible) {
     this.bubble_ = null;
     this.workspaceWidth_ = 0;
     this.workspaceHeight_ = 0;
+
     if (this.sourceListener_) {
       Blockly.unbindEvent_(this.sourceListener_);
       this.sourceListener_ = null;
@@ -283,25 +290,7 @@ Mutator.prototype.setVisible = function(visible) {
  * Fired whenever a change is made to the mutator's workspace.
  * @private
  */
-Mutator.prototype.workspaceChanged_ = function() {
-  if (Blockly.Block.dragMode_ == 0) {
-    var blocks = this.workspace_.getTopBlocks(false);
-    var MARGIN = 20;
-    for (var b = 0, block; block = blocks[b]; b++) {
-      var blockXY = block.getRelativeToSurfaceXY();
-      var blockHW = block.getHeightWidth();
-      if (block.isDeletable() && (Blockly.RTL ?
-            blockXY.x > -this.flyout_.width_ + MARGIN :
-            blockXY.x < this.flyout_.width_ - MARGIN)) {
-        // Delete any block that's sitting on top of the flyout.
-        block.dispose(false, true);
-      } else if (blockXY.y + blockHW.height < MARGIN) {
-        // Bump any block that's above the top back inside.
-        block.moveBy(0, MARGIN - blockHW.height - blockXY.y);
-      }
-    }
-  }
-
+Mutator.prototype.workspaceChanged_ = function () {
   // When the mutator's workspace changes, update the source block.
   if (this.rootBlock_.workspace == this.workspace_) {
 
@@ -312,16 +301,51 @@ Mutator.prototype.workspaceChanged_ = function() {
     // Allow the source block to rebuild itself.
     this.block_.compose(this.rootBlock_);
 
+    // Fire mutator changed event
+    if (this.block_.mutationToJSON) {
+      var newMutatorJSON = this.block_.mutationToJSON();
+      if (newMutatorJSON != this.storedMutatorJSON_) {
+        this.block_.workspaceEmit("block-set-mutation", {
+          id: this.block_.id,
+          mutation: newMutatorJSON
+        });
+      }
+      this.storeWorkspaceJSON();
+    }
+
     // Restore rendering and show the changes.
     this.block_.rendered = savedRendered;
     if (this.block_.rendered) {
       this.block_.render();
     }
     this.resizeBubble_();
-    
+
     // The source block may have changed, notify its workspace.
     this.block_.workspace.fireChangeEvent();
   }
+};
+
+Mutator.prototype.blockMoved_ = function (id) {
+  var block = this.workspace_.getBlockById(id);
+  var MARGIN = 20;
+
+  var blockXY = block.getRelativeToSurfaceXY();
+  var blockHW = block.getHeightWidth();
+
+  if (block.isDeletable() && (Blockly.RTL ?
+        blockXY.x > -this.flyout_.width_ + MARGIN :
+        blockXY.x < this.flyout_.width_ - MARGIN)) {
+
+    // Delete any block that's sitting on top of the flyout.
+    block.dispose(false, true);
+
+  } else if (blockXY.y + blockHW.height < MARGIN) {
+
+    // Bump any block that's above the top back inside.
+    block.moveBy(0, MARGIN - blockHW.height - blockXY.y);
+  }
+
+  this.resizeBubble_();
 };
 
 /**
