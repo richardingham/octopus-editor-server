@@ -221,7 +221,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		def _blockError (failure, block):
 			if failure.type is Disconnected:
-				return _blockComplete(block)
+				return _blockComplete(None, block)
 
 			# If any one step fails, cancel the rest.
 			if not _blockError.called:
