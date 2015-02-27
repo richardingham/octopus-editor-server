@@ -505,6 +505,9 @@ class Block (BaseStep, EventEmitter):
 
 	# If this block needs to be stopped by the workspace
 	# (e.g. long-running disconnected controls)
+	# TODO: make this more general - this ought to be True
+	# for any block with an output connection which is started
+	# by eval() rather than run()
 	externalStop = False
 
 	# If this block returns an output, the output data type
@@ -663,6 +666,35 @@ class Block (BaseStep, EventEmitter):
 
 		self.inputs[inputName] = childBlock
 		childBlock.parentInput = inputName
+
+		if self.state is State.READY:
+			try:
+				childBlock.reset()
+			except AlreadyRunning:
+				pass
+		elif self.state is State.RUNNING:
+			try:
+				childBlock.reset()
+				childBlock.run()
+			except AlreadyRunning:
+				pass
+		elif self.state is State.PAUSED:
+			if childBlock.state is State.PAUSED:
+				pass
+			elif childBlock.state is State.RUNNING:
+				childBlock.pause()
+			else:
+				# Should not raise AlreadyRunning due to two if's above
+				childBlock.reset()
+
+				# Do not call run() because most input blocks will be eval()ed.
+				# Parent blocks expecting to run() children should run them
+				# again when they are resumed.
+		else:
+			try:
+				childBlock.cancel()
+			except NotRunning:
+				pass
 
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
