@@ -86,14 +86,15 @@ Input.prototype.insertField = function(position, field, opt_name) {
   field.name = opt_name;
 
   // Add the field to the field row.
-  if (field.prefixField) {
-    // Add any prefix.
-    this.insertField(position, field.prefixField);
-  }
+
   this.fieldRow.splice(position, 0, field);
   if (field.suffixField) {
     // Add any suffix.
-    this.insertField(position, field.suffixField);
+    this.insertField(position + 1, field.suffixField);
+  }
+  if (field.prefixField) {
+    // Add any prefix.
+    this.insertField(position - 1, field.prefixField);
   }
 
   field.on("changed", function (value) {
