@@ -507,6 +507,11 @@ class Block (BaseStep, EventEmitter):
 	# (e.g. long-running disconnected controls)
 	externalStop = False
 
+	# If this block returns an output, the output data type
+	# may be specified. Useful if the block does not return a
+	# value immediately.
+	outputType = None
+
 	@property
 	def state (self):
 		return self._state

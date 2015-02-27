@@ -101,6 +101,8 @@ class image_crop (_image_block):
 
 
 class image_intensityfn (_image_block):
+	outputType = float
+
 	_map = {
 		"MAX": numpy.max,
 		"MIN": numpy.min,
@@ -109,6 +111,9 @@ class image_intensityfn (_image_block):
 	}
 
 	def _calculate (self, result):
+		if result is None:
+			return
+
 		op = self._map[self.fields['OP']]
 		return int(op(result.getGrayNumpy()))
 
@@ -116,6 +121,8 @@ class image_intensityfn (_image_block):
 
 
 class image_tonumber (_image_block):
+	outputType = int
+
 	_map = {
 		"CENTROIDX": lambda blob: blob.centroid()[0],
 		"CENTROIDY": lambda blob: blob.centroid()[1],

@@ -85,19 +85,26 @@ class global_declaration (Block):
 		result = yield self.getInputValue('VALUE', None)
 
 		if result is None:
-			raise Exception("Global declared value cannot be None")
+			try:
+				resultType = self.getInput('VALUE').outputType
+			except (KeyError, AttributeError):
+				raise Exception("Global declared value cannot be None")
+		else:
+			resultType = type(result)
 
 		# Special handling if the variable is an image.
 		if SimpleCVImage is not None \
-		and type(result).__name__ == "instance" \
+		and resultType.__name__ == "instance" \
 		and result.__class__ is SimpleCVImage:
 			variable = DerivedImage()
 		else:
-			variable = data.Variable(type(result))
+			variable = data.Variable(resultType)
 
 		variable.alias = self.fields['NAME']
 		self.workspace.variables[self._varName()] = variable
-		yield variable.set(result)
+
+		if result is not None:
+			yield variable.set(result)
 
 		self._onConnectivityChanged()
 
@@ -170,6 +177,7 @@ class lexical_variable_get (lexical_variable, Block):
 	def eval (self):
 		try:
 			variable = self._getVariable()
+			self.outputType = variable.type
 			return defer.succeed(variable.value)
 		except (KeyError, AttributeError):
 			return defer.succeed(None)

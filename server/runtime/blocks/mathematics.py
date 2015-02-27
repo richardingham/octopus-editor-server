@@ -40,6 +40,8 @@ class math_constant (Block):
 
 
 class math_single (Block):
+	outputType = float
+
 	_map = {
 		"ROOT": math.sqrt,
 		"ABS": math.fabs,
@@ -84,6 +86,9 @@ class math_round (math_single):
 
 
 class math_arithmetic (Block):
+	# TODO: int if lhs and rhs are ints.
+	outputType = float
+
 	_map = {
 		"ADD": operator.add,
 		"MINUS": operator.sub,
@@ -145,6 +150,9 @@ class math_number_property (Block):
 
 
 class math_modulo (Block):
+	# TODO: int if a and b are ints.
+	outputType = float
+
 	def eval (self):
 		def calculate (results):
 			a, b = results
@@ -163,6 +171,9 @@ class math_modulo (Block):
 
 
 class math_constrain (Block):
+	# TODO: int if val, low and high are all ints.
+	outputType = float
+
 	def eval (self):
 		def calculate (results):
 			val, low, high = results
@@ -182,6 +193,8 @@ class math_constrain (Block):
 
 
 class math_random_int (Block):
+	outputType = int
+
 	def eval (self):
 		def calculate (results):
 			low, high = results
@@ -205,6 +218,8 @@ class math_random_float (Block):
 
 
 class math_framed (Block):
+	outputType = float
+
 	_map = {
 		"MAX": lambda x, y: max(y),
 		"MIN": lambda x, y: min(y),
@@ -235,16 +250,22 @@ class math_framed (Block):
 	@defer.inlineCallbacks
 	def eval (self):
 		try:
+			frameLength = float(self.fields['TIME'])
 			value = yield self.getInputValue("INPUT")
 			time = now()
 			op = self._map[self.fields['OP']]
 
 			if value is not None:
 				self._x.append(time)
-				self._y.append(value)
+				self._y.append(float(value))
+
+				# Don't return a value until there is at least
+				# one frame length worth of data
+				if (time - self._x[0]) < frameLength:
+					return
 
 				# Truncate if necessary
-				min_time = time - float(self.fields['TIME'])
+				min_time = time - frameLength
 				if self._x[0] < min_time:
 					self._x = [x for x in self._x if x > min_time]
 					self._y = self._y[-len(self._x):]
