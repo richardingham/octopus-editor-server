@@ -278,7 +278,15 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			log.msg("Finished?: Waiting for %s blocks" % len(runningBlocks))
 
 			if len(runningBlocks) > 0:
-				return
+				if any(block.state is State.RUNNING for block in runningBlocks):
+					return
+				else:
+					for block in runningBlocks:
+						try:
+							log.msg("Force cancel block " + str(block))
+							block.cancel(propagate = True).addErrback(log.err)
+						except NotRunning:
+							pass
 
 			log.msg("Skipped blocks:" + str(dependencyGraph))
 
