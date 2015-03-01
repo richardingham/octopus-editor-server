@@ -1,80 +1,189 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
-	<title>Experiment Download</title>
-
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
+	<script src="/bower_components/bootstrap/js/tooltip.js"></script>
+	<script src="/bower_components/datatables/media/js/jquery.dataTables.min.js"></script>
+	<script src="/bower_components/datatables-bootstrap3-plugin/media/js/datatables-bootstrap3.min.js"></script>
+	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
+	<link rel="stylesheet" href="/bower_components/datatables-bootstrap3-plugin/media/css/datatables-bootstrap3.min.css" />
+
+	<title>Experiment Download</title>
 
 	<style>
 	/* <![CDATA[ */
 
-	html, body {
-		margin: 0;
-		padding: 0;
-	}
-
 	body {
 		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 		color: #333;
-		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
 		-webkit-tap-highlight-color: rgba(0,0,0,0);
 		-webkit-touch-callout: none;
+	}
+	
+	#variables-list_filter .btn {
+		margin-left: 10px;
+	}
+	
+	.buttons {
+		margin-top: 30px;
+	}
+	
+	.buttons .tooltip-wrapper {
+		display: inline-block;
 	}
 
 	/* ]]> */
 	</style>
+	
+	<script type="text/javascript">
+	// <![CDATA[
+	
+	$(function ($) {
+		var checkboxes = $('<div>').hide().appendTo($('form'));
+		$('#variables-list tbody input[type=checkbox]').appendTo(checkboxes);
+
+		$('[data-toggle="tooltip"]').tooltip();
+		
+		$('#variables-list').DataTable({
+			order: [[1, 'asc']],
+			paging: false,
+			columns: [
+				{ visible: false, orderable: false },
+				null,
+				null,
+				null
+			]
+		});
+		
+		$('<button class="btn btn-default">Clear</button>')
+			.appendTo('#variables-list_filter')
+			.on('click', function () {
+				$('#variables-list_filter input').val('');
+			});
+		$('<button class="btn btn-default">Select filtered</button>')
+			.appendTo('#variables-list_filter')
+			.on('click', generateToggleAllStatesFunction(true));
+		$('<button class="btn btn-default">Deselect filtered</button>')
+			.appendTo('#variables-list_filter')
+			.on('click', generateToggleAllStatesFunction(false));
+		
+		$('#variables-list tbody').on('click', 'tr', function () {
+			toggleSelectedState(this);
+			setSubmitButtonState();
+		});
+		
+		function generateToggleAllStatesFunction (state) {
+			return function () {
+				$('#variables-list tbody tr').each(function () {
+					toggleSelectedState(this, state);
+				});
+				setSubmitButtonState();
+				return false;
+			}
+		}
+		
+		function toggleSelectedState (tr, state) {
+			$(tr).toggleClass('active', state);			
+			$('input[value="' + $(tr).data('key') + '"]', checkboxes).attr('checked', $(tr).is('.active'));
+		}
+		
+		// Disable submit button initially.
+		function setSubmitButtonState () {
+			var selectedVars = $('input[checked]', checkboxes).length;
+			var button = $('form .buttons button[type="submit"]')
+			
+			button.attr('disabled', selectedVars === 0);
+			
+			if (selectedVars === 0) {
+				button.parent('.tooltip-wrapper').tooltip({ 
+					title: 'Select some data variables to continue',
+					placement: 'right'
+				});	
+			} else {
+				button.parent('.tooltip-wrapper').tooltip('destroy');
+			}
+		}
+		
+		setSubmitButtonState();
+	});
+	
+	// ]]>
+	</script>
 </head>
 <body>
 
+<div class="container">
+	<h1>Download Experiment Data</h1>
+</div>
+
 <form method="POST">
-<div>
-	Time units:
-	<select name="time_divisor">
-		<option value="1">seconds</option>
-		<option value="60">minutes</option>
-		<option value="3600">hours</option>
-	</select>
-</div>
-<div>
-	Time decimal places:
-	<input type="number" value="2" name="time_dp" />
+
+<div class="container">
+	<h3>Options</h3>
+	
+	<div class="form-horizontal">
+	
+		<div class="form-group">
+			<label for="time_divisor_input" class="col-sm-2 control-label">Time units</label>
+			<div class="col-sm-2">
+				<select class="form-control" name="time_divisor" id="time_divisor_input">
+					<option value="1">seconds</option>
+					<option value="60">minutes</option>
+					<option value="3600">hours</option>
+				</select>
+			</div>
+		</div>
+		
+		<div class="form-group">
+			<label for="time_dp_input" class="col-sm-2 control-label">Time decimal places</label>
+			<div class="col-sm-2">
+				<input type="number" value="2" name="time_dp" id="time_dp_input" />
+			</div>
+		</div>
+	</div>
 </div>
 
-<table>
-<thead>
-	<tr>
-		<td></td>
-		<td>Variable</td>
-		<td>Type</td>
-		<td>Unit</td>
-	</tr>
-</thead>
-<tbody>
-	<tr t:render="variable">
-	<td>
-		<input type="checkbox" name="vars"><t:attr name="value"><t:slot name="key" /></t:attr></input>
-	</td>
-	<td>
-		<span>
-			<t:attr name="title"><t:slot name="key" /></t:attr>
-			<t:slot name="name" />
+<div class="container">
+	<h3>Select Data</h3>
+	
+	<table class="table" id="variables-list">
+		<thead>
+			<tr>
+				<th></th>
+				<th>Variable</th>
+				<th>Type</th>
+				<th>Unit</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr t:render="variable">
+				<t:attr name="data-key"><t:slot name="key" /></t:attr>
+				<td>
+					<input type="checkbox" name="vars">
+						<t:attr name="value"><t:slot name="key" /></t:attr>
+					</input>
+				</td>
+				<td>
+					<span data-toggle="tooltip" data-placement="top">
+						<t:attr name="title"><t:slot name="key" /></t:attr>
+						<t:slot name="name" />
+					</span>
+				</td>
+				<td><t:slot name="type" /></td>
+				<td><t:slot name="unit" /></td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+<div class="container buttons">
+	<div class="col-sm-10">
+		<span class="tooltip-wrapper">
+			<button type="submit" class="btn btn-lg btn-primary">Download</button>
 		</span>
-	</td>
-	<td>
-		<t:slot name="type" />
-	</td>
-	<td>
-		<t:slot name="unit" />
-	</td>
-	</tr>
-</tbody>
-</table>
-
-<div>
-	<button type="submit">Download</button>
+	</div>
 </div>
+
 </form>
 
 </body>
