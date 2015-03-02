@@ -19,12 +19,12 @@ class controls_run (Block):
 
 
 class controls_parallel (Block):
-	def _getStacks (self): 
+	def _getStacks (self):
 		return [
 			input for name, input in self.inputs.iteritems()
 			if name[:5] == "STACK" and input is not None
 		]
-	
+
 	@defer.inlineCallbacks
 	def _run (self):
 		self._deferredList = []
@@ -52,7 +52,7 @@ class controls_parallel (Block):
 			self.finishedCount += 1
 
 			if self.finishedCount == len(self._deferredList):
-				if not complete.called:	
+				if not complete.called:
 					complete.callback(None)
 
 		def append (deferred):
