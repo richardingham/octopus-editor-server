@@ -183,7 +183,7 @@ class lexical_variable_set (lexical_variable, Block):
 			return
 
 		try:
-			yield variable.set(result)
+			yield variable.set(value)
 		except Exception as error:
 			self.emitLogMessage(str(error), "error")
 
