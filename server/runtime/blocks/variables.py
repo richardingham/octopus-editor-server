@@ -56,7 +56,7 @@ class global_declaration (Block):
 			v.off('change', self._onChange)
 
 		try:
-			self._variables = set(self.getInput('VALUE').getVariables())
+			self._variables = set(self.getInput('VALUE').getReferencedVariables())
 		except (KeyError, AttributeError):
 			self._variables = []
 
@@ -117,11 +117,11 @@ class global_declaration (Block):
 
 		self.workspace.variables.remove(self._varName())
 
-	def getDeclarationNames (self):
+	def getGlobalDeclarationNames (self):
 		variables = [ self._varName() ]
 
 		for block in self.getChildren():
-			variables.extend(block.getDeclarationNames())
+			variables.extend(block.getGlobalDeclarationNames())
 
 		return variables
 
@@ -143,7 +143,7 @@ class lexical_variable (object):
 
 		return variable
 
-	def getVariables (self):
+	def getReferencedVariables (self):
 		variable = self._getVariable()
 
 		if variable is not None:
@@ -152,19 +152,20 @@ class lexical_variable (object):
 			variables = []
 
 		for block in self.getChildren():
-			variables.extend(block.getVariables())
+			variables.extend(block.getReferencedVariables())
 
 		return variables
 
-	def getVariableNames (self):
+	def getReferencedVariableNames (self):
 		name, attr = variableName(self.fields['VAR'])
 		variables = [ name ]
 
 		for block in self.getChildren():
-			variables.extend(block.getVariableNames())
+			variables.extend(block.getReferencedVariableNames())
 
 		return variables
 
+	getUnmatchedVariableNames = getReferencedVariableNames
 
 class lexical_variable_set (lexical_variable, Block):
 	@defer.inlineCallbacks

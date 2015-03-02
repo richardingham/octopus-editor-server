@@ -95,7 +95,7 @@ class machine_declaration (Block):
 	def getMachineParams (self):
 		return {}
 
-	def getDeclarationNames (self):
+	def getGlobalDeclarationNames (self):
 		return [ self._varName() ]
 
 

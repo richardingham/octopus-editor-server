@@ -186,7 +186,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				return
 
 			runningBlocks.discard(block)
-			decls = block.getDeclarationNames()
+			decls = block.getGlobalDeclarationNames()
 
 			print "Satisfied dependencies: " + str(decls)
 
@@ -241,8 +241,11 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		def _updateDependencyGraph (data = None):
 			for item in dependencyGraph:
-				item['deps'] = set(item['block'].getVariableNames())
+				item['deps'] = set(item['block'].getUnmatchedVariableNames())
 
+		# When a new top block is added, add it to the list of blocks that must
+		# complete before the run can be finished; or to the list of blocks that
+		# must be stopped when the run finishes, if appropriate.
 		@self.on('top-block-added')
 		def onTopBlockAdded (data):
 			block = data['block']
@@ -265,6 +268,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		self.on('top-block-removed', _updateDependencyGraph)
 
+		# If there are no more running blocks, stop running.
 		def _checkFinished (error = None):
 			log.msg("Finished?: Waiting for %s blocks" % len(runningBlocks))
 
@@ -277,10 +281,14 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				_externalStop()
 				self.state = State.COMPLETE
 				self._complete.callback(None)
-				self.emit("workspace-stopped")
-				self.off('top-block-added', onTopBlockAdded)
-				self.off('top-block-removed', _updateDependencyGraph)
+				_removeListeners()
 
+		def _removeListeners ():
+			self.emit("workspace-stopped")
+			self.off('top-block-added', onTopBlockAdded)
+			self.off('top-block-removed', _updateDependencyGraph)
+
+		# Cancel all blocks which must be stopped externally.
 		def _externalStop ():
 			for block in externalStopBlocks:
 				try:
@@ -288,23 +296,126 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				except NotRunning:
 					pass
 
-		# Get all blocks ordered by x then y.
-		blocks = sorted(self.topBlocks.itervalues(), key = lambda b: b.position)
+		# Set up the dependency graph
+		allDeclaredGlobalVariables = set()
+		blocksToRunImmediately = []
+		dependencyError = False
 
-		# Run each block based on the dependency graph
-		for block in blocks:
-			deps = block.getVariableNames()
-			decls = block.getDeclarationNames()
+		# Create a list of all global variables defined in the workspace
+		for block in self.topBlocks.itervalues():
+			allDeclaredGlobalVariables.update(block.getGlobalDeclarationNames())
+
+		# Defer blocks with dependencies until these have been met.
+		for block in self.topBlocks.itervalues():
+			deps = set(block.getUnmatchedVariableNames())
+
+			# Check that all of these dependencies will be met.
+			for dep in deps:
+				if dep not in allDeclaredGlobalVariables:
+					self.emit(
+						"log-message",
+						level = "error",
+						message = "Referenced variable {:s} is never defined. ".format(dep),
+						block = block.id
+					)
+					dependencyError = True
 
 			if len(deps) is 0:
 				log.msg("Block %s has no deps, running now" % block.id)
-				_runBlock(block)
+				blocksToRunImmediately.append(block)
+
 			else:
 				log.msg("Block %s waiting for %s" % (block.id, deps))
 				dependencyGraph.append({
 					"block": block,
-					"deps": set(deps)
+					"deps": deps
 				})
+
+		# If there are no blocks that have no dependencies, then
+		# there must be a circular dependency somewhere!
+		if len(blocksToRunImmediately) == 0:
+			self.emit(
+				"log-message",
+				level = "error",
+				message = "No blocks can run."
+			)
+			dependencyError = True
+
+		# Check for circular dependencies using a topological sorting algorithm
+		def findCircularDependencies (blocks, graph):
+			from copy import deepcopy
+
+			circularDeps = []
+			blocksWithNoDeps = deepcopy(blocks)
+			dependencyGraph = deepcopy(graph)
+
+			while len(blocksWithNoDeps) > 0:
+				block = blocksWithNoDeps.pop()
+				declaredInBlock = block.getGlobalDeclarationNames()
+				toRemove = []
+
+				for item in dependencyGraph:
+					for decl in declaredInBlock:
+						item["deps"].discard(decl)
+
+					if len(item["deps"]) is 0:
+						toRemove.append(item)
+
+				for item in toRemove:
+					dependencyGraph.remove(item)
+					blocksWithNoDeps.append(item["block"])
+
+			# Remove any blocks that just depend on one of the
+			# circularly-dependent blocks
+			toRemove = []
+			for item in dependencyGraph:
+				declaredInBlock = item["block"].getGlobalDeclarationNames()
+				if declaredInBlock == 0:
+					toRemove.append(item)
+				else:
+					item["decls"] = declaredInBlock
+
+			for item in toRemove:
+				dependencyGraph.remove(item)
+
+			return dependencyGraph
+
+		circularDeps = findCircularDependencies(blocksToRunImmediately, dependencyGraph)
+		if len(circularDeps) > 0:
+			self.emit(
+				"log-message",
+				level = "error",
+				message = "Circular dependencies detected:"
+			)
+
+			for item in sorted(
+				circularDeps, key = lambda item: item["block"].position
+			):
+				self.emit(
+					"log-message",
+					level = "error",
+					message = "* {:s} depends on {:s}".format(
+						', '.join(item["decls"]),
+						', '.join(item["deps"])
+					),
+					block = item["block"].id
+				)
+
+			dependencyError = True
+
+		# Do not run if there was an error with the dependencies.
+		if dependencyError:
+			self.state = State.COMPLETE
+			self._complete.errback(Exception("Dependency errors prevented start."))
+			_removeListeners()
+
+		# Run blocks with no dependencies in order of their position.
+		# Blocks are sorted first by x then by y.
+		else:
+			for block in sorted(
+				blocksToRunImmediately, key = lambda b: b.position
+			):
+				_runBlock(block)
 
 		return self._complete
 
@@ -758,27 +869,49 @@ class Block (BaseStep, EventEmitter):
 		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-added', block = childBlock)
 
-	def getVariables (self):
+	def getReferencedVariables (self):
 		variables = []
 
 		for block in self.getChildren():
-			variables.extend(block.getVariables())
+			variables.extend(block.getReferencedVariables())
 
 		return variables
 
-	def getVariableNames (self):
+	def getReferencedVariableNames (self):
 		variables = []
 
 		for block in self.getChildren():
-			variables.extend(block.getVariableNames())
+			variables.extend(block.getReferencedVariableNames())
 
 		return variables
 
-	def getDeclarationNames (self):
+	def getGlobalDeclarationNames (self):
+		""" Returns a list of global variable names
+		that are declared within this block.
+
+		Note: This function must not return any local
+		variable names, because this will look like a
+		circular dependency.
+		"""
+
 		variables = []
 
 		for block in self.getChildren():
-			variables.extend(block.getDeclarationNames())
+			variables.extend(block.getGlobalDeclarationNames())
+
+		return variables
+
+	def getUnmatchedVariableNames (self):
+		""" Find variables that must be defined in a higher scope.
+
+		Returns a list of referenced variables that
+		are not defined within their scope (i.e. must be
+		defined globally."""
+
+		variables = []
+
+		for block in self.getChildren():
+			variables.extend(block.getUnmatchedVariableNames())
 
 		return variables
 
@@ -1189,8 +1322,6 @@ class SetBlockMutation (Event):
 # block-set-movable (value)
 # block-set-help-url (value)
 # block-set-colour (value)
-# block-set-comment (value)
-# block-set-collapsed (value)
 
 # Not Required
 # block-add-input

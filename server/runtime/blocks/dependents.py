@@ -98,7 +98,7 @@ class controls_bind (lexical_variable, Block):
 			v.off('change', self._runUpdate)
 
 		try:
-			self._variables = set(self.getInput("VALUE").getVariables())
+			self._variables = set(self.getInput("VALUE").getReferencedVariables())
 		except (KeyError, AttributeError):
 			self._variables = []
 
@@ -212,7 +212,7 @@ class controls_statemonitor (Block):
 		]
 		for input in inputs:
 			try:
-				self._variables.extend(input.getVariables())
+				self._variables.extend(input.getReferencedVariables())
 			except AttributeError:
 				pass
 

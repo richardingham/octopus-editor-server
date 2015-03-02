@@ -234,7 +234,7 @@ class controls_wait (Block):
 				v.off('change', _tryUpdate)
 
 			try:
-				self._variables = set(self.getInput("TIME").getVariables())
+				self._variables = set(self.getInput("TIME").getReferencedVariables())
 			except (KeyError, AttributeError):
 				self._variables = []
 
@@ -338,7 +338,7 @@ class controls_wait_until (Block):
 				v.off('change', runTest)
 
 			try:
-				self._variables = set(self.getInput("CONDITION").getVariables())
+				self._variables = set(self.getInput("CONDITION").getReferencedVariables())
 			except AttributeError:
 				self._variables = []
 
