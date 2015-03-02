@@ -1,8 +1,9 @@
 # Package imports
-from ..workspace import Block, Disconnected, Cancelled, Aborted
+from ..workspace import Block, Disconnected, Cancelled, Aborted, anyOfStackIs
 
 # Octopus Imports
 from octopus.constants import State
+from octopus.sequence.error import NotRunning, AlreadyRunning, NotPaused
 
 # Twisted Imports
 from twisted.internet import reactor, defer
@@ -18,25 +19,100 @@ class controls_run (Block):
 
 
 class controls_parallel (Block):
-	@defer.inlineCallbacks
-	def _run (self):
-		inputs = [
+	def _getStacks (self): 
+		return [
 			input for name, input in self.inputs.iteritems()
 			if name[:5] == "STACK" and input is not None
 		]
+	
+	@defer.inlineCallbacks
+	def _run (self):
+		self._deferredList = []
+		self.finishedCount = 0
+		stacks = set(self._getStacks())
+		complete = defer.Deferred()
+		runOnResume = []
 
-		def _error (failure):
+		if len(stacks) == 0:
+			return
+
+		def _trapCancelledDisconnected (failure):
 			error = failure.trap(Cancelled, Disconnected)
 
 			if error is Aborted:
 				return failure
 
-		runResults = defer.gatherResults(
-			[input.run().addErrback(_error) for input in inputs],
-			consumeErrors = True
-		)
+		def _errback (failure):
+			self.finishedCount += 1
 
-		yield runResults
+			if not complete.called:
+				complete.errback(failure)
+
+		def _callback (result):
+			self.finishedCount += 1
+
+			if self.finishedCount == len(self._deferredList):
+				if not complete.called:	
+					complete.callback(None)
+
+		def append (deferred):
+			self._deferredList.append(deferred)
+			deferred.addErrback(_trapCancelledDisconnected)
+			deferred.addCallbacks(_callback, _errback)
+
+		@self.on('connectivity-changed')
+		def onConnectivityChanged (data):
+			updatedStacks = set(self._getStacks())
+
+			# Stacks added
+			for stack in updatedStacks - stacks:
+				if self.state is State.RUNNING:
+					try:
+						stack.reset()
+						append(stack.run())
+					except AlreadyRunning:
+						if stack._complete is not None:
+							append(stack._complete)
+
+				elif self.state is State.PAUSED:
+					if anyOfStackIs(stack, [State.PAUSED]):
+						append(stack._complete)
+
+					elif anyOfStackIs(stack, [State.RUNNING]):
+						stack.pause()
+						append(stack._complete)
+
+					else:
+						stack.reset()
+						runOnResume.append(stack)
+						self._onResume = resume
+
+				stacks.add(stack)
+
+			# Stacks removed
+			for stack in stacks - updatedStacks:
+				stacks.discard(stack)
+
+		def resume ():
+			for stack in runOnResume:
+				try:
+					append(stack.run())
+				except AlreadyRunning:
+					pass
+
+			runOnResume = []
+
+		try:
+			for stack in stacks:
+				try:
+					stack.reset()
+					append(stack.run())
+				except AlreadyRunning:
+					pass
+
+			yield complete
+		finally:
+			self.off('connectivity-changed', onConnectivityChanged)
 
 
 class controls_if (Block):

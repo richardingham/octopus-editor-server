@@ -568,11 +568,21 @@ class Block (BaseStep, EventEmitter):
 		childBlock.prevBlock = self
 		childBlock.parentInput = None
 
-		if self.state in (State.READY, State.RUNNING, State.PAUSED):
+		if self.state in (State.RUNNING, State.PAUSED):
 			try:
 				childBlock.reset()
 			except AlreadyRunning:
 				pass
+		else:
+			if anyOfStackIs(childBlock, [State.RUNNING, State.PAUSED]):
+				if childBlock._complete is not None:
+					self._complete = defer.Deferred()
+					childBlock._complete.addCallbacks(self._complete.callback, self._complete.errback)
+			elif self.state is State.READY:
+				try:
+					childBlock.reset()
+				except AlreadyRunning:
+					pass
 
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
@@ -675,34 +685,35 @@ class Block (BaseStep, EventEmitter):
 		self.inputs[inputName] = childBlock
 		childBlock.parentInput = inputName
 
-		if self.state is State.READY:
-			try:
-				childBlock.reset()
-			except AlreadyRunning:
-				pass
-		elif self.state is State.RUNNING:
-			try:
-				childBlock.reset()
-				childBlock.run()
-			except AlreadyRunning:
-				pass
-		elif self.state is State.PAUSED:
-			if childBlock.state is State.PAUSED:
-				pass
-			elif childBlock.state is State.RUNNING:
-				childBlock.pause()
-			else:
-				# Should not raise AlreadyRunning due to two if's above
-				childBlock.reset()
+		if type == "value":
+			if self.state is State.READY:
+				try:
+					childBlock.reset()
+				except AlreadyRunning:
+					pass
+			elif self.state is State.RUNNING:
+				try:
+					childBlock.reset()
+					childBlock.run()
+				except AlreadyRunning:
+					pass
+			elif self.state is State.PAUSED:
+				if childBlock.state is State.PAUSED:
+					pass
+				elif childBlock.state is State.RUNNING:
+					childBlock.pause()
+				else:
+					# Should not raise AlreadyRunning due to two if's above
+					childBlock.reset()
 
-				# Do not call run() because most input blocks will be eval()ed.
-				# Parent blocks expecting to run() children should run them
-				# again when they are resumed.
-		else:
-			try:
-				childBlock.cancel()
-			except NotRunning:
-				pass
+					# Do not call run() because most input blocks will be eval()ed.
+					# Parent blocks expecting to run() children should run them
+					# again when they are resumed.
+			else:
+				try:
+					childBlock.cancel()
+				except NotRunning:
+					pass
 
 		@childBlock.on('connectivity-changed')
 		def onConnChange (data):
@@ -808,7 +819,17 @@ class Block (BaseStep, EventEmitter):
 					if f is Aborted:
 						raise f
 
-				self.nextBlock.run().addErrback(
+				try:
+					# Do not need to reset, should have been done on connect.
+					d = self.nextBlock.run()
+				except AlreadyRunning:
+					if self.nextBlock._complete is not None:
+						d = self.nextBlock._complete
+					else:
+						self._complete.callback(None)
+						return
+
+				d.addErrback(
 					_disconnected
 				).addCallbacks(
 					lambda result: self._complete.callback(result),
@@ -961,7 +982,7 @@ class Block (BaseStep, EventEmitter):
 					# Something has gone wrong as the this block's state
 					# should reflect those of its (input) children.
 					# Try to cancel the child.
-					results.append(block.cancel(propagate = True).addCallback(block.reset))
+					results.append(block.cancel(propagate = True).addCallback(lambda _: block.reset))
 
 			return defer.DeferredList(results)
 
