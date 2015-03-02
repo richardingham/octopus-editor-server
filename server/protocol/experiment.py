@@ -2,6 +2,10 @@ from time import time as now
 from octopus.data import Variable
 
 def _format (variable):
+	if variable.value is None:
+		if variable.type in (float, int):
+			return 0
+
 	if variable.type in (str, unicode, int):
 		return variable.value
 	if variable.type is float:
