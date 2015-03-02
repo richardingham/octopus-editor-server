@@ -59,6 +59,8 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		self.allBlocks[block.id] = block
 		self.topBlocks[block.id] = block
 
+		self.emit('top-block-added', block = block)
+
 	def getBlock (self, id):
 		try:
 			return self.allBlocks[id]
@@ -69,30 +71,27 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 	def removeBlock (self, id):
 		block = self.getBlock(id)
 
-		# Cancel parent block if waiting for data
 		try:
-			if block._complete.called is False:
-				block._complete.errback(Disconnected())
-				block._complete = None
-		except AttributeError:
+			del self.topBlocks[block.id]
+		except KeyError:
 			pass
 
 		# Disconnect prevBlock connection
 		prev = block.prevBlock
 		if prev is not None:
 			if prev.nextBlock == block:
-				prev.nextBlock = None
+				prev.disconnectNextBlock(block)
 			else:
 				prevInputs = prev.inputs
 				for input in prevInputs.iterkeys():
 					if prevInputs[input] is block:
-						prevInputs[input] = None
+						prev.disconnectInput(input, "value")
 
 		# Disconnect nextBlock connection
 		next = block.nextBlock
 		if next is not None:
 			if next.prevBlock == block:
-				next.prevBlock = None
+				block.disconnectNextBlock(next)
 
 		# Disconnect output connection
 		output = block.outputBlock
@@ -100,18 +99,14 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			outputInputs = output.inputs
 			for input in outputInputs.iterkeys():
 				if outputInputs[input] is block:
-					outputInputs[input] = None
-
-		try:
-			del self.topBlocks[block.id]
-		except KeyError:
-			pass
+					output.disconnectInput(input, "value")
 
 		try:
 			del self.allBlocks[block.id]
 		except KeyError:
 			pass
 
+		self.emit('top-block-removed', block = block)
 		block.disposed()
 
 	def connectBlock (self, id, parent, connection, input = None):
@@ -128,17 +123,11 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		elif connection == "previous":
 			parentBlock.connectNextBlock(childBlock)
 
+		self.emit('top-block-removed', block = childBlock)
+
 	def disconnectBlock (self, id, parent, connection, input = None):
 		childBlock = self.getBlock(id)
 		parentBlock = self.getBlock(parent)
-
-		# Cancel parent block if waiting for data
-		try:
-			if childBlock._complete.called is False:
-				childBlock._complete.errback(Disconnected())
-				childBlock._complete = defer.Deferred()
-		except AttributeError:
-			pass
 
 		self.topBlocks[id] = childBlock
 
@@ -148,6 +137,8 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			parentBlock.disconnectInput(input, "statement")
 		elif connection == "previous":
 			parentBlock.disconnectNextBlock(childBlock)
+
+		self.emit('top-block-added', block = childBlock)
 
 	#
 	# Controls
@@ -600,11 +591,18 @@ class Block (BaseStep, EventEmitter):
 				self.off('disconnected', onDisconnect)
 
 		self.emit('connectivity-changed')
-		self.workspace.emit('top-block-removed', block = childBlock)
 
 	def disconnectNextBlock (self, childBlock):
 		if self.nextBlock != childBlock:
 			raise Exception("Block.disconnectNextBlock: must pass the correct child block")
+
+		# Cancel parent block if waiting for data
+		try:
+			if not childBlock._complete.called:
+				childBlock._complete.errback(Disconnected())
+				childBlock._complete = defer.Deferred()
+		except AttributeError:
+			pass
 
 		self.nextBlock = None
 		childBlock.prevBlock = None
@@ -612,7 +610,6 @@ class Block (BaseStep, EventEmitter):
 
 		self.emit('disconnected', next = True)
 		self.emit('connectivity-changed')
-		self.workspace.emit('top-block-added', block = childBlock)
 
 	def getSurroundParent (self):
 		block = self
@@ -738,6 +735,14 @@ class Block (BaseStep, EventEmitter):
 			childBlock = self.inputs[inputName]
 		except KeyError:
 			return
+
+		# Cancel parent block if waiting for data
+		try:
+			if not childBlock._complete.called:
+				childBlock._complete.errback(Disconnected())
+				childBlock._complete = defer.Deferred()
+		except AttributeError:
+			pass
 
 		if type == "value":
 			childBlock.outputBlock = None
