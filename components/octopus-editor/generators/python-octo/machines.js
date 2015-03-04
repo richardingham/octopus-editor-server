@@ -20,8 +20,8 @@ function machineBlockGenerator (smod, mod, cls) {
     }
 
     return [
-      name, ' = ', mod, '.', cls, '(', conn, 
-      attributes.length ? ', ' : '', attributes.join(', '), 
+      name, ' = ', mod, '.', cls, '(', conn,
+      attributes.length ? ', ' : '', attributes.join(', '),
       ', alias = ', Blockly.PythonOcto.quote_(alias), ')'
     ].join('');
   };
@@ -37,3 +37,4 @@ Blockly.PythonOcto['machine_phidgets_phsensor'] = machineBlockGenerator('octopus
 Blockly.PythonOcto['machine_singletracker'] = machineBlockGenerator('octopus.image', 'tracker', 'SingleBlobTracker');
 Blockly.PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.image', 'tracker', 'MultiBlobTracker');
 Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('_fixme_', 'image', 'ImageProvider');
+Blockly.PythonOcto['machine_omega_hh306a'] = machineBlockGenerator('octopus.manufacturer', 'omega', 'HH306A');

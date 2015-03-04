@@ -168,6 +168,12 @@ class machine_phidgets_phsensor (machine_declaration):
 			return {}
 
 
+class machine_omega_hh306a (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import omega
+		return omega.HH306A
+
+
 class connection_tcp (Block):
 	def eval (self):
 		return defer.succeed(octopus.transport.basic.tcp(

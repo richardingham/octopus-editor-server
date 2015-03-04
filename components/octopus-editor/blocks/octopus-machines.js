@@ -112,7 +112,7 @@ var machineBlock = {
         .appendField(new Blockly.FieldMachineFlydown(
             default_name, //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
             Blockly.FieldFlydown.DISPLAY_BELOW,
-            this.rename_.bind(this)), 
+            this.rename_.bind(this)),
         'NAME');
     this.appendValueInput("CONNECTION")
         .setCheck(this.machineConnectionType || "MachineConnection")
@@ -409,4 +409,12 @@ Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
   machineVars: _MultiTracker_vars,
   machineOptions: _MultiTracker_options,
   machineConnectionType: "CameraConnection"
+});
+
+Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
+  machineTitle: "Omega HH306A",
+  machineVars: [
+    { name: "temp1", title: "Temperature 1", type: "Number", readonly: true },
+    { name: "temp2", title: "Temperature 2", type: "Number", readonly: true }
+  ]
 });
