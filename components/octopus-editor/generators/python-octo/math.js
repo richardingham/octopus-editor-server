@@ -349,9 +349,25 @@ Blockly.PythonOcto['math_framed'] = function(block) {
     'CHANGE': 'Change'
   };
   var fn = OPERATORS[block.getFieldValue('OP')];
-  var expr = Blockly.PythonOcto.valueToCode(block, 'INPUT', 
+  var expr = Blockly.PythonOcto.valueToCode(block, 'INPUT',
       Blockly.PythonOcto.ORDER_NONE) || '0';
   var time = parseFloat(block.getFieldValue('TIME')) || '0';
   var code = fn + '(' + expr + ', frame = ' + time + ')';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};
+
+Blockly.PythonOcto['math_throttle'] = function(block) {
+  // Framed arithmetic operations
+  var OPERATORS = {
+    'MAX': 'max',
+    'MIN': 'min',
+    'AVERAGE': 'avg',
+    'LATEST': 'latest'
+  };
+  var fn = OPERATORS[block.getFieldValue('OP')];
+  var expr = Blockly.PythonOcto.valueToCode(block, 'INPUT',
+      Blockly.PythonOcto.ORDER_NONE) || '0';
+  var time = parseFloat(block.getFieldValue('TIME')) || '0';
+  var code = 'Throttle(' + expr + ', method = \'' + fn + '\', frame = ' + time + ')';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };

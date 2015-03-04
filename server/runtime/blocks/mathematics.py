@@ -279,3 +279,70 @@ class math_framed (Block):
 			log.err()
 		else:
 			defer.returnValue(framedValue)
+
+
+class math_throttle (Block):
+	outputType = float
+
+	_map = {
+		"MAX": lambda x, y: max(y),
+		"MIN": lambda x, y: min(y),
+		"AVERAGE": lambda x, y: numpy.mean(y),
+		"LATEST": lambda x, y: y[-1]
+	}
+
+	def created (self):
+		self.on("connectivity-changed", self._onChange)
+		self.on("value-changed", self._onChange)
+
+		self._x = []
+		self._y = []
+		self._prevValue = None
+
+	def disposed (self):
+		self.off("connectivity-changed", self._onChange)
+		self.off("value-changed", self._onChange)
+
+	def _onChange (self, data = None):
+		# Do nothing if only the frame length has changed.
+		if 'block' in data and data['block'] is self:
+			return
+
+		self._x = []
+		self._y = []
+		self.eval()
+
+	@defer.inlineCallbacks
+	def eval (self):
+		try:
+			frameLength = float(self.fields['TIME'])
+			value = yield self.getInputValue("INPUT")
+			time = now()
+			op = self._map[self.fields['OP']]
+
+			if value is None:
+				return
+
+			self._x.append(time)
+			self._y.append(float(value))
+
+			# Don't return a value until there is at least
+			# one frame length worth of data
+			if (time - self._x[0]) < frameLength:
+				print "Insufficient data to fill frame"
+				framedValue = self._prevValue
+
+			else:
+				framedValue = float(op(self._x, self._y))
+				self._prevValue = framedValue
+				print "Framed val calculated as %s" % framedValue
+
+				# Truncate
+				self._x = []
+				self._y = []
+
+		except Exception:
+			log.err()
+			framedValue = None
+		else:
+			defer.returnValue(framedValue)

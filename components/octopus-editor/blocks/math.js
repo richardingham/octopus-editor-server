@@ -457,3 +457,50 @@ Blockly.Blocks['math_framed'] = {
     });*/
   }
 };
+
+Blockly.Blocks['math_throttle'] = {
+  /**
+   * Block for throttling data (reducing change event frequency)
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.MATH_NUMBER_HELPURL);
+    this.setColour(Blockly.MATH_CATEGORY_HUE);
+
+    var OPERATORS =
+        [['Maximum value', 'MAX'],
+         ['Minimum value', 'MIN'],
+         ['Average value', 'AVERAGE'],
+         ['Latest value', 'LATEST']];
+
+    this.fieldNumber_ = new Blockly.FieldTextInput(
+      '0',
+      Blockly.FieldTextInput.nonnegativeNumberValidator
+    );
+
+    this.appendValueInput('INPUT')
+        .appendField('Throttle')
+        .setCheck('Number');
+    this.appendDummyInput()
+        .appendField('and return')
+        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP');
+    this.appendDummyInput()
+        .appendField('every')
+        .appendField(this.fieldNumber_, 'TIME')
+        .appendField('seconds');
+    this.setOutput(true, 'Number');
+
+    var thisBlock = this;
+    this.setTooltip(function() {
+      var mode = thisBlock.getFieldValue('OP');
+      var text = 'Throttle the data generation rate, producing a new value once at the end of each time window. ';
+      var TOOLTIPS = {
+        'MAX': 'The maximum value during the time window is returned.',
+        'MIN': 'The minimum value during the time window is returned.',
+        'AVERAGE': 'The average value across the time window is returned.',
+        'LATEST': 'The current value is returned at the end of each time window.',
+      };
+      return TOOLTIPS[mode];
+    });
+  }
+};
