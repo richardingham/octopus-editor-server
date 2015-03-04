@@ -271,7 +271,7 @@ class math_framed (Block):
 					self._y = self._y[-len(self._x):]
 
 			try:
-				framedValue = op(self._x, self._y)
+				framedValue = float(op(self._x, self._y))
 			except:
 				# Emit a warning
 				framedValue = None
