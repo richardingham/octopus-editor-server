@@ -9,6 +9,10 @@
 	<link rel="stylesheet" href="/components/octopus-editor/global.css" />
 	<link rel="stylesheet" href="/resources/dropdown.css" />
 
+
+	<script src="/bower_components/bootstrap/js/modal.js"></script>
+	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+
 	<style>
 	/* <![CDATA[ */
 
@@ -19,6 +23,7 @@
 	}
 
 	body {
+		font-size: 17px;
 		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 		color: #333;
 		-webkit-user-select: none;

@@ -27,6 +27,7 @@
 
 <link rel="stylesheet" href="blockly.css">
 <link rel="stylesheet" href="ext.css">
+
 <style>
 
 :host {
@@ -67,6 +68,14 @@ core-toolbar input {
 	padding-bottom: 3px;
 	font-size: 24px;
 	margin-left: 15px;
+}
+
+core-toolbar core-icon-button {
+	font-size: 20px !important;
+}
+
+core-toolbar core-icon-button::shadow core-icon {
+	margin-right: 5px;
 }
 
 #experiments-log {
@@ -164,6 +173,7 @@ octopus-blockly-toolbox core-item.core-selected {
 	<core-icon-button icon="{{ workspaceLocked ? 'lock' : 'lock-open' }}" on-tap="{{ toggleWorkspaceLocked }}" active="{{ workspaceLocked }}"></core-icon-button>
 	<core-icon-button icon="developer-mode-tv" on-tap="{{ toggleCodeVisible }}" active="{{ codeVisible }}"></core-icon-button>
 	<core-icon-button icon="file-download" on-tap="{{ downloadXML }}"></core-icon-button>
+	<core-icon-button icon="file-upload" on-tap="{{ uploadXML }}"></core-icon-button>
 </core-toolbar>
 
 <div horizontal layout flex>
@@ -676,6 +686,68 @@ Polymer('octopus-editor', {
 	},
 	onTitleChanged: function (e) {
 		this.$.runtime.changeTitle(e.srcElement.value);
+	},
+	uploadXML: function (e) {
+		if (!this._modal) {
+			// Create an <input> element to select a file.
+			var modal = $('<div class="modal"><div class="modal-dialog"><div class="modal-content"></div></div></div>');
+			modal.appendTo(document.body);
+
+			modal.find('.modal-content')
+				.append($('<div class="modal-header"><h4 class="modal-title">Select blocks file to insert</h4></div>'))
+				.append($('<div class="modal-body"><input type="file"></div>'))
+				.append($('<div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary">Load</button></div>'));
+
+			this._modal = modal;
+			modal.modal();
+		} else {
+			modal = this._modal;
+			modal.modal('show');
+		}
+
+		function insertXMLFragmentBlock (text) {
+			var block, blockY, blockH, maxY = 0;
+			var workspace = Blockly.mainWorkspace;
+			var topBlocks = workspace.getTopBlocks();
+
+			for (var i = 0, m = topBlocks.length; i < m; i++) {
+				block = topBlocks[i];
+				blockY = block.getRelativeToSurfaceXY().y;
+				blockH = unwrap(block.svg_.svgGroup_).getBBox().height;
+				maxY = Math.max(maxY, blockY + blockH + 10);
+			}
+			try {
+				var dom = Blockly.Xml.textToDom(text);
+				$(dom).children('block').each(function () {
+					block = Blockly.Xml.domToBlock(workspace, this);
+					block.moveTo(0, maxY);
+
+					blockY = block.getRelativeToSurfaceXY().y;
+					blockH = unwrap(block.svg_.svgGroup_).getBBox().height;
+					maxY = Math.max(maxY, blockY + blockH + 10);
+				});
+			} catch (e) {
+				workspace.discardEmitTransaction();
+
+				alert('The uploaded file did not contain a valid block tree.')
+				console.log(e);
+			}
+		}
+
+		$('button.btn-primary', modal).one('click', function () {
+			file = $('input[type=file]', modal)[0].files[0];
+
+			if (file) {
+				var reader = new FileReader();
+				reader.onloadend = function (e) {
+					insertXMLFragmentBlock(e.target.result)
+					modal.modal('hide');
+				}
+				reader.readAsText(file);
+			} else {
+				modal.modal('hide');
+			}
+		});
 	},
 	downloadXML: function (e) {
 		var xmlDom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);

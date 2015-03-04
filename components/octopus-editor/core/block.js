@@ -545,6 +545,7 @@ Block.prototype.moveBy = function(dx, dy) {
   this.svg_.getRootElement().setAttribute('transform',
       'translate(' + (xy.x + dx) + ', ' + (xy.y + dy) + ')');
   this.moveConnections_(dx, dy);
+  this.workspaceEmit("block-set-position", { id: this.id, x: xy.x + dx, y: xy.y + dy });
 };
 
 /**
@@ -557,6 +558,7 @@ Block.prototype.moveTo = function(x, y) {
   this.svg_.getRootElement().setAttribute('transform',
       'translate(' + x + ', ' + y + ')');
   this.moveConnections_(x - xy.x, y - xy.y);
+  this.workspaceEmit("block-set-position", { id: this.id, x: x, y: y });
 };
 
 /**
