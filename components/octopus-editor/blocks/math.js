@@ -429,17 +429,9 @@ Blockly.Blocks['math_framed'] = {
          ['Average of', 'AVERAGE'],
          ['Change in', 'CHANGE']];
 
-    function validator (text) {
-      text = text.replace(/O/ig, '0');
-      // Strip out thousands separators.
-      text = text.replace(/,/g, '');
-      var n = Math.max(0, parseFloat(text || 0));
-      return isNaN(n) ? null : String(n);
-    }
-
     this.fieldNumber_ = new Blockly.FieldTextInput(
       '0',
-      validator
+      Blockly.FieldTextInput.nonnegativeNumberValidator
     );
 
     this.appendValueInput('INPUT')

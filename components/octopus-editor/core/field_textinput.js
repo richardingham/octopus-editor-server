@@ -258,24 +258,38 @@ FieldTextInput.prototype.widgetDispose_ = function() {
   };
 };
 
+function numberValidator(text, integer, nonnegative) {
+  // TODO: Handle cases like 'ten', '1.203,14', etc.
+  // 'O' is sometimes mistaken for '0' by inexperienced users.
+  text = text.replace(/O/ig, '0');
+  // Strip out thousands separators.
+  text = text.replace(/,/g, '');
+
+  var n = parseFloat(text);
+  if (isNaN(n)) return null;
+
+  if (nonnegative) {
+    n = Math.max(0, n);
+  }
+
+  if (integer) {
+    return String(Math.floor(n));
+  } else {
+    var s = String(n);
+    if (s.indexOf('.') === -1 && text.indexOf('.') !== -1 && parseInt(text || 0) === n) {
+      return s + '.0';
+    }
+    return s;
+  }
+}
+
 /**
  * Ensure that only a number may be entered.
  * @param {string} text The user's text.
  * @return {?string} A string representing a valid number, or null if invalid.
  */
 FieldTextInput.numberValidator = function(text) {
-  // TODO: Handle cases like 'ten', '1.203,14', etc.
-  // 'O' is sometimes mistaken for '0' by inexperienced users.
-  text = text.replace(/O/ig, '0');
-  // Strip out thousands separators.
-  text = text.replace(/,/g, '');
-  var n = parseFloat(text || 0);
-  if (isNaN(n)) return null;
-  var s = String(n);
-  if (s.indexOf('.') === -1 && text.indexOf('.') !== -1 && parseInt(text || 0) === n) {
-    return s + '.0';
-  }
-  return s;
+  return numberValidator(text);
 };
 
 /**
@@ -284,11 +298,7 @@ FieldTextInput.numberValidator = function(text) {
  * @return {?string} A string representing a valid number, or null if invalid.
  */
 FieldTextInput.integerValidator = function(text) {
-  // 'O' is sometimes mistaken for '0' by inexperienced users.
-  text = text.replace(/O/ig, '0');
-  // Strip out thousands separators.
-  text = text.replace(/,/g, '');
-  return String(parseInt(text || 0));
+  return numberValidator(text, true);
 };
 
 /**
@@ -297,11 +307,16 @@ FieldTextInput.integerValidator = function(text) {
  * @return {?string} A string representing a valid int, or null if invalid.
  */
 FieldTextInput.nonnegativeIntegerValidator = function(text) {
-  var n = FieldTextInput.integerValidator(text);
-  if (n) {
-    n = String(Math.max(0, Math.floor(n)));
-  }
-  return n;
+  return numberValidator(text, true, true);
+};
+
+/**
+ * Ensure that only a nonnegative number may be entered.
+ * @param {string} text The user's text.
+ * @return {?string} A string representing a valid int, or null if invalid.
+ */
+FieldTextInput.nonnegativeNumberValidator = function(text) {
+  return numberValidator(text, false, true);
 };
 
 return FieldTextInput;

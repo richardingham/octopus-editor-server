@@ -159,7 +159,7 @@ Blockly.Blocks['image_crop'] = {
    * @this Blockly.Block
    */
   init: function() {
-    var iv = Blockly.FieldTextInput.integerValidator;
+    var iv = Blockly.FieldTextInput.nonnegativeIntegerValidator;
     this.fieldX_ = new Blockly.FieldTextInput('0', iv);
     this.fieldY_ = new Blockly.FieldTextInput('0', iv);
     this.fieldH_ = new Blockly.FieldTextInput('0', iv);
