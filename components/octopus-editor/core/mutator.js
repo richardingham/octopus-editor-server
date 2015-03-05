@@ -71,7 +71,9 @@ var Mutator = function(quarkNames) {
   };
 
   this.onBlockMoved_ = function (e) {
-    thisObj.blockMoved_(e.id);
+    if (e.manual) {
+      thisObj.blockMoved_(e.id);
+    }
   }
 };
 util.inherits(Mutator, Blockly.Icon);

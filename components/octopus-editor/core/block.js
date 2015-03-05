@@ -343,7 +343,7 @@ Block.terminateDrag_ = function() {
       delete selected.draggedBubbles_;
       selected.setDragging_(false);
       selected.render();
-      selected.workspaceEmit("block-set-position", { id: selected.id, x: xy.x, y: xy.y });
+      selected.workspaceEmit("block-set-position", { id: selected.id, x: xy.x, y: xy.y, manual: true });
       window.setTimeout(
           selected.bumpNeighbours_.bind(selected), Blockly.BUMP_DELAY);
       // Fire an event to allow scrollbars to resize.
@@ -539,26 +539,38 @@ Block.prototype.getRelativeToSurfaceXY = function() {
  * Move a block by a relative offset.
  * @param {number} dx Horizontal offset.
  * @param {number} dy Vertical offset.
+ * @param {boolean} manual Should be true if the block was moved by the user.
  */
-Block.prototype.moveBy = function(dx, dy) {
+Block.prototype.moveBy = function(dx, dy, manual) {
   var xy = this.getRelativeToSurfaceXY();
   this.svg_.getRootElement().setAttribute('transform',
       'translate(' + (xy.x + dx) + ', ' + (xy.y + dy) + ')');
   this.moveConnections_(dx, dy);
-  this.workspaceEmit("block-set-position", { id: this.id, x: xy.x + dx, y: xy.y + dy });
+  this.workspaceEmit("block-set-position", {
+    id: this.id,
+    x: xy.x + dx,
+    y: xy.y + dy,
+    manual: !!manual
+  });
 };
 
 /**
  * Move a block to an absolute offset.
  * @param {number} dx Horizontal offset.
  * @param {number} dy Vertical offset.
+ * @param {boolean} manual Should be true if the block was moved by the user.
  */
-Block.prototype.moveTo = function(x, y) {
+Block.prototype.moveTo = function(x, y, manual) {
   var xy = this.getRelativeToSurfaceXY();
   this.svg_.getRootElement().setAttribute('transform',
       'translate(' + x + ', ' + y + ')');
   this.moveConnections_(x - xy.x, y - xy.y);
-  this.workspaceEmit("block-set-position", { id: this.id, x: x, y: y });
+  this.workspaceEmit("block-set-position", {
+    id: this.id,
+    x: x,
+    y: y,
+    manual: !!manual
+  });
 };
 
 /**
