@@ -96,7 +96,11 @@ class machine_declaration (Block):
 		return {}
 
 	def getGlobalDeclarationNames (self):
-		return [ self._varName() ]
+		name = self._varName()
+
+		return Block.getGlobalDeclarationNames(self,
+			[name] if not self.disabled else []
+		)
 
 
 class machine_vapourtec_R2R4 (machine_declaration):

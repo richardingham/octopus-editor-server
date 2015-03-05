@@ -343,19 +343,28 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		# Check for circular dependencies using a topological sorting algorithm
 		def findCircularDependencies (blocks, graph):
-			from copy import deepcopy
 
 			circularDeps = []
-			blocksWithNoDeps = deepcopy(blocks)
-			dependencyGraph = deepcopy(graph)
+
+			blocksWithNoDeps = [{
+				"block": block.id,
+				"position": block.position,
+				"decls": block.getGlobalDeclarationNames()
+			} for block in blocks]
+
+			dependencyGraph = [{
+				"block": item["block"].id,
+				"position": item["block"].position,
+				"deps": item["deps"],
+				"decls": item["block"].getGlobalDeclarationNames()
+			} for item in graph]
 
 			while len(blocksWithNoDeps) > 0:
 				block = blocksWithNoDeps.pop()
-				declaredInBlock = block.getGlobalDeclarationNames()
 				toRemove = []
 
 				for item in dependencyGraph:
-					for decl in declaredInBlock:
+					for decl in block["decls"]:
 						item["deps"].discard(decl)
 
 					if len(item["deps"]) is 0:
@@ -363,17 +372,14 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 				for item in toRemove:
 					dependencyGraph.remove(item)
-					blocksWithNoDeps.append(item["block"])
+					blocksWithNoDeps.append(item)
 
 			# Remove any blocks that just depend on one of the
 			# circularly-dependent blocks
 			toRemove = []
 			for item in dependencyGraph:
-				declaredInBlock = item["block"].getGlobalDeclarationNames()
-				if declaredInBlock == 0:
+				if len(item["decls"]) == 0:
 					toRemove.append(item)
-				else:
-					item["decls"] = declaredInBlock
 
 			for item in toRemove:
 				dependencyGraph.remove(item)
@@ -389,7 +395,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			)
 
 			for item in sorted(
-				circularDeps, key = lambda item: item["block"].position
+				circularDeps, key = lambda item: item["position"]
 			):
 				self.emit(
 					"log-message",
@@ -398,7 +404,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 						', '.join(item["decls"]),
 						', '.join(item["deps"])
 					),
-					block = item["block"].id
+					block = item["block"]
 				)
 
 			dependencyError = True
@@ -869,23 +875,23 @@ class Block (BaseStep, EventEmitter):
 		self.emit('connectivity-changed')
 		self.workspace.emit('top-block-added', block = childBlock)
 
-	def getReferencedVariables (self):
-		variables = []
+	def getReferencedVariables (self, variables = None):
+		variables = variables or []
 
 		for block in self.getChildren():
 			variables.extend(block.getReferencedVariables())
 
 		return variables
 
-	def getReferencedVariableNames (self):
-		variables = []
+	def getReferencedVariableNames (self, variables = None):
+		variables = variables or []
 
 		for block in self.getChildren():
 			variables.extend(block.getReferencedVariableNames())
 
 		return variables
 
-	def getGlobalDeclarationNames (self):
+	def getGlobalDeclarationNames (self, variables = None):
 		""" Returns a list of global variable names
 		that are declared within this block.
 
@@ -894,21 +900,21 @@ class Block (BaseStep, EventEmitter):
 		circular dependency.
 		"""
 
-		variables = []
+		variables = variables or []
 
 		for block in self.getChildren():
 			variables.extend(block.getGlobalDeclarationNames())
 
 		return variables
 
-	def getUnmatchedVariableNames (self):
+	def getUnmatchedVariableNames (self, variables = None):
 		""" Find variables that must be defined in a higher scope.
 
 		Returns a list of referenced variables that
 		are not defined within their scope (i.e. must be
 		defined globally."""
 
-		variables = []
+		variables = variables or []
 
 		for block in self.getChildren():
 			variables.extend(block.getUnmatchedVariableNames())

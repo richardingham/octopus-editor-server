@@ -118,15 +118,14 @@ class global_declaration (Block):
 		self.workspace.variables.remove(self._varName())
 
 	def getGlobalDeclarationNames (self):
-		variables = [ self._varName() ]
+		name = self._varName()
 
-		for block in self.getChildren():
-			variables.extend(block.getGlobalDeclarationNames())
+		return Block.getGlobalDeclarationNames(self,
+			[name] if not self.disabled else []
+		)
 
-		return variables
 
-
-class lexical_variable (object):
+class lexical_variable (Block):
 	def _getVariable (self):
 		try:
 			name, attr = variableName(self.fields['VAR'])
@@ -146,28 +145,21 @@ class lexical_variable (object):
 	def getReferencedVariables (self):
 		variable = self._getVariable()
 
-		if variable is not None:
-			variables = [ variable ]
-		else:
-			variables = []
-
-		for block in self.getChildren():
-			variables.extend(block.getReferencedVariables())
-
-		return variables
+		return Block.getReferencedVariables(self,
+			[variable] if not self.disabled and variable is not None else []
+		)
 
 	def getReferencedVariableNames (self):
 		name, attr = variableName(self.fields['VAR'])
-		variables = [ name ]
 
-		for block in self.getChildren():
-			variables.extend(block.getReferencedVariableNames())
-
-		return variables
+		return Block.getReferencedVariableNames(self,
+			[name] if not self.disabled else []
+		)
 
 	getUnmatchedVariableNames = getReferencedVariableNames
 
-class lexical_variable_set (lexical_variable, Block):
+
+class lexical_variable_set (lexical_variable):
 	@defer.inlineCallbacks
 	def _run (self):
 		result = yield self.getInputValue("VALUE")
@@ -189,7 +181,7 @@ class lexical_variable_set (lexical_variable, Block):
 			self.emitLogMessage(str(error), "error")
 
 
-class lexical_variable_get (lexical_variable, Block):
+class lexical_variable_get (lexical_variable):
 	def eval (self):
 		try:
 			variable = self._getVariable()
@@ -204,7 +196,7 @@ class lexical_variable_get (lexical_variable, Block):
 			return defer.succeed(None)
 
 
-class math_change (lexical_variable_set, Block):
+class math_change (lexical_variable_set):
 	def _run (self):
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1
 		variable = self._getVariable()
