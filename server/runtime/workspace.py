@@ -188,8 +188,6 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			runningBlocks.discard(block)
 			decls = block.getGlobalDeclarationNames()
 
-			print "Satisfied dependencies: " + str(decls)
-
 			# Check if any other blocks can be run
 			toRun = []
 			for item in dependencyGraph:
@@ -203,9 +201,8 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			# so that the dependency graph is updated before any new blocks run.
 			for item in toRun:
 				dependencyGraph.remove(item)
+				item["block"].off("connectivity-change", item["onConnectivityChange"])
 				_runBlock(item["block"])
-
-			log.msg("Block %s completed, now running %s" % (block.id, [i["block"].id for i in toRun]))
 
 			# Check if the experiment can be finished
 			reactor.callLater(0, _checkFinished)
@@ -239,9 +236,25 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		# Allow access to called within scope of _blockError
 		_blockError.called = False
 
-		def _updateDependencyGraph (data = None):
+		def _updateDependencyGraph (data = None, block = None):
+			toRemove = []
+
 			for item in dependencyGraph:
+				if block is not None and item['block'] is not block:
+					continue
+
+				# If a block is no longer a top block, remove it
+				# from the dependency graph
+				if item['block'].prevBlock is not None:
+					toRemove.append(item)
+					continue
+
+				# Update dependency list
 				item['deps'] = set(item['block'].getUnmatchedVariableNames())
+
+			for item in toRemove:
+				item['block'].off('connectivity-change', item['onConnectivityChange'])
+				dependencyGraph.remove(item)
 
 		# When a new top block is added, add it to the list of blocks that must
 		# complete before the run can be finished; or to the list of blocks that
@@ -249,7 +262,6 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		@self.on('top-block-added')
 		def onTopBlockAdded (data):
 			block = data['block']
-			print "Block #%s added to top blocks (%s)" % (block.id, block._complete)
 
 			if block._complete is not None and block._complete.called is False:
 				if block.externalStop:
@@ -288,6 +300,9 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			self.off('top-block-added', onTopBlockAdded)
 			self.off('top-block-removed', _updateDependencyGraph)
 
+			for item in dependencyGraph:
+				item['block'].off('connectivity-change', item['onConnectivityChange'])
+
 		# Cancel all blocks which must be stopped externally.
 		def _externalStop ():
 			for block in externalStopBlocks:
@@ -304,6 +319,12 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		# Create a list of all global variables defined in the workspace
 		for block in self.topBlocks.itervalues():
 			allDeclaredGlobalVariables.update(block.getGlobalDeclarationNames())
+
+		def _generateOnConnectivityChange (block):
+			def onConnectivityChange (data):
+				_updateDependencyGraph(block = block)
+
+			return onConnectivityChange
 
 		# Defer blocks with dependencies until these have been met.
 		for block in self.topBlocks.itervalues():
@@ -326,9 +347,14 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 			else:
 				log.msg("Block %s waiting for %s" % (block.id, deps))
+
+				onConnectivityChange = _generateOnConnectivityChange(block)
+				block.on("connectivity-change", onConnectivityChange)
+
 				dependencyGraph.append({
 					"block": block,
-					"deps": deps
+					"deps": deps,
+					"onConnectivityChange": onConnectivityChange
 				})
 
 		# If there are no blocks that have no dependencies, then
@@ -343,27 +369,13 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 		# Check for circular dependencies using a topological sorting algorithm
 		def findCircularDependencies (blocks, graph):
-
 			circularDeps = []
 
-			blocksWithNoDeps = [{
-				"block": block.id,
-				"position": block.position,
-				"decls": block.getGlobalDeclarationNames()
-			} for block in blocks]
-
-			dependencyGraph = [{
-				"block": item["block"].id,
-				"position": item["block"].position,
-				"deps": item["deps"],
-				"decls": item["block"].getGlobalDeclarationNames()
-			} for item in graph]
-
-			while len(blocksWithNoDeps) > 0:
-				block = blocksWithNoDeps.pop()
+			while len(blocks) > 0:
+				block = blocks.pop()
 				toRemove = []
 
-				for item in dependencyGraph:
+				for item in graph:
 					for decl in block["decls"]:
 						item["deps"].discard(decl)
 
@@ -371,22 +383,35 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 						toRemove.append(item)
 
 				for item in toRemove:
-					dependencyGraph.remove(item)
-					blocksWithNoDeps.append(item)
+					graph.remove(item)
+					blocks.append(item)
 
 			# Remove any blocks that just depend on one of the
 			# circularly-dependent blocks
 			toRemove = []
-			for item in dependencyGraph:
+			for item in graph:
 				if len(item["decls"]) == 0:
 					toRemove.append(item)
 
 			for item in toRemove:
-				dependencyGraph.remove(item)
+				graph.remove(item)
 
-			return dependencyGraph
+			return graph
 
-		circularDeps = findCircularDependencies(blocksToRunImmediately, dependencyGraph)
+		circularDeps = findCircularDependencies(
+			blocks = [{
+				"block": block.id,
+				"position": block.position,
+				"decls": block.getGlobalDeclarationNames()
+			} for block in blocksToRunImmediately],
+			graph = [{
+				"block": item["block"].id,
+				"position": item["block"].position,
+				"deps": item["deps"].copy(),
+				"decls": item["block"].getGlobalDeclarationNames()
+			} for item in dependencyGraph]
+		)
+
 		if len(circularDeps) > 0:
 			self.emit(
 				"log-message",

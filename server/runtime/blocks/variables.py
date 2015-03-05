@@ -92,6 +92,9 @@ class global_declaration (Block):
 				resultType = self.getInput('VALUE').outputType
 			except (KeyError, AttributeError):
 				raise Exception("Global declared value cannot be None")
+
+			if resultType is None:
+				raise Exception("Global declared value cannot be None")
 		else:
 			resultType = type(result)
 
