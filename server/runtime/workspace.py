@@ -657,6 +657,27 @@ class Block (BaseStep, EventEmitter):
 		self._state = value
 		self.workspace.emit("block-state", block = self.id, state = value.name)
 
+	@property
+	def disabled (self):
+		try:
+			return self._disabled
+		except AttributeError:
+			return False
+
+	@disabled.setter
+	def disabled (self, disabled):
+		self._disabled = bool(disabled)
+
+		try:
+			if disabled:
+				self.cancel(propagate = False)
+			else:
+				self.reset(propagate = False)
+		except (NotRunning, AlreadyRunning):
+			pass
+
+		self.emit("connectivity-changed")
+
 	def __init__ (self, workspace, id):
 		self.workspace = workspace
 		self.id = id
@@ -1314,15 +1335,7 @@ class SetBlockDisabled (Event):
 
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
-		block.disabled = bool(self.values['value'])
-
-		try:
-			if block.disabled:
-				block.cancel(propagate = False)
-			else:
-				block.reset(propagate = False)
-		except (NotRunning, AlreadyRunning):
-			pass
+		block.disabled = self.values['value']
 
 class SetBlockCollapsed (Event):
 	_fields = ("id", "value")
