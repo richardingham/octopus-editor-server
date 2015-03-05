@@ -329,13 +329,11 @@ class math_throttle (Block):
 			# Don't return a value until there is at least
 			# one frame length worth of data
 			if (time - self._x[0]) < frameLength:
-				print "Insufficient data to fill frame"
 				framedValue = self._prevValue
 
 			else:
 				framedValue = float(op(self._x, self._y))
 				self._prevValue = framedValue
-				print "Framed val calculated as %s" % framedValue
 
 				# Truncate
 				self._x = []
