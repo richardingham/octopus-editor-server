@@ -1103,17 +1103,21 @@ class Block (BaseStep, EventEmitter):
 	def _cancel (self, abort = False):
 		pass
 
-	def reset (self):
+	def reset (self, propagate = True):
 		# Entire stack must not be RUNNING or PAUSED
-		if anyOfStackIs(self, (State.RUNNING, State.PAUSED)):
+		if (not propagate and self.state in (State.RUNNING, State.PAUSED)) \
+		or (propagate and anyOfStackIs(self, (State.RUNNING, State.PAUSED))):
 			raise AlreadyRunning
 
+		results = []
+
+		# Reset this block and inputs
 		if self.state is not State.READY:
 			self.state = State.READY
 			self._onResume = None
 
-			results = [defer.maybeDeferred(self._reset)]
-			for block in self.getChildren():
+			results.append(defer.maybeDeferred(self._reset))
+			for block in self.inputs.itervalues():
 				try:
 					results.append(block.reset())
 				except AlreadyRunning:
@@ -1122,14 +1126,11 @@ class Block (BaseStep, EventEmitter):
 					# Try to cancel the child.
 					results.append(block.cancel(propagate = True).addCallback(lambda _: block.reset))
 
-			return defer.DeferredList(results)
+		# Reset next block if propagating
+		if propagate and self.nextBlock is not None:
+			results.append(self.nextBlock.reset())
 
-		elif self.nextBlock is not None:
-			return self.nextBlock.reset()
-
-		# Bottom of stack, nothing needed to be reset.
-		else:
-			return defer.succeed(None)
+		return defer.DeferredList(results)
 
 	#
 	# Serialise
@@ -1283,6 +1284,14 @@ class SetBlockDisabled (Event):
 	def apply (self, workspace):
 		block = workspace.getBlock(self.values['id'])
 		block.disabled = bool(self.values['value'])
+
+		try:
+			if block.disabled:
+				block.cancel(propagate = False)
+			else:
+				block.reset(propagate = False)
+		except (NotRunning, AlreadyRunning):
+			pass
 
 class SetBlockCollapsed (Event):
 	_fields = ("id", "value")
