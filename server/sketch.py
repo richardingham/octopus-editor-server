@@ -10,6 +10,9 @@ from twisted.internet import defer, threads
 from twisted.python import log
 from twisted.python.filepath import FilePath
 
+# Octopus Imports
+from octopus.sequence.error import NotRunning
+
 # Package Imports
 from util import EventEmitter
 from runtime.workspace import Workspace, Aborted, Cancelled
@@ -318,6 +321,17 @@ class Sketch (EventEmitter):
 		eid = self._writeEvent(event.type, event.values)
 
 		self.notifySubscribers(event.jsProtocol, event.jsTopic, event.valuesWithEventId(eid), context)
+
+	def runtimeCancelBlock (self, id):
+		try:
+			block = self.workspace.getBlock(id)
+		except KeyError:
+			return
+
+		try:
+			block.cancel()
+		except NotRunning:
+			pass
 
 	def _writeEvent (self, eventType, data):
 		if not self.loaded:

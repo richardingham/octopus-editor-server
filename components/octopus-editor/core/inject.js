@@ -254,11 +254,11 @@ Blockly.createDom_ = function(container) {
 
   // Pass through block events
   [
-    "created", "disposed", "connected", "disconnected", "set-position", 
+    "created", "disposed", "connected", "disconnected", "set-position",
     "set-disabled", "set-deletable", "set-editable", "set-movable",
     "set-help-url", "set-colour", "set-comment", "set-collapsed",
     "set-field-value", "set-inputs-inline", "add-input", "remove-input",
-    "set-mutation", "transaction"
+    "set-mutation", "transaction", "cancel"
   ].forEach(function (e) {
     Blockly.mainWorkspace.on("block-" + e, function (data) {
       Blockly.emit("block-" + e, data);

@@ -12,6 +12,10 @@ class BlockProtocol (object):
 			if topic == 'transaction':
 				for event in payload['events']:
 					self.receive(event['event'], event['data'], sketch, context)
+				return
+
+			if topic == 'cancel':
+				return sketch.runtimeCancelBlock(payload['id'])
 
 			# Block commands
 			try:

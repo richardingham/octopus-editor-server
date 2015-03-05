@@ -726,6 +726,16 @@ Block.prototype.duplicate_ = function() {
 };
 
 /**
+ * Send a cancel message to the server for this block.
+ * @private
+ */
+Block.prototype.sendCancelMessage_ = function() {
+  if (this.runningState_ === "running" || this.runningState_ === "paused") {
+    this.workspaceEmit("block-cancel", { id: this.id });
+  }
+};
+
+/**
  * Show the context menu for this block.
  * @param {!Event} e Mouse event.
  * @private
@@ -737,6 +747,17 @@ Block.prototype.showContextMenu_ = function(e) {
   // Save the current block in a variable for use in closures.
   var block = this;
   var options = [];
+
+  if (this.runningState_ === "running" || this.runningState_ === "paused") {
+    var cancelOption = {
+      text: 'Cancel', // Blockly.Msg.CANCEL_BLOCK,
+      enabled: true,
+      callback: function() {
+        block.sendCancelMessage_();
+      }
+    };
+    options.push(cancelOption);
+  }
 
   if (this.isDeletable() && this.isMovable() && !block.isInFlyout) {
     // Option to duplicate this block.
