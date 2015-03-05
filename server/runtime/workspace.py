@@ -1077,7 +1077,7 @@ class Block (BaseStep, EventEmitter):
 			for block in self.inputs.itervalues():
 				# Cancel all input children
 				try:
-					results.append(block.cancel(abort, propagate))
+					results.append(block.cancel(abort, propagate = True))
 				except (AttributeError, NotRunning):
 					pass
 			return defer.DeferredList(results)
