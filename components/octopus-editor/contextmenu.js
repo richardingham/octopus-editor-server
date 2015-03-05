@@ -5,7 +5,7 @@
 
   /* CONTEXTMENU CLASS DEFINITION
    * ============================ */
-  
+
   /*
   items = [{text: 'Make It So',
    value: val,
@@ -14,7 +14,7 @@
    selected: true,
    [children: [...]]
   }]
-  
+
   callback receives value if set, or text if not.
   callback is not called if item callback is set.
   */
@@ -22,7 +22,7 @@
     this.$menu = generate(items, options);
     this.callback = callback;
   };
-  
+
   var menuContainerSelector = "#menu-container";
   //var menuContainerSelector = '.blocklyWidgetDiv';
 
@@ -66,33 +66,28 @@
 
     constructor: ContextMenu
     ,showAtEvent: function (e) {
-      var point = {x: e.clientX, y: e.clientY}, 
-      size = {width: 0, height: 0},
-      tp = this.getPosition(point, size, this.$menu);
-      this.show(tp);
+      this.show({x: e.clientX, y: e.clientY}, {width: 0, height: 0});
       e.preventDefault();
     }
-    
+
     ,showForBox: function (point, size) {
-      var tp = this.getPosition(point, size, this.$menu);
-      this.show(tp);
+      this.show(point, size);
     }
-    
-    ,show: function(tp) {
+
+    ,show: function(point, size) {
 
       var $menu = this.$menu
         , evt
         , items = 'li:not(.divider)'
         , relatedTarget = { relatedTarget: this };
-        
+
       $(menuContainerSelector).empty().append($menu);
-      //$(menuContainerSelector).css(tp);
 
       $menu.trigger(evt = $.Event('show.bs.context', relatedTarget));
       $menu.find('.dropdown-submenu-positioned').removeClass('dropdown-submenu-positioned');
 
       $menu.attr('style', '')
-        .css(tp)
+        .css(this.getPosition(point, size, $menu))
         .addClass('open')
         .on('click.context.data-api', items, $.proxy(this.onItem, this))
         .on('mouseover.context.data-api', items, $.proxy(this.layoutSubmenu, this))
@@ -110,7 +105,7 @@
 
       return false;
     }
-    
+
     ,layoutSubmenu: function (e) {
       var parent = $(e.currentTarget);
       if (!parent.is('.dropdown-submenu') || parent.is('.dropdown-submenu-positioned')) {
