@@ -442,3 +442,12 @@ Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
     { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
   ]
 });
+
+Blockly.Blocks['machine_mt_sics_balance'] = extend(machineBlock, {
+  machineTitle: "MT Balance (SICS)",
+	machineDefaultName: "balance",
+  machineVars: [
+    { name: "status", title: "Status", type: "String", readonly: true },
+    { name: "weight", title: "Weight", type: "Number", readonly: true }
+  ]
+});

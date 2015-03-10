@@ -193,6 +193,12 @@ class machine_harvard_phd2000 (machine_declaration):
 			return {}
 
 
+class machine_mt_sics_balance (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import mt
+		return mt.SICSBalance
+
+
 class connection_tcp (Block):
 	def eval (self):
 		return defer.succeed(octopus.transport.basic.tcp(

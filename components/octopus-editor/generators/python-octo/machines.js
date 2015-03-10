@@ -39,3 +39,4 @@ Blockly.PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.imag
 Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('octopus.image', 'provider', 'ImageProvider');
 Blockly.PythonOcto['machine_omega_hh306a'] = machineBlockGenerator('octopus.manufacturer', 'omega', 'HH306A');
 Blockly.PythonOcto['machine_harvard_phd2000'] = machineBlockGenerator('octopus.manufacturer', 'harvard', 'PHD2000');
+Blockly.PythonOcto['machine_mt_sics_balance'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'SICSBalance');
