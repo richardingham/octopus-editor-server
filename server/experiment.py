@@ -456,7 +456,7 @@ class CompletedExperiment (object):
 		# Convert the columns into a single DataFrame
 		# Ensure there is a datapoint at each time point
 		dataframe = pd.concat(cols, axis = 1)
-		dataframe.apply(pd.Series.interpolate)
+		dataframe = dataframe.apply(pd.Series.interpolate)
 
 		# Generate excel file
 		dataframe.to_excel(writer, sheet_name = self.title[0:30])
