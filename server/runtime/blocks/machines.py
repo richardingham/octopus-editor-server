@@ -181,7 +181,7 @@ class machine_omega_hh306a (machine_declaration):
 class machine_harvard_phd2000 (machine_declaration):
 	def getMachineClass (self):
 		from octopus.manufacturer import harvard
-		return harvard.PHD2000
+		return harvard.PHD2000Infuser
 
 	def getMachineParams (self):
 		import json
