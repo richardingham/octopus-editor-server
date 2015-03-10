@@ -102,7 +102,7 @@ var _ARROW_CHAR = /*goog.userAgent.ANDROID ? ' \u25B6 ' :*/ ' \u25B8 ';
 
 var machineBlock = {
   init: function() {
-    var default_name = "reactor";
+    var default_name = this.machineDefaultName || "reactor";
     var thisBlock = this;
 
     //this.setHelpUrl('http://www.example.com/');
@@ -344,28 +344,33 @@ Blockly.Blocks['machine_vapourtec_R2R4'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_knauer_K120'] = extend(machineBlock, {
   machineTitle: "Knauer K120",
+	machineDefaultName: "pump",
   machineVars: _K120_vars,
 });
 
 Blockly.Blocks['machine_knauer_S100'] = extend(machineBlock, {
   machineTitle: "Knauer S100",
+	machineDefaultName: "pump",
   machineVars: _S100_vars,
 });
 
 Blockly.Blocks['machine_vici_multivalve'] = extend(machineBlock, {
   machineTitle: "VICI multi-position valve",
+	machineDefaultName: "valve",
   machineVars: _MultiValve_vars,
   machineOptions: _MultiValve_options,
 });
 
 Blockly.Blocks['machine_mt_icir'] = extend(machineBlock, {
   machineTitle: "MT FlowIR",
+	machineDefaultName: "ir",
   machineVars: _iCIR_vars,
   machineOptions: _iCIR_options,
 });
 
 Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
   machineTitle: "WPI Aladdin syringe pump",
+	machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
     { name: "rate", title: "Flow rate", type: "Number" },
@@ -380,6 +385,7 @@ Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
   machineTitle: "Phidgets pH Sensor",
+	machineDefaultName: "phsensor",
   machineVars: [
     { name: "ph", title: "pH Reading", type: "Number", readonly: true },
     { name: "temperature", title: "Temperature", type: "Number" }
@@ -392,6 +398,7 @@ Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
   machineTitle: "Image Provider",
+	machineDefaultName: "camera",
   machineVars: [
     { name: "image", title: "Image", type: "Image", readonly: true }
   ],
@@ -400,12 +407,14 @@ Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_singletracker'] = extend(machineBlock, {
   machineTitle: "Single Tracker",
+	machineDefaultName: "tracker",
   machineVars: _SingleTracker_vars,
   machineConnectionType: "CameraConnection"
 });
 
 Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
   machineTitle: "Multi Tracker",
+	machineDefaultName: "tracker",
   machineVars: _MultiTracker_vars,
   machineOptions: _MultiTracker_options,
   machineConnectionType: "CameraConnection"
@@ -413,6 +422,7 @@ Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
   machineTitle: "Omega HH306A",
+	machineDefaultName: "thermocouple",
   machineVars: [
     { name: "temp1", title: "Temperature 1", type: "Number", readonly: true },
     { name: "temp2", title: "Temperature 2", type: "Number", readonly: true }
@@ -421,6 +431,7 @@ Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
   machineTitle: "Harvard PHD2000 infuse-only syringe pump",
+	machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
     { name: "rate", title: "Flow rate", type: "Number" },
