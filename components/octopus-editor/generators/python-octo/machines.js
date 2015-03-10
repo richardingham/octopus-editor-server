@@ -36,6 +36,6 @@ Blockly.PythonOcto['machine_wpi_aladdin'] = machineBlockGenerator('octopus.manuf
 Blockly.PythonOcto['machine_phidgets_phsensor'] = machineBlockGenerator('octopus.manufacturer', 'phidgets', 'PHSensor');
 Blockly.PythonOcto['machine_singletracker'] = machineBlockGenerator('octopus.image', 'tracker', 'SingleBlobTracker');
 Blockly.PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.image', 'tracker', 'MultiBlobTracker');
-Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('_fixme_', 'image', 'ImageProvider');
+Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('octopus.image', 'provider', 'ImageProvider');
 Blockly.PythonOcto['machine_omega_hh306a'] = machineBlockGenerator('octopus.manufacturer', 'omega', 'HH306A');
 Blockly.PythonOcto['machine_harvard_phd2000'] = machineBlockGenerator('octopus.manufacturer', 'harvard', 'PHD2000');
