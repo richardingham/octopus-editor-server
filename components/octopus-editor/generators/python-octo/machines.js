@@ -14,7 +14,7 @@ function machineBlockGenerator (smod, mod, cls) {
         if (opt.multi) {
           attributes.push(opt.name + ' = ' + JSON.stringify(block.mutation[opt.name] || []));
         } else {
-          attributes.push(opt.name + ' = ' + block.mutation[opt.name] || (opt.type === "Number" ? 0 : '""'));
+          attributes.push(opt.name + ' = ' + (block.mutation[opt.name] || (opt.type === "Number" ? 0 : '""')));
         }
       }
     }
