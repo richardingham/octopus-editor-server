@@ -418,3 +418,16 @@ Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
     { name: "temp2", title: "Temperature 2", type: "Number", readonly: true }
   ]
 });
+
+Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
+  machineTitle: "Harvard PHD2000 infuse-only syringe pump",
+  machineVars: [
+    { name: "status", title: "Status", type: "String", readonly: true },
+    { name: "rate", title: "Flow rate", type: "Number" },
+    { name: "dispensed", title: "Dispensed volume", type: "Number", readonly: true },
+    { name: "target_volume", title: "Target volume", type: "Number" }
+  ],
+  machineOptions: [
+    { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
+  ]
+});
