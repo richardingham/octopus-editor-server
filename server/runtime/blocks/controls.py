@@ -378,7 +378,15 @@ class controls_maketime (Block):
 class controls_whileUntil (Block):
 	@defer.inlineCallbacks
 	def _run (self):
+		self.iterations = 0
+
 		while True:
+			if self.state is State.PAUSED:
+				self._onResume = self._run
+				return
+			elif self.state is not State.RUNNING:
+				return
+
 			condition = yield self.getInputValue('BOOL', False)
 			if self.fields['MODE'] == "UNTIL":
 				condition = (condition == False)
@@ -395,20 +403,27 @@ class controls_whileUntil (Block):
 			else:
 				break
 
+			self.iterations += 1
 
 class controls_repeat_ext (Block):
 	@defer.inlineCallbacks
 	def _run (self):
-		index = 0
+		self.iterations = 0
 
 		while True:
+			if self.state is State.PAUSED:
+				self._onResume = self._run
+				return
+			elif self.state is not State.RUNNING:
+				return
+
 			# Recalculate count on each iteration.
 			# I imagine this is expected if a simple number block is used,
 			# but if variables are involved it may turn out to lead to
 			# unexpected behaviour!
 			count = yield self.getInputValue('TIMES', None)
 
-			if count is None or index >= count:
+			if count is None or self.iterations >= count:
 				break
 
 			try:
@@ -418,4 +433,4 @@ class controls_repeat_ext (Block):
 			except (Disconnected, Cancelled, AttributeError):
 				pass
 
-			index += 1
+			self.iterations += 1
