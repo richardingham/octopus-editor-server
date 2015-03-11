@@ -319,7 +319,7 @@ class controls_wait_until (Block):
 			if self.state is State.PAUSED:
 				self._onResume = runTest
 				return
-			elif self.state in (State.CANCELLED, State.ERROR):
+			elif self.state is not State.RUNNING:
 				removeListeners()
 				complete.callback(None)
 				defer.returnValue(None)
