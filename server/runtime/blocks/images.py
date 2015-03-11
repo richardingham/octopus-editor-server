@@ -31,7 +31,8 @@ class _image_block (Block):
 
 			return self._calculate(result)
 
-		self._complete = self.getInputValue('INPUT').addCallback(calculate)
+		self._complete = self.getInputValue('INPUT', None)
+		self._complete.addCallback(calculate)
 		return self._complete
 
 
@@ -43,6 +44,9 @@ class image_findcolour (_image_block):
 	}
 
 	def _calculate (self, result):
+		if result is None:
+			return None
+
 		op = self._map[self.fields['OP']]
 		return op(*result.splitChannels())
 
@@ -78,7 +82,7 @@ class image_colourdistance (Block):
 			return self._calculate(input, colour)
 
 		self._complete = defer.gatherResults([
-			self.getInputValue('INPUT'),
+			self.getInputValue('INPUT', None),
 			self.getInputValue('COLOUR', (0, 0, 0))
 		]).addCallback(calculate)
 
@@ -96,6 +100,9 @@ class image_crop (_image_block):
 		y = int(self.fields['Y'])
 		w = int(self.fields['W'])
 		h = int(self.fields['H'])
+
+		if result is None:
+			return None
 
 		return result.crop(x, y, w, h)
 
@@ -131,12 +138,10 @@ class image_tonumber (_image_block):
 	}
 
 	def _calculate (self, result):
-		blobs = result.findBlobs(100) # min_size
-
-		if blobs is not None:
+		try:
+			blobs = result.findBlobs(100) # min_size
 			blob = blobs.sortArea()[-1]
-
-		else:
+		except AttributeError:
 			return None
 
 		op = self._map[self.fields['OP']]
