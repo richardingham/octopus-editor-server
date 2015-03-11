@@ -266,3 +266,19 @@ Blockly.Blocks['controls_statemonitor'] = {
     withMutation.call(this, this.mutationConfig);
   }
 };
+
+
+Blockly.Blocks['controls_dependent_stack'] = {
+  /**
+   * Block for dependent stack control
+   * @this Blockly.Block
+   */
+  init: function() {
+    //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENT_STACK_HELPURL);
+    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.appendDummyInput()
+        .appendField("run stack:");
+    this.appendStatementInput('STACK');
+    this.setOutput(true, 'Control');
+  }
+};

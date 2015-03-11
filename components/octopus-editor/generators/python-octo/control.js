@@ -150,3 +150,8 @@ Blockly.PythonOcto['controls_statemonitor'] = function(block) {
     '\n)';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
+
+Blockly.PythonOcto['controls_dependent_stack'] = function(block) {
+  var code = Blockly.PythonOcto.statementToCode(block, 'STACK') || 'sequence()';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};

@@ -232,3 +232,19 @@ class controls_statemonitor (Block):
 	def _cancel (self, abort = False):
 		self.removeListeners()
 		self._run_complete.callback(None)
+
+
+class controls_dependent_stack (Block):
+
+	externalStop = True
+
+	def _run (self):
+		self._run_complete = defer.Deferred()
+
+		self.getInput('STACK').reset()
+		self.getInput('STACK').run()
+
+		return self._run_complete
+
+	def _cancel (self, abort = False):
+		self._run_complete.callback(None)
