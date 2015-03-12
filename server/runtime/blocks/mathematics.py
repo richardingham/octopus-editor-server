@@ -17,7 +17,7 @@ import numpy
 class math_number (Block):
 	def eval (self):
 		number = float(self.fields['NUM'])
-		if number % 1 == 0:
+		if '.' not in str(self.fields['NUM']):
 			number = int(number)
 
 		return defer.succeed(number)
