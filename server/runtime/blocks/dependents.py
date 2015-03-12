@@ -241,8 +241,11 @@ class controls_dependent_stack (Block):
 	def _run (self):
 		self._run_complete = defer.Deferred()
 
-		self.getInput('STACK').reset()
-		self.getInput('STACK').run()
+		try:
+			self.getInput('STACK').reset()
+			self.getInput('STACK').run()
+		except (KeyError, AttributeError, AlreadyRunning):
+			return
 
 		return self._run_complete
 
