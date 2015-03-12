@@ -8,6 +8,7 @@ $(function ($) {
   $('#variables-list').DataTable({
     order: [[1, 'asc']],
     paging: false,
+    autoWidth: false,
     columns: [
       { visible: false, orderable: false },
       null,
@@ -16,10 +17,12 @@ $(function ($) {
     ]
   });
 
+  var dt = $('#variables-list').DataTable();
   $('<button class="btn btn-default">Clear</button>')
     .appendTo('#variables-list_filter')
     .on('click', function () {
-      $('#variables-list_filter input').val('');
+      dt.search('');
+      dt.draw();
       return false;
     });
   $('<button class="btn btn-default">Select filtered</button>')
