@@ -172,7 +172,6 @@ class controls_statemonitor (Block):
 				if self.cancel_on_trigger:
 					self.getInput('RESET').cancel(propagate = True)
 			except (KeyError, AttributeError, NotRunning) as e:
-				print e.__class__.__name__
 				pass
 
 			# Run trigger_step
