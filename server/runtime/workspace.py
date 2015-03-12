@@ -1177,6 +1177,8 @@ class Block (BaseStep, EventEmitter):
 					# should reflect those of its (input) children.
 					# Try to cancel the child.
 					results.append(block.cancel(propagate = True).addCallback(lambda _: block.reset))
+				except AttributeError:
+					pass
 
 		# Reset next block if propagating
 		if propagate and self.nextBlock is not None:
