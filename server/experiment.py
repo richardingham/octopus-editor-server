@@ -419,23 +419,9 @@ class CompletedExperiment (object):
 		writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
 		writer.book.filename = io
 
-		def format_time (x):
-			if x is not "":
-				return round(float(x) / time_divisor, time_dp)
-
-		def getColumn (file, title):
-			data = pd.read_csv(
-				experimentDir.child(file).path,
-				comment = '#',
-				index_col = 0,
-				usecols = [0, 1],
-				converters = {0: format_time},
-				names = ["Time", title]
-			)
-			return data.groupby(data.index).first()
-
-		# Readable variable names
 		def varName (variable):
+			""" Generates a column title from a variable name """
+
 			if variable["unit"] != '':
 				unit = ' (' + variable["unit"] + ')'
 			else:
@@ -451,9 +437,12 @@ class CompletedExperiment (object):
 		# Read data for each requested variable
 		cols = yield defer.gatherResults(map(
 			lambda variable: threads.deferToThread(
-				getColumn,
-				variable["file"],
-				varName(variable)
+				pd.read_csv,
+				experimentDir.child(variable["file"]).path,
+				comment = '#',
+				index_col = 0,
+				usecols = [0, 1],
+				names = ["Time", varName(variable)]
 			),
 			map(lambda name: storedVariablesData[name], variables)
 		))
@@ -461,8 +450,18 @@ class CompletedExperiment (object):
 		# Convert the columns into a single DataFrame
 		dataframe = pd.concat(cols, axis = 1)
 
-		# Ensure there is a datapoint at each time point
-		dataframe = dataframe.apply(pd.Series.interpolate)
+		# Ensure there is a datapoint at each time point. Fill rather than
+		# interpolate to maintain greatest data fidelity.
+		dataframe.fillna(method = 'pad', inplace = True)
+
+		# Reduce the number of datapoints according to time_divisor / time_dp
+		# This is done over the entire dataframe, after filling empty values,
+		# so that all property values are retained.
+		def format_time (x):
+			if x is not "":
+				return round(float(x) / time_divisor, time_dp)
+
+		dataframe = dataframe.groupby(format_time).first()
 
 		# Remove invalid chars from expt title for Excel sheet title
 		sheet_title = re.sub('[\[\]\*\/\\\?]+', '', self.title)[0:30]
