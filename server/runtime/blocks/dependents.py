@@ -141,9 +141,9 @@ class controls_statemonitor (Block):
 	def runUpdate (self, data = None):
 		if self.state is State.PAUSED:
 			self._onResume = self.runUpdate
-			defer.returnValue(None)
+			return
 		elif self.state is not State.RUNNING:
-			defer.returnValue(None)
+			return
 
 		inputValues = [
 			input.eval()
@@ -161,12 +161,12 @@ class controls_statemonitor (Block):
 				# TODO: log a warning if an exception.
 				pass
 
-		# If the monitor is already triggered, check if we need to reset.
+		# Reset if already triggered and inputs now OK.
 		if self._triggered and self.auto_reset and ok:
 			self.resetTrigger()
 
-		# Check if the monitor should be triggered.
-		elif not ok:
+		# Trigger if not triggered already, and inputs not OK.
+		elif not self._triggered and not ok:
 			# Cancel reset_step
 			try:
 				if self.cancel_on_trigger:
