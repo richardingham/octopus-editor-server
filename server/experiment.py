@@ -458,8 +458,11 @@ class CompletedExperiment (object):
 		dataframe = pd.concat(cols, axis = 1)
 		dataframe = dataframe.apply(pd.Series.interpolate)
 
+		# Remove invalid chars from expt title for Excel sheet title
+		sheet_title = re.sub('[\[\]\*\/\\\?]+', '', self.title)[0:30]
+
 		# Generate excel file
-		dataframe.to_excel(writer, sheet_name = self.title[0:30])
+		dataframe.to_excel(writer, sheet_name = sheet_title)
 		writer.save()
 
 		defer.returnValue(io.getvalue())
