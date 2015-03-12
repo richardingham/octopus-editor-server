@@ -59,6 +59,7 @@
 			.appendTo('#variables-list_filter')
 			.on('click', function () {
 				$('#variables-list_filter input').val('');
+				return false;
 			});
 		$('<button class="btn btn-default">Select filtered</button>')
 			.appendTo('#variables-list_filter')
