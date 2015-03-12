@@ -405,7 +405,10 @@ class CompletedExperiment (object):
 	@defer.inlineCallbacks
 	def buildExcelFile (self, variables, time_divisor, time_dp):
 		import pandas as pd
-		from StringIO import StringIO
+		try:
+		    from cStringIO import StringIO
+		except:
+		    from StringIO import StringIO
 
 		date = yield self._fetchDateFromDb(self.id)
 		experimentDir = self._getExperimentDir(self.id, date)
@@ -431,6 +434,7 @@ class CompletedExperiment (object):
 			)
 			return data.groupby(data.index).first()
 
+		# Readable variable names
 		def varName (variable):
 			if variable["unit"] != '':
 				unit = ' (' + variable["unit"] + ')'
@@ -444,6 +448,7 @@ class CompletedExperiment (object):
 
 			return name + unit
 
+		# Read data for each requested variable
 		cols = yield defer.gatherResults(map(
 			lambda variable: threads.deferToThread(
 				getColumn,
@@ -454,8 +459,9 @@ class CompletedExperiment (object):
 		))
 
 		# Convert the columns into a single DataFrame
-		# Ensure there is a datapoint at each time point
 		dataframe = pd.concat(cols, axis = 1)
+
+		# Ensure there is a datapoint at each time point
 		dataframe = dataframe.apply(pd.Series.interpolate)
 
 		# Remove invalid chars from expt title for Excel sheet title
