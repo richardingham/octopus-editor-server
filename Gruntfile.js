@@ -2,29 +2,29 @@ module.exports = function(grunt) {
   grunt.initConfig({
     watch: {
       core: {
-	    files: [ 'components/octopus-editor/core/*.js' ],
+	    files: [ 'resources/blockly/core/*.js' ],
         tasks: [ 'browserify', 'uglify:core' ]
       },
       blocks: {
-	    files: [ 'components/octopus-editor/blocks/*.js' ],
+	    files: [ 'resources/blockly/blocks/*.js' ],
         tasks: [ 'concat:blocks', 'uglify:blocks' ]
       },
       pythonocto: {
-	    files: [ 'components/octopus-editor/generators/python-octo.js', 'components/octopus-editor/generators/python-octo/*.js' ],
+	    files: [ 'resources/blockly/generators/python-octo.js', 'resources/blockly/generators/python-octo/*.js' ],
         tasks: [ 'concat:pythonocto', 'uglify:pythonocto' ]
-      }, 
+      },
     },
     browserify: {
-      'components/octopus-editor/dist/blockly.js': [ 'components/octopus-editor/core/blockly.js' ]
+      'resources/blockly/dist/blockly.js': [ 'resources/blockly/core/blockly.js' ]
     },
 	  concat: {
       blocks: {
-        src: [ 'components/octopus-editor/blocks/*.js' ],
-        dest: 'components/octopus-editor/dist/blocks.js'
+        src: [ 'resources/blockly/blocks/*.js' ],
+        dest: 'resources/blockly/dist/blocks.js'
       },
       pythonocto: {
-        src: [ 'components/octopus-editor/generators/python-octo.js', 'components/octopus-editor/generators/python-octo/*.js' ],
-        dest: 'components/octopus-editor/dist/python-octo.js'
+        src: [ 'resources/blockly/generators/python-octo.js', 'resources/blockly/generators/python-octo/*.js' ],
+        dest: 'resources/blockly/dist/python-octo.js'
       }
 	  },
 	  uglify: {
@@ -34,17 +34,17 @@ module.exports = function(grunt) {
       },
       core: {
         files: {
-          'components/octopus-editor/dist/blockly.min.js': ['components/octopus-editor/dist/blockly.js']
+          'resources/blockly/dist/blockly.min.js': ['resources/blockly/dist/blockly.js']
         }
       },
       blocks: {
         files: {
-          'components/octopus-editor/dist/blocks.min.js': ['components/octopus-editor/dist/blocks.js']
+          'resources/blockly/dist/blocks.min.js': ['resources/blockly/dist/blocks.js']
         }
       },
       pythonocto: {
         files: {
-          'components/octopus-editor/dist/python-octo.min.js': ['components/octopus-editor/dist/python-octo.js']
+          'resources/blockly/dist/python-octo.min.js': ['resources/blockly/dist/python-octo.js']
         }
       }
     }

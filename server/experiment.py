@@ -540,7 +540,7 @@ class CompletedExperiment (object):
 		defer.returnValue(variables)
 
 	@defer.inlineCallbacks
-	def _getData (self, dataFile, name, var_type, start = None, interval = None):
+	def _getData (self, dataFile, name, var_type, start = None, end = None):
 
 		if var_type == "int":
 			cast = int
@@ -549,9 +549,7 @@ class CompletedExperiment (object):
 		else:
 			cast = str
 
-		if start is not None and interval is not None:
-			end = start + interval
-		else:
+		if end is None:
 			start = None
 
 		def _readFile ():

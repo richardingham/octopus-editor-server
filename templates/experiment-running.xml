@@ -1,140 +1,45 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" flex="" vertical="" layout="">
 <head>
+	<script src="/bower_components/lodash/lodash.min.js"></script>
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/core.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/widget.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/mouse.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/draggable.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/resizable.min.js"></script>
+	<script src="/resources/gridstack/gridstack.js"></script>
 
-	<link rel="import" href="/components/octopus-experiment-interface/octopus-experiment-interface.html" />
-	<link rel="import" href="/components/octopus-experiment-runtime/octopus-experiment-runtime.html" />
+	<script src="/bower_components/d3/d3.min.js"></script>
 
-	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
-	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
-	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
+	<script src="/resources/experiment-running.js"></script>
+	<script src="/resources/experiment-popup.js"></script>
+	<script src="/resources/experiment-graph.js"></script>
 
-	<style>
-	/* <![CDATA[ */
-
-	html, body {
-		margin: 0;
-		padding: 0;
-		height: 100vh;
-	}
-
-	body {
-		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-		color: #333;
-		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
-		-webkit-tap-highlight-color: rgba(0,0,0,0);
-		-webkit-touch-callout: none;
-	}
-
-	core-toolbar {
-		background-color: #526E9C;
-		color: #FFF;
-	}
-
-	core-toolbar span {
-		color: #fff;
-		padding-bottom: 3px;
-		font-size: 24px;
-		margin-left: 15px;
-	}
-
-	/* ]]> */
-	</style>
+	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
+	<link rel="stylesheet" href="/resources/gridstack/gridstack.css" />
+	<link rel="stylesheet" href="/resources/experiment-result.css" />
+	<link rel="stylesheet" href="/resources/experiment-popup.css" />
 </head>
-<body unresolved=""  flex="" vertical="" layout="" t:render="editor_body">
-<template id="application" is="auto-binding">
+<body t:render="editor_body">
 
-<core-toolbar>
-	<core-icon-button icon="cancel">{{ closeLabel }}</core-icon-button>
-	<span id="experiment-title">{{ experimentTitle }}</span>
-</core-toolbar>
+<nav id="toolbar" class="navbar navbar-default">
+	<div class="container-fluid">
+		<div class="navbar-left">
+			<a href="/" id="btn-home" class="btn btn-default navbar-btn"><i class="fa fa-home" /></a>
+			<span id="experiment-title"><t:slot name="title" /></span>
+		</div>
+	</div>
+</nav>
 
-<octopus-experiment-interface flex="" horizontal="" layout=""
-	id="interface"
-	on-request-data="{{ requestStreamData }}"
-	on-set-value="{{ propertySetValue }}"
-	variables="{{ experimentVariables }}"
-	runtimeProperties="{{ runtimeProperties }}"
-	runtimeStreams="{{ runtimeStreams }}"
-	>
-</octopus-experiment-interface>
+<div id="viewer">
+	<t:attr name="data-url"><t:slot name="websocket_url" /></t:attr>
+	<t:attr name="data-sketch"><t:slot name="sketch_id" /></t:attr>
+	<t:attr name="data-experiment"><t:slot name="experiment_id" /></t:attr>
 
-<octopus-experiment-runtime
-	id="runtime"
-	properties="{{ runtimeProperties }}"
-	streams="{{ runtimeStreams }}"
-	on-experiment-load="{{ experimentLoaded }}"
-	on-properties="{{ onPropertiesData }}"
-	on-streams="{{ onStreamData }}"
->
-	<t:attr name="url"><t:slot name="websocket_url" /></t:attr>
-	<t:attr name="sketch"><t:slot name="sketch_id" /></t:attr>
-	<t:attr name="experiment"><t:slot name="experiment_id" /></t:attr>
-</octopus-experiment-runtime>
+	<ul id="variables"></ul>
+	<div id="data"></div>
+</div>
 
-</template>
-<script>
-// <![CDATA[
-
-var template = document.getElementById('application');
-
-template.closeLabel = "Back";
-template.experimentTitle = "";
-template.experimentTimeZero = "";
-template.experimentVariables = [];
-template.propertyUpdateFrequency = 1000;
-template.streamUpdateFrequency = 1000;
-template._propertyUpdateTimer = null;
-template._streamUpdateTimer = null;
-
-template.ready = function () {
-	this.closeLabel = window.opener ? "Back" : "Close";
-};
-
-template.experimentLoaded = function (e) {
-	this.experimentVariables = e.detail.variables.sort(function (a, b) {
-		if (a.name < b.name) return -1;
-		if (a.name > b.name) return 1;
-		return 0;
-	});
-	this.experimentTitle = e.detail.title;
-};
-
-template.onPropertiesData = function (e) {
-	this.$.interface.onPropertiesData(e.detail.data);
-
-	window.clearTimeout(this._propertyUpdateTimer);
-	this._propertyUpdateTimer = window.setTimeout(
-		this.$.runtime.requestProperties.bind(this.$.runtime),
-		this.propertyUpdateFrequency
-	);
-};
-
-template.requestStreamData = function (e, detail) {
-	this.$.runtime.requestOneOffStreamData(detail.streams, detail.start);
-};
-
-template.propertySetValue = function (e, detail) {
-	this.$.runtime.propertySetValue(detail.variable, detail.value);
-};
-
-template.onStreamData = function (e, detail) {
-	this.$.interface.onStreamData(detail.data);
-
-	if (!detail.oneoff) {
-		window.clearTimeout(this._streamUpdateTimer);
-		this._streamUpdateTimer = window.setTimeout(
-			this.$.runtime.requestStreams.bind(this.$.runtime),
-			this.streamUpdateFrequency
-		);
-	}
-};
-
-// ]]>
-</script>
 </body>
 </html>

@@ -55,7 +55,12 @@ class ExperimentProtocol (object):
 				else:
 					streams = context.getExperimentStreams(experiment)
 
-				return self.sendStreams(sketch, experiment, streams, payload['start'], context, oneoff)
+				if 'end' in payload:
+					end = payload['end']
+				else:
+					end = now()
+
+				return self.sendStreams(sketch, experiment, streams, payload['start'], end, context, oneoff)
 
 			if topic == 'set-property':
 				return self.setProperty(sketch, experiment, payload['variable'], payload['value'], context)
@@ -136,10 +141,9 @@ class ExperimentProtocol (object):
 			context
 		)
 
-	def sendStreams (self, sketch, experiment, streams, start, context, oneoff = False):
+	def sendStreams (self, sketch, experiment, streams, start, end, context, oneoff = False):
 		variables = experiment.variables()
-
-		interval = now() - start
+		interval = end - start
 
 		def _compress (point):
 			try:

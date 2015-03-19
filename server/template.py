@@ -118,7 +118,8 @@ class ExperimentResult (Element):
 				id = self.expt.id,
 				title = self.expt.title,
 				sketch_id = self.expt.sketch_id,
-				date = str(self.expt.date),
+				started_date = str(self.expt.started_date),
+				finished_date = str(self.expt.finished_date),
 				variables = json.dumps(self.expt.variables)
 			)
 
@@ -162,5 +163,6 @@ class ExperimentRunning (Element):
 		return tag.fillSlots(
 			websocket_url = websocketUrl,
 			sketch_id = self.experiment.sketch.id,
-			experiment_id = self.experiment.id
+			experiment_id = self.experiment.id,
+			title = self.experiment.sketch.title
 		)

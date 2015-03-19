@@ -393,13 +393,17 @@ class GetExperimentData (resource.Resource):
 		self._id = id
 
 	def render_GET (self, request):
-		variables = _getArg(request, 'var', list, [])
-		start = _getFloatArg(request, 'start')
-		interval = _getFloatArg(request, 'interval')
+		try:
+			variables = request.args['var[]']
+		except KeyError:
+			variables = []
+
+		start = _getArg(request, 'start', float)
+		end = _getArg(request, 'end', float)
 
 		expt = experiment.CompletedExperiment(self._id)
-		expt.loadData(variables, start, interval)\
-			.addCallback(_respondWithJSON)\
+		expt.loadData(variables, start, end)\
+			.addCallback(_respondWithJSON, request)\
 			.addErrback(_error, request)
 
 		return server.NOT_DONE_YET

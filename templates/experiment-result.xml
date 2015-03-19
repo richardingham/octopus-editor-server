@@ -2,62 +2,48 @@
 <head>
 	<title>Experiment Results</title>
 
+	<script src="/bower_components/lodash/lodash.min.js"></script>
 	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
-	<link rel="import" href="/bower_components/font-roboto/roboto.html" />
+	<script src="/bower_components/jquery-ui/ui/minified/core.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/widget.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/mouse.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/draggable.min.js"></script>
+	<script src="/bower_components/jquery-ui/ui/minified/resizable.min.js"></script>
+	<script src="/resources/gridstack/gridstack.js"></script>
 
-	<link rel="import" href="/components/octopus-experiment-viewer/octopus-experiment-viewer.html" />
+	<script src="/bower_components/d3/d3.min.js"></script>
 
-	<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html" />
-	<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html" />
-	<link rel="import" href="/bower_components/core-icons/core-icons.html" />
+	<script src="/resources/experiment-result.js"></script>
+	<script src="/resources/experiment-popup.js"></script>
+	<script src="/resources/experiment-graph.js"></script>
 
-	<style>
-	/* <![CDATA[ */
+	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
+	<link rel="stylesheet" href="/resources/gridstack/gridstack.css" />
+	<link rel="stylesheet" href="/resources/experiment-result.css" />
+	<link rel="stylesheet" href="/resources/experiment-popup.css" />
 
-	html, body {
-		margin: 0;
-		padding: 0;
-		height: 100vh;
-	}
-
-	body {
-		font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-		color: #333;
-		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
-		-webkit-tap-highlight-color: rgba(0,0,0,0);
-		-webkit-touch-callout: none;
-	}
-
-	core-toolbar {
-		background-color: #526E9C;
-		color: #FFF;
-	}
-
-	core-toolbar span {
-		color: #fff;
-		padding-bottom: 3px;
-		font-size: 24px;
-		margin-left: 15px;
-	}
-
-	/* ]]> */
-	</style>
 </head>
-<body unresolved=""  flex="" vertical="" layout="" t:render="body">
+<body t:render="body">
 
-<core-toolbar>
-	<span id="experiment-title"><t:slot name="title" /></span>
-</core-toolbar>
+<nav id="toolbar" class="navbar navbar-default">
+	<div class="container-fluid">
+		<div class="navbar-left">
+			<a href="/" id="btn-home" class="btn btn-default navbar-btn"><i class="fa fa-home" /></a>
+			<span id="experiment-title"><t:slot name="title" /></span>
+		</div>
+	</div>
+</nav>
 
-<octopus-experiment-viewer id="viewer" flex="" horizontal="" layout="">
-	<t:attr name="dataurl"><t:slot name="data_url" /></t:attr>
-	<t:attr name="timezero"><t:slot name="date" /></t:attr>
-	<t:attr name="variables"><t:slot name="variables" /></t:attr>
-</octopus-experiment-viewer>
+<div id="viewer">
+	<t:attr name="data-url"><t:slot name="data_url" /></t:attr>
+	<t:attr name="data-timezero"><t:slot name="started_date" /></t:attr>
+	<t:attr name="data-timeend"><t:slot name="finished_date" /></t:attr>
+	<t:attr name="data-variables"><t:slot name="variables" /></t:attr>
+
+	<ul id="variables"></ul>
+	<div id="data"></div>
+</div>
 
 </body>
 </html>
