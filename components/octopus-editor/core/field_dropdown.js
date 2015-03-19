@@ -89,7 +89,9 @@ FieldDropdown.prototype.CURSOR = 'default';
  * @private
  */
 FieldDropdown.prototype.showEditor_ = function() {
-  Blockly.WidgetDiv.show(this, null);
+  Blockly.WidgetDiv.show(this, function () {
+    thisField.menu.closemenu();
+  });
   var thisField = this;
   var fieldValue = this.getValue();
 

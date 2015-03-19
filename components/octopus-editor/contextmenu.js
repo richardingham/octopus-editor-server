@@ -24,7 +24,6 @@
   };
 
   var menuContainerSelector = "#menu-container";
-  //var menuContainerSelector = '.blocklyWidgetDiv';
 
   var generate = function (spec, options) {
     var a, row, item, menu = $(document.createElement('ul')).addClass('dropdown-menu').attr('role', 'menu');
@@ -59,6 +58,13 @@
         item.append(generate(row.children, options));
       }
     }
+
+    // Stops context menu being shown for drop-up menus.
+    menu.on('contextmenu', function (e) {
+      e.preventDefault();
+      return false;
+    });
+
     return menu;
   };
 
@@ -71,6 +77,10 @@
     }
 
     ,showForBox: function (point, size) {
+      // Add some space under drop-up menus for shadow.
+      point.y -= 5;
+      size.height += 5;
+
       this.show(point, size);
     }
 
@@ -115,10 +125,10 @@
       var child = parent.children('.dropdown-menu');
       var childOffset = child.offset();
 
-      if (childOffset.left + child.outerWidth() > $(window).width()) {
+      if (childOffset.left + child.outerWidth() > $(window).width() - 5) {
         parent.addClass("pull-left");
       }
-      if (childOffset.top + child.outerHeight() > $(window).height()) {
+      if (childOffset.top + child.outerHeight() > $(window).height() - 5) {
         parent.addClass("dropup");
       }
       parent.addClass('dropdown-submenu-positioned');

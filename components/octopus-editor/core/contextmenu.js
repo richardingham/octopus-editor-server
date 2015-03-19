@@ -40,20 +40,26 @@ Menu.currentBlock = null;
  * @param {!Array.<!Object>} options Array of menu options.
  */
 Menu.show = function(e, options) {
-  Blockly.WidgetDiv.show(Menu, null);
+  Blockly.WidgetDiv.show(Menu, function () {
+    if (this.menu) {
+      this.menu.closemenu();
+    }
+  }.bind(this));
+
   if (!options.length) {
     Menu.hide();
     return;
   }
+
   this.menu = new ContextMenu(options);
   this.menu.showAtEvent(e);
-  
+
   /* Here's what one option object looks like:
     {text: 'Make It So',
      enabled: true,
      callback: Blockly.MakeItSo}
   */
-  
+
 /* ???
   menu.setAllowAutoFocus(true);
   // 1ms delay is required for focusing on context menus because some other
@@ -68,7 +74,9 @@ Menu.show = function(e, options) {
  * Hide the context menu.
  */
 Menu.hide = function() {
-  this.menu.closemenu();
+  if (this.menu) {
+    this.menu.closemenu();
+  }
   this.menu = null;
   Blockly.WidgetDiv.hideIfOwner(Menu);
   Menu.currentBlock = null;

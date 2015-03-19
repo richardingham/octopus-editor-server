@@ -262,8 +262,7 @@ Blockly.onMouseDown_ = function(e) {
     Blockly.selected.unselect();
   }
   if (e.target == Blockly.svg && Blockly.isRightButton(e)) {
-    // Right-click.
-    Blockly.showContextMenu_(e);
+    // Ignore right-click - handled in mouseup.
   } else if ((Blockly.readOnly || isTargetSvg) &&
              Blockly.mainWorkspace.scrollbar) {
     // If the workspace is editable, only allow dragging when gripping empty
@@ -307,6 +306,11 @@ Blockly.onMouseUp_ = function(e) {
   if (Blockly.onMouseMoveWrapper_) {
     Blockly.unbindEvent_(Blockly.onMouseMoveWrapper_);
     Blockly.onMouseMoveWrapper_ = null;
+  }
+
+  if (e.target == Blockly.svg && Blockly.isRightButton(e)) {
+    // Right-click.
+    Blockly.showContextMenu_(e);
   }
 };
 

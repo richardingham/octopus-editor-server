@@ -224,7 +224,9 @@ FieldLexicalVariable.dropdownCreate = function() {
  * @private
  */
 FieldLexicalVariable.prototype.showEditor_ = function() {
-  Blockly.WidgetDiv.show(this, null);
+  Blockly.WidgetDiv.show(this, function () {
+    thisField.menu.closemenu();
+  });
   var thisField = this;
   var selected = this.value_;
   var filter = this.filter_;
@@ -283,6 +285,14 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
     var checked = false;
     var option, menuItem;
 
+    if (!subMenu && options.length === 0) {
+      menu.push({
+      text: "No variables defined",
+      enabled: false,
+       });
+      options = [];
+    }
+
     for (var x = 0; x < options.length; x++) {
       option = options[x];
 
@@ -313,6 +323,30 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
               checked = true;
             }
           }
+
+          //menuItem.enabled = true;
+          menuItem.children = build(attributes, true);
+          var subChecked = menuItem.children.isChecked;
+
+          // Unless the parent menu item is disabled, add an entry
+          // to allow the parent to be selected.
+          /*if (menuItem.enabled) {
+            var same = (option.getName() === selected);
+            menuItem.children = [{
+                text: menuItem.text,
+                value: menuItem.value,
+                selected: same
+              }, {
+                divider: true
+              }].concat(menuItem.children);
+            subChecked |= same;
+          }*/
+
+          // If one of the child items is checked, the parent is checked.
+          if (subChecked) {
+            menuItem.selected = true;
+          }
+          checked |= subChecked;
         }
 
         // Just a regular menu item.
