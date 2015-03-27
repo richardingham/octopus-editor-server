@@ -40,4 +40,5 @@ Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('octopus.ima
 Blockly.PythonOcto['machine_omega_hh306a'] = machineBlockGenerator('octopus.manufacturer', 'omega', 'HH306A');
 Blockly.PythonOcto['machine_harvard_phd2000'] = machineBlockGenerator('octopus.manufacturer', 'harvard', 'PHD2000');
 Blockly.PythonOcto['machine_mt_sics_balance'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'SICSBalance');
+Blockly.PythonOcto['machine_startech_powerremotecontrol'] = machineBlockGenerator('octopus.manufacturer', 'startech', 'PowerRemoveControl');
 Blockly.PythonOcto['machine_gilson_FractionCollector203B'] = machineBlockGenerator('octopus.manufacturer', 'gilson', 'FractionCollector203B');

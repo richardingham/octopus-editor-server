@@ -199,6 +199,12 @@ class machine_mt_sics_balance (machine_declaration):
 		return mt.SICSBalance
 
 
+class machine_startech_powerremotecontrol (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import startech
+		return startech.PowerRemoteControl
+
+
 class machine_gilson_FractionCollector203B (machine_declaration):
 	def getMachineClass (self):
 		from octopus.manufacturer import gilson

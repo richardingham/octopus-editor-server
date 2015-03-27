@@ -471,6 +471,22 @@ Blockly.Blocks['machine_mt_sics_balance'] = extend(machineBlock, {
   ]
 });
 
+Blockly.Blocks['machine_startech_powerremotecontrol'] = extend(machineBlock, {
+  machineTitle: "StarTech Power Remote Control",
+  machineDefaultName: "powerswitch",
+  machineVars: [
+    { name: "current", title: "Current", type: "Number", readonly: true },
+    { name: "port1", title: "Port 1", type: "String", options: ['off', 'on'] },
+    { name: "port2", title: "Port 2", type: "String", options: ['off', 'on'] },
+    { name: "port3", title: "Port 3", type: "String", options: ['off', 'on'] },
+    { name: "port4", title: "Port 4", type: "String", options: ['off', 'on'] },
+    { name: "port5", title: "Port 5", type: "String", options: ['off', 'on'] },
+    { name: "port6", title: "Port 6", type: "String", options: ['off', 'on'] },
+    { name: "port7", title: "Port 7", type: "String", options: ['off', 'on'] },
+    { name: "port8", title: "Port 8", type: "String", options: ['off', 'on'] }
+  ]
+});
+
 Blockly.Blocks['machine_gilson_FractionCollector203B'] = extend(machineBlock, {
   machineTitle: "Gilson Fraction Collector 203B",
   machineDefaultName: "fractioncollector",
