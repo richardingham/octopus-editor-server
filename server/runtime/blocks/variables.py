@@ -32,7 +32,7 @@ class InvalidVariableNameError (Exception):
 
 class global_declaration (Block):
 	def _varName (self, name = None):
-		return "global.global::" + (name or self.fields['NAME'])
+		return "global.global::" + (name or self.getFieldValue('NAME', ''))
 
 	def created (self):
 		self._variables = []
@@ -106,7 +106,7 @@ class global_declaration (Block):
 		else:
 			variable = data.Variable(resultType)
 
-		variable.alias = self.fields['NAME']
+		variable.alias = self.getFieldValue('NAME')
 		self.workspace.variables[self._varName()] = variable
 
 		if result is not None:
@@ -131,7 +131,7 @@ class global_declaration (Block):
 class lexical_variable (Block):
 	def _getVariable (self):
 		try:
-			name, attr = variableName(self.fields['VAR'])
+			name, attr = variableName(self.getFieldValue('VAR', ''))
 			variable = self.workspace.variables[name]
 		except (InvalidVariableNameError, KeyError):
 			return None
@@ -153,7 +153,7 @@ class lexical_variable (Block):
 		)
 
 	def getReferencedVariableNames (self):
-		name, attr = variableName(self.fields['VAR'])
+		name, attr = variableName(self.getFieldValue('VAR', ''))
 
 		return Block.getReferencedVariableNames(self,
 			[name] if not self.disabled else []
@@ -173,7 +173,7 @@ class lexical_variable_set (lexical_variable):
 	def _setVariable (self, variable, value):
 		if variable is None:
 			self.emitLogMessage(
-				"Cannot set unknown variable: " + str(self.fields['VAR']),
+				"Cannot set unknown variable: " + str(self.getFieldValue('VAR', '')),
 				"error"
 			)
 			return
@@ -192,7 +192,7 @@ class lexical_variable_get (lexical_variable):
 			return defer.succeed(variable.value)
 		except (AttributeError):
 			self.emitLogMessage(
-				"Unknown variable: " + str(self.fields['VAR']),
+				"Unknown variable: " + str(self.getFieldValue('VAR')),
 				"error"
 			)
 
@@ -212,5 +212,5 @@ class connection_gsioc (lexical_variable):
 		gsioc = machine.gsioc
 		return defer.maybeDeferred(
 			gsioc,
-			int(self.fields['ID']),
+			int(self.getFieldValue('ID', 0)),
 		)

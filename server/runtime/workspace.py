@@ -804,7 +804,8 @@ class Block (BaseStep, EventEmitter):
 		return children
 
 	def setFieldValue (self, fieldName, value):
-		oldValue = self.fields[fieldName]
+		oldValue = self.getFieldValue(fieldName)
+
 		self.fields[fieldName] = value
 		self.emit('value-changed',
 			block = self,
@@ -813,8 +814,11 @@ class Block (BaseStep, EventEmitter):
 			newValue = value
 		)
 
-	def getFieldValue (self, fieldName):
-		return self.fields[fieldName]
+	def getFieldValue (self, fieldName, default = None):
+		try:
+			return self.fields[fieldName]
+		except KeyError:
+			return default
 
 	def getInput (self, inputName):
 		return self.inputs[inputName]
