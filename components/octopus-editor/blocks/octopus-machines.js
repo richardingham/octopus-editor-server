@@ -103,17 +103,19 @@ var _ARROW_CHAR = /*goog.userAgent.ANDROID ? ' \u25B6 ' :*/ ' \u25B8 ';
 var machineBlock = {
   init: function() {
     var default_name = this.machineDefaultName || "reactor";
+
     var thisBlock = this;
+    this.fieldName_ = new Blockly.FieldMachineFlydown(
+      default_name, //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
+      Blockly.FieldFlydown.DISPLAY_BELOW,
+      this.rename_.bind(this)
+    );
 
     //this.setHelpUrl('http://www.example.com/');
     this.setColour(Blockly.MACHINES_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField(this.machineTitle + " ")
-        .appendField(new Blockly.FieldMachineFlydown(
-            default_name, //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
-            Blockly.FieldFlydown.DISPLAY_BELOW,
-            this.rename_.bind(this)),
-        'NAME');
+        .appendField(this.fieldName_, 'NAME');
     this.appendValueInput("CONNECTION")
         .setCheck(this.machineConnectionType || "MachineConnection")
         .setAlign(Blockly.ALIGN_RIGHT)

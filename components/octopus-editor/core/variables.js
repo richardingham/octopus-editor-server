@@ -44,6 +44,7 @@ var Variable = function (name, scope, subScope) {
   this.setName(name);
 };
 
+// Updates the displayed value in each variable field
 Variable.variableRenamed_ = function (oldName, newName, variable) {
   var block, blocks = Blockly.mainWorkspace.getAllBlocks();
   for (var i = 0, max = blocks.length; i < max; i++) {
@@ -54,12 +55,13 @@ Variable.variableRenamed_ = function (oldName, newName, variable) {
   }
 };
 
-Variable.announceRenamed = function (name, oldName) {
+// Sends var rename event back to server for each block referencing a var
+Variable.announceRenamed = function (name) {
   var block, blocks = Blockly.mainWorkspace.getAllBlocks();
   for (var i = 0, max = blocks.length; i < max; i++) {
     block = blocks[i];
     if (block.announceRename) {
-      block.announceRename(name, oldName);
+      block.announceRename(name);
     }
   }
 };

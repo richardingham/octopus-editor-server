@@ -118,7 +118,7 @@ FieldTextInput.prototype.showEditor_ = function(opt_quietInput) {
     }
     if (newValue !== null) {
       this.setText(newValue);
-      this.emit("changed", newValue);
+      this.announceChanged(newValue);
     }
     return;
   }
@@ -254,8 +254,12 @@ FieldTextInput.prototype.widgetDispose_ = function() {
     FieldTextInput.htmlInput_ = null;
     // Delete the width property.
     Blockly.WidgetDiv.DIV.style.width = 'auto';
-    thisField.emit("changed", text);
+    thisField.announceChanged(text);
   };
+};
+
+FieldTextInput.prototype.announceChanged = function (name) {
+  this.emit("changed", name);
 };
 
 function numberValidator(text, integer, nonnegative) {

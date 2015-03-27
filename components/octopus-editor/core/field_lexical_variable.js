@@ -53,6 +53,14 @@ FieldLexicalVariable.prototype.getFullVariableName = function() {
   return this.value_;
 };
 
+FieldLexicalVariable.prototype.getVariableName = function() {
+  return this.value_.split('::').slice(0, 2).join('::');
+};
+
+FieldLexicalVariable.prototype.getAttributeName = function() {
+  return this.value_.split('::').slice(2, 3).join('');
+};
+
 /**
  * Set the variable name.
  * @param {string} text New text.
@@ -90,8 +98,8 @@ FieldLexicalVariable.prototype.setValue = function (variable) {
     this.setText(variable || "");
     return this.value_;
   }
-  if (this.block_.setVarType_) {
-    this.block_.setVarType_(variable.getType());
+  if (this.block_.variableChanged_) {
+    this.block_.variableChanged_(variable);
   }
   this.value_ = variable.getName();
   this.setText(variable.getDisplay());

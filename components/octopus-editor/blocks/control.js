@@ -214,8 +214,8 @@ Blockly.Blocks['controls_bind'] = {
 
     withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
-  setVarType_: function (type) {
-    this.getInput('VALUE').setCheck(type);
+  variableChanged_: function (variable) {
+    this.getInput('VALUE').setCheck(variable.getType());
   }
 };
 

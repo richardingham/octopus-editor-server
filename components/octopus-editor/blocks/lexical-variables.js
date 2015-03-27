@@ -7,7 +7,7 @@ Blockly.Blocks['global_declaration'] = {
   //helpUrl: Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_HELPURL,
   init: function() {
     var block = this;
-    this.fieldName_ = new Blockly.FieldGlobalFlydown( 
+    this.fieldName_ = new Blockly.FieldGlobalFlydown(
       'name', //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
       Blockly.FieldFlydown.DISPLAY_BELOW,
       this.rename_.bind(this)
@@ -23,13 +23,6 @@ Blockly.Blocks['global_declaration'] = {
     if (!this.isInFlyout) {
       this.rename_('name');
       this.fieldName_.setValue(this.variable_.getVarName());
-
-      this.fieldName_.on("changed", function (name) {
-        block.workspace.startEmitTransaction();
-        block.workspaceEmit("block-set-field-value", { id: block.id, field: 'NAME', value: name });
-        Blockly.Variable.announceRenamed(block.variable_.getName());
-        block.workspace.completeEmitTransaction();
-      });
     }
   },
   getVars: function() {
@@ -50,7 +43,7 @@ Blockly.Blocks['global_declaration'] = {
       this.variable_ = Blockly.GlobalScope.addVariable(newName);
     } else {
       this.variable_.setName(newName);
-    } 
+    }
     return this.variable_.getVarName();
   },
   disposed: function () {
@@ -58,7 +51,6 @@ Blockly.Blocks['global_declaration'] = {
       this.variable_.getScope().removeVariable(this.variable_.getVarName());
     }
   }
-  //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_TITLE_INIT }]
 };
 
 
@@ -78,14 +70,12 @@ Blockly.Blocks['lexical_variable_get'] = {
         .appendField(this.fieldVar_, 'VAR');
     this.setOutput(true, null);
     this.setTooltip(''); //Blockly.Msg.LANG_VARIABLES_GET_TOOLTIP);
-    //this.errors = [{name:"checkIsInDefinition"},{name:"checkDropDownContainsValidValue",dropDowns:["VAR"]}];
 
     withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
-  setVarType_: function (type) {
-    this.changeOutput(type);
+  variableChanged_: function (variable) {
+    this.changeOutput(variable.getType());
   }
-  //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_GET_TITLE_GET + Blockly.Msg.LANG_VARIABLES_VARIABLE }]
 };
 
 
@@ -95,9 +85,9 @@ Blockly.Blocks['lexical_variable_get'] = {
 Blockly.Blocks['lexical_variable_set'] = {
   // Variable setter.
   category: 'Variables',
-  //helpUrl: Blockly.Msg.LANG_VARIABLES_SET_HELPURL, // *** [lyn, 11/10/12] Fix this
+  //helpUrl: Blockly.Msg.LANG_VARIABLES_SET_HELPURL,
   init: function() {
-    this.setColour(Blockly.VARIABLES_CATEGORY_HUE); //Blockly.VARIABLE_CATEGORY_HUE);
+    this.setColour(Blockly.VARIABLES_CATEGORY_HUE);
     this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", { readonly: false });
     this.fieldVar_.setBlock(this);
     this.appendValueInput('VALUE')
@@ -107,12 +97,12 @@ Blockly.Blocks['lexical_variable_set'] = {
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     this.setTooltip(''); //Blockly.Msg.LANG_VARIABLES_SET_TOOLTIP);
-    //this.errors = [{name:"checkIsInDefinition"},{name:"checkDropDownContainsValidValue",dropDowns:["VAR"]}];
 
 	  withVariableDropdown.call(this, this.fieldVar_, 'VAR');
   },
-  setVarType_: function (type) {
-    this.getInput('VALUE').setCheck(type);
+  variableChanged_: function (variable) {
+    this.getInput('VALUE').setCheck(variable.getType());
   }
-  //typeblock: [{ translatedName: Blockly.Msg.LANG_VARIABLES_SET_TITLE_SET + Blockly.Msg.LANG_VARIABLES_VARIABLE }]
+};
+  }
 };

@@ -59,7 +59,11 @@ function withVariableDropdown (field, fieldName) {
    * @this Blockly.Block
    */
   this.announceRename = function announceRename (name) {
-    if (Blockly.Names.equals(name, field.getFullVariableName())) {
+    if (Blockly.Names.equals(name, field.getVariableName())) {
+      var attributeName = field.getAttributeName();
+      if (attributeName !== '') {
+        name += '::' + attributeName;
+      }
       this.workspaceEmit("block-set-field-value", { id: this.id, field: fieldName, value: name });
     }
   };

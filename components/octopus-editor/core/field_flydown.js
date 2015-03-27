@@ -25,7 +25,7 @@
  */
 
 var util = require('util');
- 
+
 module.exports = (function (Blockly) {
 
 var FieldFlydown = function(name, isEditable, displayLocation, opt_changeHandler) {
@@ -205,7 +205,20 @@ FieldFlydown.prototype.dispose = function() {
   Blockly.FieldTextInput.prototype.dispose.call(this);
 };
 
+
+FieldFlydown.prototype.announceChanged = function (name) {
+  var block = this.sourceBlock_;
+  var variable = block && block.variable_;
+  if (variable && variable.getName()) {
+    block.workspace.startEmitTransaction();
+    this.emit("changed", name);
+    Blockly.Variable.announceRenamed(variable.getName());
+    block.workspace.completeEmitTransaction();
+  } else {
+    this.emit("changed", name);
+  }
+};
+
 return FieldFlydown;
 
 });
-
