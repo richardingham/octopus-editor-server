@@ -204,3 +204,13 @@ class math_change (lexical_variable_set):
 		add = 1 if self.getFieldValue("MODE") == 'INCREMENT' else -1
 		variable = self._getVariable()
 		return self._setVariable(variable, variable.value + add)
+
+
+class connection_gsioc (lexical_variable):
+	def eval (self):
+		machine = self._getVariable()
+		gsioc = machine.gsioc
+		return defer.maybeDeferred(
+			gsioc,
+			int(self.fields['ID']),
+		)

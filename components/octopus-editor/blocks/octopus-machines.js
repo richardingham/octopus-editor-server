@@ -26,19 +26,19 @@
 
 
 var _R2R4_vars = [{
-	name: "status", title: "Status", type: "String", readonly: true
+  name: "status", title: "Status", type: "String", readonly: true
 }, {
-	name: "power", title: "Power", type: "String"
+  name: "power", title: "Power", type: "String"
 }, {
-	name: "loop1", title: "Loop A", type: "String"
+  name: "loop1", title: "Loop A", type: "String"
 }, {
-	name: "loop2", title: "Loop B", type: "String"
+  name: "loop2", title: "Loop B", type: "String"
 }, {
-	name: "pressure_limit", title: "Pressure Limit", type: "Number"
+  name: "pressure_limit", title: "Pressure Limit", type: "Number"
 }, {
-	name: "pressure", title: "System Pressure", type: "Number", readonly: true
+  name: "pressure", title: "System Pressure", type: "Number", readonly: true
 }, {
-	name: "output", title: "Output", type: "String"
+  name: "output", title: "Output", type: "String"
 }]
 for (var i = 1; i < 3; i++) {
   _R2R4_vars.push({
@@ -64,13 +64,13 @@ for (var i = 1; i < 5; i++) {
 
 var _K120_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
-	{ name: "power", title: "Power", type: "String" },
+  { name: "power", title: "Power", type: "String" },
   { name: "target", title: "Target", type: "Number" },
   { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
 ];
 var _S100_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
-	{ name: "power", title: "Power", type: "String" },
+  { name: "power", title: "Power", type: "String" },
   { name: "target", title: "Target", type: "Number" },
   { name: "pressure", title: "Pressure", type: "Number", readonly: true },
   { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
@@ -127,6 +127,10 @@ var machineBlock = {
       machineVar.setType("component");
       machineVar.setReadonly("true");
 
+      if (this.machineVarFlags) {
+        machineVar.flags = this.machineVarFlags;
+      }
+
       var addParts = function (variable, parts, titlePart) {
         var part;
         for (var i = 0; i < parts.length; i++) {
@@ -137,6 +141,10 @@ var machineBlock = {
           partVar.setDisplay(display);
           partVar.setType(part.parts ? "component" : part.type);
           partVar.setReadonly(part.readonly || part.parts);
+
+          if (part.flags) {
+            partVar.flags = part.flags;
+          }
 
           if (part.parts) {
             addParts(partVar, part.parts, display);
@@ -340,37 +348,38 @@ Blockly.Blocks['machine_quark_argument'] = {
 Blockly.Blocks['machine_vapourtec_R2R4'] = extend(machineBlock, {
   machineTitle: "Vapourtec R2+/R4",
   machineVars: _R2R4_vars,
+  machineVarFlags: { providesGSIOC: true }
 });
 
 Blockly.Blocks['machine_knauer_K120'] = extend(machineBlock, {
   machineTitle: "Knauer K120",
-	machineDefaultName: "pump",
+  machineDefaultName: "pump",
   machineVars: _K120_vars,
 });
 
 Blockly.Blocks['machine_knauer_S100'] = extend(machineBlock, {
   machineTitle: "Knauer S100",
-	machineDefaultName: "pump",
+  machineDefaultName: "pump",
   machineVars: _S100_vars,
 });
 
 Blockly.Blocks['machine_vici_multivalve'] = extend(machineBlock, {
   machineTitle: "VICI multi-position valve",
-	machineDefaultName: "valve",
+  machineDefaultName: "valve",
   machineVars: _MultiValve_vars,
   machineOptions: _MultiValve_options,
 });
 
 Blockly.Blocks['machine_mt_icir'] = extend(machineBlock, {
   machineTitle: "MT FlowIR",
-	machineDefaultName: "ir",
+  machineDefaultName: "ir",
   machineVars: _iCIR_vars,
   machineOptions: _iCIR_options,
 });
 
 Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
   machineTitle: "WPI Aladdin syringe pump",
-	machineDefaultName: "pump",
+  machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
     { name: "rate", title: "Flow rate", type: "Number" },
@@ -385,7 +394,7 @@ Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
   machineTitle: "Phidgets pH Sensor",
-	machineDefaultName: "phsensor",
+  machineDefaultName: "phsensor",
   machineVars: [
     { name: "ph", title: "pH Reading", type: "Number", readonly: true },
     { name: "temperature", title: "Temperature", type: "Number" }
@@ -398,7 +407,7 @@ Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
   machineTitle: "Image Provider",
-	machineDefaultName: "camera",
+  machineDefaultName: "camera",
   machineVars: [
     { name: "image", title: "Image", type: "Image", readonly: true }
   ],
@@ -407,14 +416,14 @@ Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_singletracker'] = extend(machineBlock, {
   machineTitle: "Single Tracker",
-	machineDefaultName: "tracker",
+  machineDefaultName: "tracker",
   machineVars: _SingleTracker_vars,
   machineConnectionType: "CameraConnection"
 });
 
 Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
   machineTitle: "Multi Tracker",
-	machineDefaultName: "tracker",
+  machineDefaultName: "tracker",
   machineVars: _MultiTracker_vars,
   machineOptions: _MultiTracker_options,
   machineConnectionType: "CameraConnection"
@@ -422,7 +431,7 @@ Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
   machineTitle: "Omega HH306A",
-	machineDefaultName: "thermocouple",
+  machineDefaultName: "thermocouple",
   machineVars: [
     { name: "temp1", title: "Temperature 1", type: "Number", readonly: true },
     { name: "temp2", title: "Temperature 2", type: "Number", readonly: true }
@@ -431,7 +440,7 @@ Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
   machineTitle: "Harvard PHD2000 infuse-only syringe pump",
-	machineDefaultName: "pump",
+  machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
     { name: "rate", title: "Flow rate", type: "Number" },
@@ -445,9 +454,19 @@ Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
 
 Blockly.Blocks['machine_mt_sics_balance'] = extend(machineBlock, {
   machineTitle: "MT Balance (SICS)",
-	machineDefaultName: "balance",
+  machineDefaultName: "balance",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
     { name: "weight", title: "Weight", type: "Number", readonly: true }
   ]
+});
+
+Blockly.Blocks['machine_gilson_FractionCollector203B'] = extend(machineBlock, {
+  machineTitle: "Gilson Fraction Collector 203B",
+  machineDefaultName: "fractioncollector",
+  machineVars: [
+    { name: "position", title: "Position", type: "Number" },
+    { name: "valve", title: "Valve", type: "String", options: ['collect', 'waste'] }
+  ],
+  machineConnectionType: "GSIOCConnection"
 });

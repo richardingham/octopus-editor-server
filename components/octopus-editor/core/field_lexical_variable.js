@@ -21,10 +21,12 @@ module.exports = (function (Blockly) {
  * @extends Blockly.FieldDropdown
  * @constructor
  */
-var FieldLexicalVariable = function(varname, filter) {
+var FieldLexicalVariable = function(varname, filter, noVariablesMessage) {
   this.menuGenerator_ = FieldLexicalVariable.dropdownCreate;
   this.arrow_ = Blockly.createSvgElement("tspan", {}, null);
   this.arrow_.appendChild(document.createTextNode(Blockly.RTL ? Blockly.FieldDropdown.ARROW_CHAR + " " : " " + Blockly.FieldDropdown.ARROW_CHAR));
+
+  this.noVariablesMessage = noVariablesMessage || 'No variables defined';
 
   Blockly.FieldDropdown.super_.call(this, " ")
 
@@ -101,10 +103,10 @@ FieldLexicalVariable.prototype.setValue = function (variable) {
 
 /**
  * Get the block holding this drop-down variable chooser
- * @return {string} Block holding this drop-down variable chooser. 
+ * @return {string} Block holding this drop-down variable chooser.
  */
 FieldLexicalVariable.prototype.getBlock = function() {
-  return this.block_; 
+  return this.block_;
 };
 
 /**
@@ -118,15 +120,15 @@ FieldLexicalVariable.prototype.setBlock = function(block) {
 
 /**
  * Get the cached parent of the block holding this drop-down variable chooser
- * @return {string} Cached parent of the block holding this drop-down variable chooser. 
+ * @return {string} Cached parent of the block holding this drop-down variable chooser.
  */
 FieldLexicalVariable.prototype.getCachedParent = function() {
-  return this.cachedParent_; 
+  return this.cachedParent_;
 };
 
 /**
- * Set the cached parent of the block holding this drop-down variable chooser. 
- * This is used for detecting when the parent has changed in the onchange event handler. 
+ * Set the cached parent of the block holding this drop-down variable chooser.
+ * This is used for detecting when the parent has changed in the onchange event handler.
  * @param {string} Parent of the block holding this drop-down variable chooser
  */
 FieldLexicalVariable.prototype.setCachedParent = function(parent) {
@@ -144,12 +146,12 @@ FieldLexicalVariable.prototype.setCachedParent = function(parent) {
 // [lyn, 11/18/12] Clarified structure of namespaces
 // [lyn, 11/17/12]
 // * Now handle event params.
-// * Commented out loop params because AI doesn't handle loop variables correctly yet. 
+// * Commented out loop params because AI doesn't handle loop variables correctly yet.
 // [lyn, 11/10/12]
-// Returns the names of all names in lexical scope for the block associated with this menu. 
-// including global variable names. 
-// * Each global name is prefixed with "global " 
-// * If Blockly.showPrefixToUser is false, non-global names are not prefixed. 
+// Returns the names of all names in lexical scope for the block associated with this menu.
+// including global variable names.
+// * Each global name is prefixed with "global "
+// * If Blockly.showPrefixToUser is false, non-global names are not prefixed.
 // * If Blockly.showPrefixToUser is true, non-global names are prefixed with labels
 //   specified in blocklyeditor.js
 
@@ -209,7 +211,7 @@ FieldLexicalVariable.dropdownCreate = function() {
 
 /**
  * Create a dropdown menu under the text. This dropdown menu allows submenus
- * for selecting machine components, and disabled / enabled states for 
+ * for selecting machine components, and disabled / enabled states for
  * getters / setters.
  * @private
  */
@@ -218,6 +220,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
   var thisField = this;
   var selected = this.value_;
   var filter = this.filter_;
+  var noVariablesMessage = this.noVariablesMessage;
 
   function callback(value) {
     if (thisField.changeHandler_) {
@@ -254,6 +257,13 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
         return false;
       }
     }
+    for (var flag in filter) {
+      if (filter.hasOwnProperty(flag) && flag != 'type' && flag != 'readonly') {
+        if (!variable.flags[flag]) {
+          return false;
+        }
+      }
+    }
     return true;
   }
 
@@ -264,23 +274,15 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
     var menu = [];
     var checked = false;
     var option, menuItem;
-    
-    if (!subMenu && options.length === 0) {
-      menu.push({
-      text: "No variables defined",
-      enabled: false,
-       });
-      options = [];
-    }
 
     for (var x = 0; x < options.length; x++) {
       option = options[x];
-    
+
       // Separators are allowed.
       if (option === "separator") {
         menuItem = { divider: true };
-      } 
-    
+      }
+
       // Everything else will be a Blockly.Variable.
       else if (option.getName) {
         menuItem = {
@@ -292,44 +294,40 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
 
         // If a submenu is required
         if (attributes.length) {
-          //menuItem.enabled = true;
-          menuItem.children = build(attributes, true);
-          var subChecked = menuItem.children.isChecked;
+          var children = build(attributes, true);
 
-          // Unless the parent menu item is disabled, add an entry 
-          // to allow the parent to be selected.
-          /*if (menuItem.enabled) {
-            var same = (option.getName() === selected);
-            menuItem.children = [{
-                text: menuItem.text,
-                value: menuItem.value,
-                selected: same
-              }, {
-                divider: true
-              }].concat(menuItem.children);
-            subChecked |= same;
-          }*/
+          if (children.length) {
+            menuItem.children = children;
 
-          // If one of the child items is checked, the parent is checked.
-          if (subChecked) {
-            menuItem.selected = true;
-          }
-          checked |= subChecked;
-        } 
-    
-        // Just a regular menu item.
-        else {
-          var same = (option.getName() === selected);
-              menuItem.selected = same;
-          checked |= same;
+            // If one of the child items is checked, the parent is checked.
+            if (menuItem.children.isChecked) {
+              menuItem.selected = true;
+              checked = true;
+            }
           }
         }
 
-        // "disabled" items are not added to the menu.
-        if (menuItem.enabled || (menuItem.children && menuItem.children.length)) {
-          menu.push(menuItem);
+        // Just a regular menu item.
+        if (!menuItem.children) {
+          var same = (option.getName() === selected);
+          menuItem.selected = same;
+          checked |= same;
         }
       }
+
+      // "disabled" items are not added to the menu.
+      if (menuItem.enabled || (menuItem.children && menuItem.children.length)) {
+        menu.push(menuItem);
+      }
+    }
+
+    if (!subMenu && menu.length === 0 ) {
+      menu.push({
+        text: noVariablesMessage,
+        enabled: false
+      });
+      options = [];
+    }
 
     menu.isChecked = checked;
     return menu;
@@ -345,8 +343,8 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
 
 
 /**
- * Split name into digit suffix and prefix before it. 
- * Return two-element list of prefix and suffix strings. Suffix is empty if no digits. 
+ * Split name into digit suffix and prefix before it.
+ * Return two-element list of prefix and suffix strings. Suffix is empty if no digits.
  * @param {string} name Input string
  * @return {string list} Two-element list of prefix and suffix
  */
@@ -354,9 +352,9 @@ FieldLexicalVariable.prefixSuffix = function(name) {
   var prefix = name;
   var suffix = "";
   var matchResult = name.match(/^(.*?)(\d+)$/);
-  if (matchResult) 
+  if (matchResult)
     return [matchResult[1], matchResult[2]]; // List of prefix and suffix
-  else 
+  else
     return [name, ""];
 }
 

@@ -25,3 +25,10 @@ Blockly.PythonOcto['connection_cvcamera'] = function(block) {
   var code = 'cv_webcam(' + id + ')';
   return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
 };
+
+Blockly.PythonOcto['connection_gsioc'] = function(block) {
+  var name = Blockly.PythonOcto.getVariableName_(block.getVariable());
+  var id = parseInt(block.getFieldValue('ID'));
+  var code = name + '.gsioc(' + id + ')';
+  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+};

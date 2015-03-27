@@ -199,6 +199,12 @@ class machine_mt_sics_balance (machine_declaration):
 		return mt.SICSBalance
 
 
+class machine_gilson_FractionCollector203B (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import gilson
+		return gilson.machine_gilson_FractionCollector203B
+
+
 class connection_tcp (Block):
 	def eval (self):
 		return defer.succeed(octopus.transport.basic.tcp(

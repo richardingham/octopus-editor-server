@@ -37,6 +37,7 @@ var Variable = function (name, scope, subScope) {
   this.subScope_ = subScope;
   this.type_ = null;
   this.readonly = false;
+  this.flags = {};
 
   // local.subscope::myvar
   // local.subscope::myvar::subobj.subsubobj
@@ -338,7 +339,7 @@ VariableScope.prototype.getScopedVariable = function (name) {
     name = split[+(split.length > 1)];
 
     var attribute = split[2],
-      variable = this.getVariable(name, attribute), 
+      variable = this.getVariable(name, attribute),
       scope,
       block = this.block_.getSurroundParent();
 
@@ -500,15 +501,15 @@ var prefixSuffix = function(name) {
   var prefix = name;
   var suffix = "";
   var matchResult = name.match(/^(.*?)(\d+)$/);
-  if (matchResult) 
+  if (matchResult)
     return [matchResult[1], matchResult[2]]; // List of prefix and suffix
-  else 
+  else
     return [name, ""];
 };
 
 /**
- * Possibly add a digit to name to distinguish it from names in list. 
- * Used to guarantee that two names aren't the same in situations that prohibit this. 
+ * Possibly add a digit to name to distinguish it from names in list.
+ * Used to guarantee that two names aren't the same in situations that prohibit this.
  * @param {string} name Proposed name.
  * @param {string} currentName If the variable is being renamed, current name.
  * @return {string} Non-colliding name.
@@ -521,8 +522,8 @@ VariableScope.prototype.validName = function (name, currentName) {
   var namePrefixSuffix = prefixSuffix(name);
   var namePrefix = namePrefixSuffix[0];
   var nameSuffix = namePrefixSuffix[1];
-  var emptySuffixUsed = false; // Tracks whether "" is a suffix. 
-  var isConflict = false; // Tracks whether nameSuffix is used 
+  var emptySuffixUsed = false; // Tracks whether "" is a suffix.
+  var isConflict = false; // Tracks whether nameSuffix is used
   var suffixes = [];
   for (var i = 0; i < nameList.length; i++) {
     if (nameList[i] === currentName) {
@@ -538,13 +539,13 @@ VariableScope.prototype.validName = function (name, currentName) {
       if (suffix === "") {
         emptySuffixUsed = true;
       } else {
-        suffixes.push(suffix); 
+        suffixes.push(suffix);
       }
     }
-  } 
+  }
   if (! isConflict) {
     // There is no conflict; just return name
-    return name; 
+    return name;
   } else if (! emptySuffixUsed) {
     // There is a conflict, but empty suffix not used, so use that
     return namePrefix;
@@ -552,10 +553,10 @@ VariableScope.prototype.validName = function (name, currentName) {
     // There is a possible conflict and empty suffix is not an option.
     // First sort the suffixes as numbers from low to high
     var suffixesAsNumbers = suffixes.map( function (elt, i, arr) { return parseInt(elt,10); } )
-    suffixesAsNumbers.sort( function(a,b) { return a-b; } ); 
+    suffixesAsNumbers.sort( function(a,b) { return a-b; } );
     // Now find smallest number >= 2 that is unused
     var smallest = 2; // Don't allow 0 or 1 an indices
-    var index = 0; 
+    var index = 0;
     while (index < suffixesAsNumbers.length) {
       if (smallest < suffixesAsNumbers[index]) {
         return namePrefix + smallest;
