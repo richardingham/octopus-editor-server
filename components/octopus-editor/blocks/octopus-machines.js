@@ -28,25 +28,25 @@
 var _R2R4_vars = [{
   name: "status", title: "Status", type: "String", readonly: true
 }, {
-  name: "power", title: "Power", type: "String"
+  name: "power", title: "Power", type: "String", options: ['off', 'on']
 }, {
-  name: "loop1", title: "Loop A", type: "String"
+  name: "loop1", title: "Loop A", type: "String", options: ['load', 'inject']
 }, {
-  name: "loop2", title: "Loop B", type: "String"
+  name: "loop2", title: "Loop B", type: "String", options: ['load', 'inject']
 }, {
-  name: "pressure_limit", title: "Pressure Limit", type: "Number"
+  name: "pressure_limit", title: "Pressure Limit", type: "Number", unit: 'mbar'
 }, {
   name: "pressure", title: "System Pressure", type: "Number", readonly: true
 }, {
-  name: "output", title: "Output", type: "String"
+  name: "output", title: "Output", type: "String", options: ['waste', 'collect']
 }]
 for (var i = 1; i < 3; i++) {
   _R2R4_vars.push({
     name: "pump" + i, title: "Pump " + String.fromCharCode(64 + i), parts: [
-      { name: "target", title: "Target", type: "Number" },
+      { name: "target", title: "Target", type: "Number", unit: 'uL/min' },
       { name: "rate", title: "Flow Rate", type: "Number", readonly: true },
       { name: "pressure", title: "Pressure", type: "Number", readonly: true },
-      { name: "input", title: "Input", type: "String" },
+      { name: "input", title: "Input", type: "String", options: ['solvent', 'reagent'] },
       { name: "airlock", title: "Airlock", type: "Number", readonly: true }
     ]
   });
@@ -54,7 +54,7 @@ for (var i = 1; i < 3; i++) {
 for (var i = 1; i < 5; i++) {
   _R2R4_vars.push({
     name: "heater" + i, title: "Heater " + String.fromCharCode(64 + i), parts: [
-      { name: "target", title: "Target", type: "Number" },
+      { name: "target", title: "Target", type: "Number", unit: 'C' },
       { name: "temp", title: "Temperature", type: "Number", readonly: true },
       { name: "mode", title: "Mode", type: "Number", readonly: true },
       { name: "power", title: "Power", type: "Number", readonly: true }
@@ -64,14 +64,14 @@ for (var i = 1; i < 5; i++) {
 
 var _K120_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
-  { name: "power", title: "Power", type: "String" },
-  { name: "target", title: "Target", type: "Number" },
+  { name: "power", title: "Power", type: "String", options: ['off', 'on'] },
+  { name: "target", title: "Target", type: "Number", unit: 'uL/min' },
   { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
 ];
 var _S100_vars = [
   { name: "status", title: "Status", type: "String", readonly: true },
-  { name: "power", title: "Power", type: "String" },
-  { name: "target", title: "Target", type: "Number" },
+  { name: "power", title: "Power", type: "String", options: ['off', 'on'] },
+  { name: "target", title: "Target", type: "Number", unit: 'uL/min' },
   { name: "pressure", title: "Pressure", type: "Number", readonly: true },
   { name: "rate", title: "Flow Rate", type: "Number", readonly: true }
 ];
@@ -146,6 +146,14 @@ var machineBlock = {
 
           if (part.flags) {
             partVar.flags = part.flags;
+          }
+
+          if (part.options) {
+            partVar.flags.options = part.options;
+          }
+
+          if (part.unit) {
+            partVar.flags.unit = part.unit;
           }
 
           if (part.parts) {
@@ -384,7 +392,7 @@ Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
   machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
-    { name: "rate", title: "Flow rate", type: "Number" },
+    { name: "rate", title: "Flow rate", type: "Number", unit: 'uL/min' },
     { name: "direction", title: "Direction", type: "String", options: ['infuse', 'withdraw'] },
     { name: "dispensed", title: "Dispensed volume", type: "Number", readonly: true },
     { name: "withdrawn", title: "Withdrawn volume", type: "Number", readonly: true }
@@ -399,7 +407,7 @@ Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
   machineDefaultName: "phsensor",
   machineVars: [
     { name: "ph", title: "pH Reading", type: "Number", readonly: true },
-    { name: "temperature", title: "Temperature", type: "Number" }
+    { name: "temperature", title: "Temperature", type: "Number", unit: 'C' }
   ],
   machineOptions: [
     { name: "min_change", title: "Minimum pH Change", type: "Number", min: 0 }
@@ -445,9 +453,9 @@ Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
   machineDefaultName: "pump",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
-    { name: "rate", title: "Flow rate", type: "Number" },
+    { name: "rate", title: "Flow rate", type: "Number", unit: 'uL/min' },
     { name: "dispensed", title: "Dispensed volume", type: "Number", readonly: true },
-    { name: "target_volume", title: "Target volume", type: "Number" }
+    { name: "target_volume", title: "Target volume", type: "Number", unit: 'mL' }
   ],
   machineOptions: [
     { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
@@ -468,7 +476,7 @@ Blockly.Blocks['machine_gilson_FractionCollector203B'] = extend(machineBlock, {
   machineDefaultName: "fractioncollector",
   machineVars: [
     { name: "position", title: "Position", type: "Number" },
-    { name: "valve", title: "Valve", type: "String", options: ['collect', 'waste'] }
+    { name: "valve", title: "Valve", type: "String", options: ['waste', 'collect'] }
   ],
   machineConnectionType: "GSIOCConnection"
 });

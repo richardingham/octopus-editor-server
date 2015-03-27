@@ -104,5 +104,87 @@ Blockly.Blocks['lexical_variable_set'] = {
     this.getInput('VALUE').setCheck(variable.getType());
   }
 };
+
+
+/**
+ * Prototype bindings for a variable setter block
+ */
+Blockly.Blocks['lexical_variable_set_to'] = {
+  // Variable setter.
+  category: 'Variables',
+  //helpUrl: Blockly.Msg.LANG_VARIABLES_SET_TO_HELPURL,
+  init: function() {
+    this.setColour(Blockly.VARIABLES_CATEGORY_HUE);
+    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", { readonly: false });
+    this.fieldVar_.setBlock(this);
+    this.appendDummyInput('INPUT')
+        .appendField('set') //Blockly.Msg.LANG_VARIABLES_SET_TITLE_SET)
+        .appendField(this.fieldVar_, 'VAR')
+        .appendField('to') //Blockly.Msg.LANG_VARIABLES_SET_TITLE_TO);
+        .appendField('...', 'UNIT');
+    this.appendDummyInput('BLANK')
+        .appendField(new Blockly.FieldTextInput(''), 'VALUE')
+        .setVisible(false);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setTooltip(''); //Blockly.Msg.LANG_VARIABLES_SET_TOOLTIP);
+
+	  withVariableDropdown.call(this, this.fieldVar_, 'VAR');
+  },
+  variableChanged_: function (variable) {
+    var input = this.getInput('INPUT');
+    var value = this.getFieldValue('VALUE');
+    var type = variable.getType();
+    var field, options;
+
+    this.removeInput('BLANK', true);
+    input.removeField('VALUE', true);
+    input.removeField('UNIT', true);
+
+    // Drop-down menu
+    if (variable.flags.options) {
+      options = [];
+      for (var i = 0; i < variable.flags.options.length; i++) {
+        options.push([variable.flags.options[i], variable.flags.options[i]]);
+      }
+
+      field = input.appendField(new Blockly.FieldDropdown(options), 'VALUE');
+
+      if (variable.flags.options.indexOf(value) >= 0) {
+        this.setFieldValue(value, 'VALUE');
+      }
+
+    // Number field
+    } else if (type == "Number") {
+      value = parseFloat(value);
+      field = input.appendField(new Blockly.FieldTextInput(
+        isNaN(value) ? '0' : String(value),
+        Blockly.FieldTextInput.numberValidator
+      ), 'VALUE');
+
+    // Boolean field
+    } else if (type == "Boolean") {
+      options = [
+        [Blockly.Msg.LOGIC_BOOLEAN_TRUE, 'TRUE'],
+        [Blockly.Msg.LOGIC_BOOLEAN_FALSE, 'FALSE']
+      ];
+
+      field = input.appendField(new Blockly.FieldDropdown(options), 'VALUE');
+
+      if (value) {
+        this.setFieldValue('TRUE', 'VALUE');
+      }
+
+    // Text field
+    } else {
+      field = input.appendField(new Blockly.FieldTextInput(
+        String(value)
+      ), 'VALUE');
+    }
+
+    // Unit
+    if (variable.flags.unit) {
+      input.appendField(variable.flags.unit, 'UNIT');
+    }
   }
 };

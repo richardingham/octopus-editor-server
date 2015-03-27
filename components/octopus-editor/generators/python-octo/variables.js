@@ -35,7 +35,7 @@ Blockly.PythonOcto.getVariableName_ = function (variable) {
   var attr = variable.getVarAttribute();
   var prefix = variable.getScope().isGlobal() ? split_ns[1] + "_" : "";
   var name = Blockly.PythonOcto.variableDB_.getName(
-    variable.getVarName(), 
+    variable.getVarName(),
     Blockly.Variables.NAME_TYPE
   );
 
@@ -54,6 +54,29 @@ Blockly.PythonOcto['lexical_variable_set'] = function(block) {
       Blockly.PythonOcto.ORDER_NONE) || '0';
   var name = Blockly.PythonOcto.getVariableName_(block.getVariable());
   return 'set(' + name + ', ' + argument0 + ')';
+};
+
+Blockly.PythonOcto['lexical_variable_set_to'] = function(block) {
+  // Variable setter.
+  var variable = block.getVariable();
+  var name = Blockly.PythonOcto.getVariableName_(variable);
+  var type = variable && variable.getType();
+  var value = block.getFieldValue('VALUE');
+  var defaultValue;
+
+  if (type == 'Number') {
+    if (!value) {
+      value = 0;
+    }
+  } else if (type == 'Boolean') {
+    value = value ? 'true' : 'false';
+  } else if (!value) {
+    value = '\'\'';
+  } else {
+    value = '\'' + value + '\'';
+  }
+
+  return 'set(' + name + ', ' + value + ')';
 };
 
 Blockly.PythonOcto['global_declaration'] = function(block) {

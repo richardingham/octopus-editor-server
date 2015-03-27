@@ -125,9 +125,10 @@ Input.prototype.appendTitle = function(field, opt_name) {
 /**
  * Remove a field from this input.
  * @param {string} name The name of the field.
+ * @param {boolean} opt_quiet Suppress error if field not present.
  * @throws {Error} if the field is not present.
  */
-Input.prototype.removeField = function(name) {
+Input.prototype.removeField = function(name, opt_quiet) {
   for (var i = 0, field; field = this.fieldRow[i]; i++) {
     if (field.name === name) {
       field.removeAllListeners();
@@ -141,7 +142,9 @@ Input.prototype.removeField = function(name) {
       return;
     }
   }
-  throw new Error('Field "' + name + '" not found.');
+  if (!opt_quiet) {
+    throw new Error('Field "' + name + '" not found.');
+  }
 };
 
 /**

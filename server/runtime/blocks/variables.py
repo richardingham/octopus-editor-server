@@ -184,6 +184,14 @@ class lexical_variable_set (lexical_variable):
 			self.emitLogMessage(str(error), "error")
 
 
+class lexical_variable_set_to (lexical_variable_set):
+	@defer.inlineCallbacks
+	def _run (self):
+		result = self.getFieldValue('VALUE')
+		variable = self._getVariable()
+		yield self._setVariable(variable, result)
+
+
 class lexical_variable_get (lexical_variable):
 	def eval (self):
 		try:
