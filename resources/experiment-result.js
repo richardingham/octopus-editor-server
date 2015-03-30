@@ -1,5 +1,5 @@
 $(function ($) {
-  
+
   var timezero = parseInt($('#viewer').data('timezero')) * 1000;
   var timeend = parseInt($('#viewer').data('timeend')) * 1000;
   var variables = $('#viewer').data('variables');
@@ -101,7 +101,7 @@ $(function ($) {
         graphs.splice(i, 1);
       }
     }
-  }).appendTo(handle);
+  });
 
   $('#data').on('click', '.chart-container i.options', function () {
     var container = $(this).closest('.chart-container');
