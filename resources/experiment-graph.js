@@ -230,11 +230,11 @@ function Graph (element, options) {
 
     var result = [];
     var days   = Math.floor(d / 86400);
-    data -= days * 86400;
+    d -= days * 86400;
 
     var hours = Math.floor(d / 3600);
     if (hours > 0) result.push(hours);
-    data -= hours * 3600;
+    d -= hours * 3600;
 
     var minutes = Math.floor(d / 60);
     if (minutes > 0) {
