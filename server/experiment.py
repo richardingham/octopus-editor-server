@@ -393,7 +393,7 @@ class CompletedExperiment (object):
 		]
 
 	@defer.inlineCallbacks
-	def loadData (self, variables, start, interval):
+	def loadData (self, variables, start, end):
 		date = yield self._fetchDateFromDb(self.id)
 		experimentDir = self._getExperimentDir(self.id, date)
 		storedVariablesData = yield self._getVariables(experimentDir)
@@ -404,7 +404,7 @@ class CompletedExperiment (object):
 				variable["name"],
 				variable["type"],
 				start,
-				interval
+				end
 			),
 			map(lambda name: storedVariablesData[name], variables)
 		))
@@ -583,11 +583,13 @@ class CompletedExperiment (object):
 		#var_name = '.'.join(name.split('::')[1:])
 
 		if len(data) > 400 and cast in (int, float):
-			if interval is None:
+			if end is None:
 				try:
 					interval = data[-1][0] - data[0][0]
 				except IndexError:
 					interval = 0
+			else:
+				interval = end - start
 
 			spread = max(data, key = lambda x: x[1])[1] - min(data, key = lambda x: x[1])[1]
 			print "Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data)
