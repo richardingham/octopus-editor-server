@@ -99,6 +99,10 @@ function Graph (element, options) {
         this.streams = _.pluck(streams, 'key');
         makeLegend();
         draw();
+
+        if (streams.length === 0) {
+          unit = null;
+        }
         return true;
       }
     }
