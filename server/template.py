@@ -114,6 +114,7 @@ class ExperimentResult (Element):
 		def _done (result):
 			return tag.fillSlots(
 				sketch_url = "/sketch/{:s}".format(self.expt.sketch_id),
+				download_url = "/experiment/{:s}/download".format(self.expt.id),
 				data_url = "/experiment/{:s}/data".format(self.expt.id),
 				id = self.expt.id,
 				title = self.expt.title,

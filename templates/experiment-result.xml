@@ -30,6 +30,10 @@
 	<div class="container-fluid">
 		<div class="navbar-left">
 			<a href="/" id="btn-home" class="btn btn-default navbar-btn"><i class="fa fa-home" /></a>
+			<a id="btn-download" class="btn btn-default navbar-btn">
+				<t:attr name="href"><t:slot name="download_url" /></t:attr>
+				<i class="fa fa-download" />
+			</a>
 			<span id="experiment-title"><t:slot name="title" /></span>
 		</div>
 	</div>
