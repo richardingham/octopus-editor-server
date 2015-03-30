@@ -36,6 +36,8 @@
 	<t:attr name="data-url"><t:slot name="websocket_url" /></t:attr>
 	<t:attr name="data-sketch"><t:slot name="sketch_id" /></t:attr>
 	<t:attr name="data-experiment"><t:slot name="experiment_id" /></t:attr>
+	<t:attr name="data-title"><t:slot name="title" /></t:attr>
+	<t:attr name="data-timezero"><t:slot name="started_date" /></t:attr>
 
 	<ul id="variables"></ul>
 	<div id="data"></div>

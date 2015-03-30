@@ -164,5 +164,6 @@ class ExperimentRunning (Element):
 			websocket_url = websocketUrl,
 			sketch_id = self.experiment.sketch.id,
 			experiment_id = self.experiment.id,
-			title = self.experiment.sketch.title
+			title = self.experiment.sketch.title,
+			started_date = str(self.experiment.startTime)
 		)

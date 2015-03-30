@@ -3,8 +3,8 @@ $(function ($) {
   var experiment = {
     sketch: $('#viewer').data('sketch'),
     id: $('#viewer').data('experiment'),
-    title: "",
-    timeZero: "",
+    title: $('#viewer').data('title'),
+    timeZero: $('#viewer').data('timezero') * 1000,
     variables: []
   };
 
