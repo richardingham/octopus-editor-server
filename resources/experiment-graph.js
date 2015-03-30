@@ -211,8 +211,9 @@ function Graph (element, options) {
 
   var color = d3.scale.category10();
 
-  var chartarea = svg.append("g")
+  var cliparea = svg.append("g")
       .attr('clip-path', 'url(#graph' + graphId + '-clip)');
+  var chartarea = cliparea.append("g");
 
   var legend = svg.append("g")
       .attr("class", "legend")
@@ -223,6 +224,11 @@ function Graph (element, options) {
 
   function _fetch (fn, i) {
     return function(s) { return fn(s.data, function(v) { return v[i]; }); };
+  }
+
+  if (options.timezero) {
+    // Round to nearest second.
+    options.timezero = Math.round(options.timezero / 1000) * 1000;
   }
 
   function relativeTickFormat (date) {
@@ -242,6 +248,8 @@ function Graph (element, options) {
     }
 
     var seconds = d - (minutes * 60);
+    seconds = Math.round(seconds * 100) / 100;
+
     if (result.length === 0) {
       result.push(seconds + 's');
     } else if (seconds > 0) {
