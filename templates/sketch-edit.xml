@@ -80,6 +80,7 @@
 		<block type="machine_mt_sics_balance"></block>
 		<block type="machine_gilson_FractionCollector203B"></block>
 		<block type="machine_startech_powerremotecontrol"></block>
+		<block type="machine_ismatec_RegloSingleChannel"></block>
 		<block type="connection_tcp"></block>
 		<block type="connection_serial"></block>
 		<block type="connection_phidget"></block>

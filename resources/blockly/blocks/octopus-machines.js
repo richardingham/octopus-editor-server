@@ -496,3 +496,17 @@ Blockly.Blocks['machine_gilson_FractionCollector203B'] = extend(machineBlock, {
   ],
   machineConnectionType: "GSIOCConnection"
 });
+
+Blockly.Blocks['machine_ismatec_RegloSingleChannel'] = extend(machineBlock, {
+  machineTitle: "Ismatec Single-Channel Peristaltic pump",
+  machineDefaultName: "pump",
+  machineVars: [
+    { name: "power", title: "Power", type: "String", options: ['on', 'off'] },
+    { name: "rate", title: "Flow Rate", type: "Number", unit: 'uL/min' },
+    { name: "direction", title: "Direction", type: "String", options: ['clockwise', 'anticlockwise'] },
+    { name: "dispensed", title: "Dispensed Volume", type: "Number", unit: 'mL', readonly: true }
+  ],
+  machineOptions: [
+    { name: "tubing_diameter", title: "Tubing Diameter /mm", type: "Number", min: 0 }
+  ]
+});

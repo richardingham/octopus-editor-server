@@ -211,6 +211,21 @@ class machine_gilson_FractionCollector203B (machine_declaration):
 		return gilson.FractionCollector203B
 
 
+class machine_ismatec_RegloSingleChannel (machine_declaration):
+	def getMachineClass (self):
+		from octopus.manufacturer import ismatec
+		return ismatec.RegloSingleChannel
+
+	def getMachineParams (self):
+		import json
+		try:
+			return {
+				"tubing_diameter": float(json.loads(self.mutation)['tubing_diameter'])
+			}
+		except (ValueError, KeyError):
+			return {}
+
+
 class connection_tcp (Block):
 	def eval (self):
 		return defer.succeed(octopus.transport.basic.tcp(
