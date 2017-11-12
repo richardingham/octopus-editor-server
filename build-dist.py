@@ -89,12 +89,13 @@ for f in filelist:
 
 # Download Installers
 
-print "Download Installers"
-os.chdir(dist_dir)
-wget.download("https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi", out = "python-2.7.9.msi")
-wget.download("https://pypi.python.org/packages/2.7/T/Twisted/Twisted-14.0.2.win32-py2.7.msi#md5=e5f239987f3b5efbec41e6224bf982cb", out = "Twisted-14.0.2.win32-py2.7.msi")
-wget.download("http://sourceforge.net/projects/numpy/files/NumPy/1.9.1/numpy-1.9.1-win32-superpack-python2.7.exe/download", out = "numpy-1.9.1-win32-superpack-python2.7.exe")
-wget.download("https://pypi.python.org/packages/any/p/pyserial/pyserial-2.7.win32.exe#md5=21555387937eeb79126cde25abee4b35", out = "pyserial-2.7.win32.exe")
-wget.download("http://www.voidspace.org.uk/downloads/pycrypto26/pycrypto-2.6.win32-py2.7.exe", out = "pycrypto-2.6.win32-py2.7.exe")
-wget.download("https://pypi.python.org/packages/2.7/z/zope.interface/zope.interface-4.1.1.win32-py2.7.exe#md5=8b36e1fcd506ac9fb325ddf1c7238b07", out = "zope.interface-4.1.1.win32-py2.7.exe")
-wget.download("http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/pywin32-219.win32-py2.7.exe/download", out = "pywin32-219.win32-py2.7.exe")
+if os.name == 'nt':
+	print "Download Installers"
+	os.chdir(dist_dir)
+	wget.download("https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi", out = "python-2.7.9.msi")
+	wget.download("https://pypi.python.org/packages/2.7/T/Twisted/Twisted-14.0.2.win32-py2.7.msi#md5=e5f239987f3b5efbec41e6224bf982cb", out = "Twisted-14.0.2.win32-py2.7.msi")
+	wget.download("http://sourceforge.net/projects/numpy/files/NumPy/1.9.1/numpy-1.9.1-win32-superpack-python2.7.exe/download", out = "numpy-1.9.1-win32-superpack-python2.7.exe")
+	wget.download("https://pypi.python.org/packages/any/p/pyserial/pyserial-2.7.win32.exe#md5=21555387937eeb79126cde25abee4b35", out = "pyserial-2.7.win32.exe")
+	wget.download("http://www.voidspace.org.uk/downloads/pycrypto26/pycrypto-2.6.win32-py2.7.exe", out = "pycrypto-2.6.win32-py2.7.exe")
+	wget.download("https://pypi.python.org/packages/2.7/z/zope.interface/zope.interface-4.1.1.win32-py2.7.exe#md5=8b36e1fcd506ac9fb325ddf1c7238b07", out = "zope.interface-4.1.1.win32-py2.7.exe")
+	wget.download("http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/pywin32-219.win32-py2.7.exe/download", out = "pywin32-219.win32-py2.7.exe")
