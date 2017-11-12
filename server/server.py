@@ -10,7 +10,6 @@ from twisted.web import server, static, resource, guard
 from twisted.web.template import flatten
 from twisted.web.resource import NoResource
 from twisted.cred.portal import IRealm, Portal
-from twisted.manhole.telnet import ShellFactory
 
 # Zope Imports
 from zope.interface import implements
@@ -26,7 +25,7 @@ import websocket
 import template
 
 # System Imports
-import os
+import sys, os
 import uuid
 import sqlite3
 import json
@@ -42,8 +41,11 @@ now = time.time
 data_path = os.path.abspath(os.path.join(os.path.basename(__file__), "..", "data"))
 
 dbfilename = os.path.join(data_path, "octopus.db")
+
+if not os.path.isfile(dbfilename):
+	sys.exit("ERROR: Database not found.\nCreate the database using initialise.py before starting the server.")
+
 dbpool = adbapi.ConnectionPool("sqlite3", dbfilename, check_same_thread = False)
-print "Using database: " + dbfilename
 
 experiment.Experiment.db = dbpool
 experiment.Experiment.dataDir = os.path.join(data_path, "experiments")
@@ -96,7 +98,7 @@ def _error (failure, request):
 		pass
 
 	log.err(failure)
-	request.write("There was an error: " + failure)
+	request.write("There was an error: " + str(failure))
 	request.finish()
 
 def _getArg (request, arg, cast = None, default = None):
@@ -525,20 +527,12 @@ class UndeleteExperiment (resource.Resource):
 		return server.NOT_DONE_YET
 
 
-def makeService (options):
-	"""
-	This will be called from twistd plugin system and we are supposed to
-	create and return an application service.
-	"""
-
-	application = service.IServiceCollection(
-		service.Application("octopus_editor_server", uid = 1, gid = 1)
-	)
-
+def makeWebsocketServerFactory (host, port):
 	# WebSocket Server
-	websocketUrl = "ws://" + str(options["wshost"]) + ":" + str(options["wsport"])
+	websocketUrl = "ws://" + str(host) + ":" + str(port)
 	template.websocketUrl = websocketUrl
-	factory = WebSocketServerFactory(websocketUrl, debug = False)
+
+	factory = WebSocketServerFactory(websocketUrl) #, debug = False)
 	factory.protocol = websocket.OctopusEditorProtocol
 	factory.runtime = websocket_runtime
 
@@ -550,11 +544,9 @@ def makeService (options):
 
 	factory.setProtocolOptions(perMessageCompressionAccept = accept)
 
-	internet.TCPServer(
-		int(options["wsport"]),
-		factory
-	).setServiceParent(application)
+	return factory
 
+def makeHTTPResourcesServerFactory ():
 	# HTTP Server
 	resources_path = os.path.join(os.path.dirname(__file__), "resources")
 
@@ -571,22 +563,63 @@ def makeService (options):
 	root.putChild("components", static.File(rootDir.child("components").path))
 	root.putChild("resources", static.File(rootDir.child("resources").path))
 
-	site = server.Site(root)
-	internet.TCPServer(
-		int(options["port"]),
-		site
-	).setServiceParent(application)
+	return server.Site(root)
 
-	# Manhole
+def makeConsoleServerFactory ():
+	from twisted.conch.insults import insults
+	from twisted.conch.manhole import ColoredManhole
+	from twisted.conch.manhole_ssh import ConchFactory, TerminalRealm
+	from twisted.conch.ssh import keys
+	from twisted.cred import checkers, portal
+
 	shell_password = str(uuid.uuid1()).split("-")[0]
-	shell_factory = ShellFactory()
-	shell_factory.username = 'octopus'
-	shell_factory.password = shell_password
-	shell_factory.namespace['sketches'] = loaded_sketches
-	shell_factory.namespace['experiments'] = running_experiments
-	print "Octopus telnet shell running on port 4040 (octopus:%s)\n\n" % shell_password
 
-	internet.TCPServer(4040, shell_factory).setServiceParent(application)
+	# Note - using unsafe credentials checker.
+	checker = checkers.InMemoryUsernamePasswordDatabaseDontUse(octopus=shell_password)
+
+	def chainProtocolFactory():
+		return insults.ServerProtocol(
+			ColoredManhole,
+			dict(
+				sketches = loaded_sketches,
+				experiments = running_experiments
+			)
+		)
+
+	rlm = TerminalRealm()
+	rlm.chainedProtocolFactory = chainProtocolFactory
+	ptl = portal.Portal(rlm, [checker])
+
+	factory = ConchFactory(ptl)
+	factory.publicKeys[b"ssh-rsa"] = keys.Key.fromFile(os.path.join(data_path, "ssh-keys", "ssh_host_rsa_key.pub"))
+	factory.privateKeys[b"ssh-rsa"] = keys.Key.fromFile(os.path.join(data_path, "ssh-keys", "ssh_host_rsa_key"))
+
+	print "Octopus SSH access credentials are octopus:%s\n\n" % shell_password
+
+	return factory
+
+
+def makeService (options):
+	"""
+	This will be called from twistd plugin system and we are supposed to
+	create and return an application service.
+	"""
+
+	application = service.IServiceCollection(
+		service.Application("octopus_editor_server", uid = 1, gid = 1)
+	)
+
+	ws_factory = makeWebsocketServerFactory(str(options["wshost"]), int(options["wsport"]))
+	internet.TCPServer(int(options["wsport"]), ws_factory).setServiceParent(application)
+
+	http_factory = makeHTTPResourcesServerFactory()
+	internet.TCPServer(int(options["port"]), http_factory).setServiceParent(application)
+
+	try:
+		console_factory = makeConsoleServerFactory()
+		internet.TCPServer(int(options["consoleport"]), console_factory).setServiceParent(application)
+	except IOError:
+		log.err("ERROR: Console could not be started. Create SSH keys using initialise.py before running.")
 
 	return application
 
@@ -596,35 +629,12 @@ def run_server ():
 	log.startLogging(sys.stdout)
 
 	ws_port = 9000
-	websocketUrl = "ws://localhost:" + str(ws_port)
-	template.websocketUrl = websocketUrl
-	factory = WebSocketServerFactory(websocketUrl, debug = False)
-	factory.protocol = websocket.OctopusEditorProtocol
-	factory.runtime = websocket_runtime
-
-	# Required for Chromium ~33 and newer
-	def accept (offers):
-		for offer in offers:
-			if isinstance(offer, PerMessageDeflateOffer):
-				return PerMessageDeflateOfferAccept(offer)
-
-	factory.setProtocolOptions(perMessageCompressionAccept = accept)
-
-	reactor.listenTCP(ws_port, factory)
+	ws_factory = makeWebsocketServerFactory("localhost", ws_port)
+	reactor.listenTCP(ws_port, ws_factory)
 	log.msg("WS listening on port %s" % ws_port)
 
-	root = resource.Resource()
-	root.putChild("", Root())
-	root.putChild("sketch", Sketch())
-	root.putChild("experiment", Experiment())
-
-	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
-	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
-	root.putChild("components", static.File(rootDir.child("components").path))
-	root.putChild("resources", static.File(rootDir.child("resources").path))
-
-	site = server.Site(root)
-	reactor.listenTCP(8001, site)
+	http_factory = makeHTTPResourcesServerFactory()
+	reactor.listenTCP(8001, http_factory)
 	log.msg("HTTP listening on port 8001")
 
 	reactor.run()
