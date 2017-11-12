@@ -41,7 +41,7 @@ mkpath(dist_dir)
 # octopus-editor-server/twisted/*
 
 print "Copy Server Components"
-for dir in ['bower_components', 'components', 'resources', 'server', 'templates', 'twisted']:
+for dir in ['bower_components', 'resources', 'server', 'templates', 'twisted']:
 	copy_tree(pjoin(server_src_dir, dir), pjoin(dist_dir, dir))
 
 for file in ['Start Server.lnk']:
@@ -49,8 +49,8 @@ for file in ['Start Server.lnk']:
 
 # del octopus-editor-server/components/octopus-editor/{core, blocks, generators}
 
-for dir in ['core', 'blocks', 'generators']:
-	remove_tree(pjoin(dist_dir, 'components', 'octopus-editor', dir))
+#for dir in ['core', 'blocks', 'generators']:
+#	remove_tree(pjoin(dist_dir, 'components', 'octopus-editor', dir))
 
 # octopus/octopus/*
 # octopus/tools/*
@@ -79,6 +79,27 @@ mkpath(pjoin(dist_dir, 'data', 'sketches'))
 mkpath(pjoin(dist_dir, 'data', 'experiments'))
 
 server.createdb.createdb(pjoin(dist_dir, 'data'))
+
+print ("Creating SSH Keys")
+key = rsa.generate_private_key(
+    backend=crypto_default_backend(),
+    public_exponent=65537,
+    key_size=2048
+)
+private_key = key.private_bytes(
+    crypto_serialization.Encoding.PEM,
+    crypto_serialization.PrivateFormat.TraditionalOpenSSL,
+    crypto_serialization.NoEncryption())
+public_key = key.public_key().public_bytes(
+    crypto_serialization.Encoding.OpenSSH,
+    crypto_serialization.PublicFormat.OpenSSH
+)
+
+with open(pjoin(dist_dir, 'data', 'ssh-keys', 'ssh_host_rsa_key.pub'), 'wb') as f:
+    f.write(public_key)
+
+with open(pjoin(dist_dir, 'data', 'ssh-keys', 'ssh_host_rsa_key'), 'wb') as f:
+    f.write(private_key)
 
 # del *.pyc
 
