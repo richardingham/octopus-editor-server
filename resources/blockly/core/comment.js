@@ -24,21 +24,25 @@
  */
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Icon from './icon';
+import Bubble from './bubble';
+import Warning from './warning';
+import {inherits} from './utils';
+import {bindEvent_, unbindEvent_, createSvgElement} from './utils';
 
 /**
  * Class for a comment.
- * @param {!Blockly.Block} block The block associated with this comment.
- * @extends {Blockly.Icon}
+ * @param {!Block} block The block associated with this comment.
+ * @extends {Icon}
  * @constructor
  */
 var Comment = function(block) {
   Comment.super_.call(this, block);
   this.createIcon_();
 };
-util.inherits(Comment, Blockly.Icon);
+inherits(Comment, Icon);
+export default Comment;
 
 
 /**
@@ -64,20 +68,20 @@ Comment.prototype.height_ = 80;
  * @private
  */
 Comment.prototype.createIcon_ = function() {
-  Blockly.Icon.prototype.createIcon_.call(this);
+  Icon.prototype.createIcon_.call(this);
   /* Here's the markup that will be generated:
   <circle class="blocklyIconShield" r="8" cx="8" cy="8"/>
   <text class="blocklyIconMark" x="8" y="13">?</text>
   */
-  var iconShield = Blockly.createSvgElement('circle',
+  var iconShield = createSvgElement('circle',
       {'class': 'blocklyIconShield',
-       'r': Blockly.Icon.RADIUS,
-       'cx': Blockly.Icon.RADIUS,
-       'cy': Blockly.Icon.RADIUS}, this.iconGroup_);
-  this.iconMark_ = Blockly.createSvgElement('text',
+       'r': Icon.RADIUS,
+       'cx': Icon.RADIUS,
+       'cy': Icon.RADIUS}, this.iconGroup_);
+  this.iconMark_ = createSvgElement('text',
       {'class': 'blocklyIconMark',
-       'x': Blockly.Icon.RADIUS,
-       'y': 2 * Blockly.Icon.RADIUS - 3}, this.iconGroup_);
+       'x': Icon.RADIUS,
+       'y': 2 * Icon.RADIUS - 3}, this.iconGroup_);
   this.iconMark_.appendChild(document.createTextNode('?'));
 };
 
@@ -96,8 +100,8 @@ Comment.prototype.createEditor_ = function() {
       </body>
     </foreignObject>
   */
-  this.foreignObject_ = Blockly.createSvgElement('foreignObject',
-      {'x': Blockly.Bubble.BORDER_WIDTH, 'y': Blockly.Bubble.BORDER_WIDTH},
+  this.foreignObject_ = createSvgElement('foreignObject',
+      {'x': Bubble.BORDER_WIDTH, 'y': Bubble.BORDER_WIDTH},
       null);
   var body = document.createElementNS(Blockly.HTML_NS, 'body');
   body.setAttribute('xmlns', Blockly.HTML_NS);
@@ -107,8 +111,8 @@ Comment.prototype.createEditor_ = function() {
   this.textarea_.setAttribute('dir', Blockly.RTL ? 'RTL' : 'LTR');
   body.appendChild(this.textarea_);
   this.foreignObject_.appendChild(body);
-  Blockly.bindEvent_(this.textarea_, 'mouseup', this, this.textareaFocus_);
-  Blockly.bindEvent_(this.textarea_, 'blur', this, this.saveComment_);
+  bindEvent_(this.textarea_, 'mouseup', this, this.textareaFocus_);
+  bindEvent_(this.textarea_, 'blur', this, this.saveComment_);
   return this.foreignObject_;
 };
 
@@ -123,7 +127,7 @@ Comment.prototype.updateEditable = function() {
     this.setVisible(true);
   }
   // Allow the icon to update.
-  Blockly.Icon.prototype.updateEditable.call(this);
+  Icon.prototype.updateEditable.call(this);
 };
 
 /**
@@ -133,7 +137,7 @@ Comment.prototype.updateEditable = function() {
  */
 Comment.prototype.resizeBubble_ = function() {
   var size = this.bubble_.getBubbleSize();
-  var doubleBorderWidth = 2 * Blockly.Bubble.BORDER_WIDTH;
+  var doubleBorderWidth = 2 * Bubble.BORDER_WIDTH;
   this.foreignObject_.setAttribute('width', size.width - doubleBorderWidth);
   this.foreignObject_.setAttribute('height', size.height - doubleBorderWidth);
   this.textarea_.style.width = (size.width - doubleBorderWidth - 4) + 'px';
@@ -142,7 +146,7 @@ Comment.prototype.resizeBubble_ = function() {
 
 var _foreignObjectSupported = (
   typeof document !== "undefined" &&
-  typeof  document.implementation !== "undefined" &&
+  typeof document.implementation !== "undefined" &&
   document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#Extensibility","1.1")
 );
 
@@ -160,7 +164,7 @@ Comment.prototype.setVisible = function(visible) {
     // MSIE does not support foreignobject; textareas are impossible.
     // http://msdn.microsoft.com/en-us/library/hh834675%28v=vs.85%29.aspx
     // Always treat comments in IE as uneditable.
-    Blockly.Warning.prototype.setVisible.call(this, visible);
+    Warning.prototype.setVisible.call(this, visible);
     return;
   }
   // Save the bubble stats before the visibility switch.
@@ -168,8 +172,8 @@ Comment.prototype.setVisible = function(visible) {
   var size = this.getBubbleSize();
   if (visible) {
     // Create the bubble.
-    this.bubble_ = new Blockly.Bubble(
-        /** @type {!Blockly.Workspace} */ (this.block_.workspace),
+    this.bubble_ = new Bubble(
+        /** @type {!Workspace} */ (this.block_.workspace),
         this.createEditor_(), this.block_.svg_.svgPath_,
         this.iconX_, this.iconY_,
         this.width_, this.height_);
@@ -266,9 +270,5 @@ Comment.prototype.setText = function(text) {
 Comment.prototype.dispose = function() {
   this.block_.comment = null;
   this.block_.workspaceEmit("block-set-comment", { id: this.block_.id, value: "" });
-  Blockly.Icon.prototype.dispose.call(this);
+  Icon.prototype.dispose.call(this);
 };
-
-return Comment;
-
-});

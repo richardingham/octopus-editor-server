@@ -24,11 +24,6 @@
  */
 'use strict';
 
-/**
- * Name space for the Msg singleton.
- * Msg gets populated in the message files.
- */
+var Msg = {};
 
-var Blockly = require('Blockly');
- 
-Blockly.Msg = {};
+export default Msg;

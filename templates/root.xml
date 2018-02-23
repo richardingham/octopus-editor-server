@@ -1,17 +1,31 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
-	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<script src="/bower_components/moment/min/moment.min.js"></script>
-	<script src="/bower_components/bootstrap/js/collapse.js"></script>
-	<script src="/bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
-	<script src="/bower_components/datatables/media/js/jquery.dataTables.min.js"></script>
-	<script src="/bower_components/datatables-bootstrap3-plugin/media/js/datatables-bootstrap3.min.js"></script>
+	<!-- jQuery -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
-	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" />
-	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
-	<link rel="stylesheet" href="/bower_components/datatables-bootstrap3-plugin/media/css/datatables-bootstrap3.min.css" />
-	<link rel="stylesheet" href="/resources/root.css" />
+	<!-- Bootstrap -->
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+
+	<!-- DataTables -->
+	<script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap.min.js"></script>
+	<link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" />
+	<link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap.min.css" />
+
+  <!-- Moment.js -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.2/moment.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.2/locale/en-gb.js"></script>
+
+	<!-- bootstrap-datepicker -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/locales/bootstrap-datepicker.en-GB.min.js"></script>
+	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.min.css" />
+
+  <!-- local -->
+	<script src="/resources/root.js"></script>
+  <link rel="stylesheet" href="/resources/root.css" />
 
 	<title>Octopus</title>
 </head>
@@ -172,7 +186,5 @@
 		</table>
 	</div>
 	</section>
-
-	<script src="/resources/root.js"></script>
 </body>
 </html>

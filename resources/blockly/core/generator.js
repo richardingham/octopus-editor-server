@@ -25,10 +25,6 @@
  */
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
-
 /**
  * Class for a code generator that translates the blocks into a language.
  * @param {string} name Language name of this generator.
@@ -40,6 +36,7 @@ var Generator = function(name) {
   this.FUNCTION_NAME_PLACEHOLDER_REGEXP_ =
       new RegExp(this.FUNCTION_NAME_PLACEHOLDER_, 'g');
 };
+export default Generator;
 
 /**
  * Category to separate generated function names from variables and procedures.
@@ -66,13 +63,12 @@ Generator.prototype.STATEMENT_PREFIX = null;
  * Generate code for all blocks in the workspace to the specified language.
  * @return {string} Generated code.
  */
-Generator.prototype.workspaceToCode = function() {
+Generator.prototype.workspaceToCode = function(blocks) {
   var code = [];
   this.init();
-  var blocks = Blockly.mainWorkspace.getTopBlocks(true);
   for (var x = 0, block; block = blocks[x]; x++) {
     var line = this.blockToCode(block);
-    if (util.isArray(line)) {
+    if (Array.isArray(line)) {
       // Value blocks return tuples of code and operator order.
       // Top-level blocks don't care about operator order.
       line = line[0];
@@ -110,7 +106,7 @@ Generator.prototype.prefixLines = function(text, prefix) {
 
 /**
  * Recursively spider a tree of blocks, returning all their comments.
- * @param {!Blockly.Block} block The block from which to start spidering.
+ * @param {!Block} block The block from which to start spidering.
  * @return {string} Concatenated list of comments.
  */
 Generator.prototype.allNestedComments = function(block) {
@@ -131,7 +127,7 @@ Generator.prototype.allNestedComments = function(block) {
 
 /**
  * Generate code for the specified block (and attached blocks).
- * @param {Blockly.Block} block The block to generate code for.
+ * @param {Block} block The block to generate code for.
  * @return {string|!Array} For statement blocks, the generated code.
  *     For value blocks, an array containing the generated code and an
  *     operator order value.  Returns '' if block is null.
@@ -155,10 +151,10 @@ Generator.prototype.blockToCode = function(block) {
   // The current prefered method of accessing the block is through the second
   // argument to func.call, which becomes the first parameter to the generator.
   var code = func.call(block, block);
-  if (util.isArray(code)) {
+  if (Array.isArray(code)) {
     // Value blocks return tuples of code and operator order.
     return [this.scrub_(block, code[0]), code[1]];
-  } else if (util.isString(code)) {
+  } else if (typeof code === 'string') {
     if (this.STATEMENT_PREFIX) {
       code = this.STATEMENT_PREFIX.replace(/%1/g, '\'' + block.id + '\'') +
           code;
@@ -174,7 +170,7 @@ Generator.prototype.blockToCode = function(block) {
 
 /**
  * Generate code representing the specified value input.
- * @param {!Blockly.Block} block The block containing the input.
+ * @param {!Block} block The block containing the input.
  * @param {string} name The name of the input.
  * @param {number} order The maximum binding strength (minimum order value)
  *     of any operators adjacent to "block".
@@ -194,7 +190,7 @@ Generator.prototype.valueToCode = function(block, name, order) {
     // Disabled block.
     return '';
   }
-  if (!util.isArray(tuple)) {
+  if (!Array.isArray(tuple)) {
     // Value blocks must return code and order of operations info.
     // Statement blocks must only return code.
     throw 'Expecting tuple from value block "' + targetBlock.type + '".';
@@ -223,14 +219,14 @@ Generator.prototype.valueToCode = function(block, name, order) {
 
 /**
  * Generate code representing the statement.  Indent the code.
- * @param {!Blockly.Block} block The block containing the input.
+ * @param {!Block} block The block containing the input.
  * @param {string} name The name of the input.
  * @return {string} Generated code or '' if no blocks are connected.
  */
 Generator.prototype.statementToCode = function(block, name) {
   var targetBlock = block.getInputTargetBlock(name);
   var code = this.blockToCode(targetBlock);
-  if (!util.isString(code)) {
+  if (!typeof code === 'string') {
     // Value blocks must return code and order of operations info.
     // Statement blocks must only return code.
     throw 'Expecting code from statement block "' + targetBlock.type + '".';
@@ -311,6 +307,4 @@ Generator.prototype.provideFunction_ = function(desiredName, code) {
   return this.functionNames_[desiredName];
 };
 
-return Generator;
-
-});
+module.exports = Generator;

@@ -24,33 +24,35 @@
  */
 'use strict';
 
-// goog.require('Blockly.Field');
-
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import BlockSvg from './block_svg';
+import Field from './field';
+import Tooltip from './tooltip';
+import {createSvgElement} from './utils';
+import {inherits} from './utils';
 
 /**
  * Class for a non-editable field.
  * @param {string} text The initial content of the field.
  * @param {string|Array} extraClass Any additional classes to add to the field.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 var FieldLabel = function(text, extraClass) {
   extraClass = extraClass || '';
-  if (util.isArray(extraClass)) {
+  if (Array.isArray(extraClass)) {
     extraClass = extraClass.join(' ');
   }
 
   this.sourceBlock_ = null;
   // Build the DOM.
-  this.textElement_ = Blockly.createSvgElement('text',
+  this.textElement_ = createSvgElement('text',
       {'class': 'blocklyText ' + extraClass}, null);
   this.size_ = {height: 25, width: 0};
   this.setText(text);
 };
-util.inherits(FieldLabel, Blockly.Field);
+inherits(FieldLabel, Field);
+export default FieldLabel;
 
 /**
  * Clone this FieldLabel.
@@ -68,7 +70,7 @@ FieldLabel.prototype.EDITABLE = false;
 
 /**
  * Install this text on a block.
- * @param {!Blockly.Block} block The block containing this text.
+ * @param {!Block} block The block containing this text.
  */
 FieldLabel.prototype.init = function(block) {
   if (this.sourceBlock_) {
@@ -79,7 +81,7 @@ FieldLabel.prototype.init = function(block) {
 
   // Configure the field to be transparent with respect to tooltips.
   this.textElement_.tooltip = this.sourceBlock_;
-  Blockly.Tooltip.bindMouseEvents(this.textElement_);
+  Tooltip.bindMouseEvents(this.textElement_);
 };
 
 /**
@@ -108,7 +110,3 @@ FieldLabel.prototype.getRootElement = function() {
 FieldLabel.prototype.setTooltip = function(newTip) {
   this.textElement_.tooltip = newTip;
 };
-
-return FieldLabel;
-
-});

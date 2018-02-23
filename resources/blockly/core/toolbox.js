@@ -24,9 +24,11 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Flyout from './flyout';
 
 var Toolbox = {};
+export default Toolbox;
 
 /**
  * Width of the toolbox.
@@ -41,10 +43,10 @@ Toolbox.width = 0;
  */
 Toolbox.createDom = function(svg, container) {
   /**
-   * @type {!Blockly.Flyout}
+   * @type {!Flyout}
    * @private
    */
-  Toolbox.flyout_ = new Blockly.Flyout();
+  Toolbox.flyout_ = new Flyout();
   svg.appendChild(Toolbox.flyout_.createDom());
 };
 
@@ -58,10 +60,3 @@ Toolbox.init = function() {
 };
 
 Toolbox.populate_ = function () {};
-
-return Toolbox;
-
-});
-
-
-

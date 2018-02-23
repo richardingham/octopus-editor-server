@@ -24,11 +24,12 @@
  */
 'use strict';
 
-// goog.require('Blockly.Field');
-
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import BlockSvg from './block_svg';
+import Field from './field';
+import Tooltip from './tooltip';
+import {createSvgElement} from './utils';
+import {inherits} from './utils';
 
 /**
  * Class for an image.
@@ -36,7 +37,7 @@ module.exports = (function (Blockly) {
  * @param {number} width Width of the image.
  * @param {number} height Height of the image.
  * @param {?string} opt_alt Optional alt text for when block is collapsed.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 var FieldImage = function(src, width, height, opt_alt) {
@@ -47,9 +48,9 @@ var FieldImage = function(src, width, height, opt_alt) {
   this.size_ = {height: this.height_ + 10, width: this.width_};
   this.text_ = opt_alt || '';
   // Build the DOM.
-  var offsetY = 6 - Blockly.BlockSvg.FIELD_HEIGHT;
-  this.fieldGroup_ = Blockly.createSvgElement('g', {}, null);
-  this.imageElement_ = Blockly.createSvgElement('image',
+  var offsetY = 6 - BlockSvg.FIELD_HEIGHT;
+  this.fieldGroup_ = createSvgElement('g', {}, null);
+  this.imageElement_ = createSvgElement('image',
       {'height': this.height_ + 'px',
        'width': this.width_ + 'px',
        'y': offsetY}, this.fieldGroup_);
@@ -58,14 +59,15 @@ var FieldImage = function(src, width, height, opt_alt) {
   /*if (goog.userAgent.GECKO) {
     // Due to a Firefox bug which eats mouse events on image elements,
     // a transparent rectangle needs to be placed on top of the image.
-    this.rectElement_ = Blockly.createSvgElement('rect',
+    this.rectElement_ = createSvgElement('rect',
         {'height': this.height_ + 'px',
          'width': this.width_ + 'px',
          'y': offsetY,
          'fill-opacity': 0}, this.fieldGroup_);
   }*/
 };
-util.inherits(FieldImage, Blockly.Field);
+inherits(FieldImage, Field);
+export default FieldImage;
 
 /**
  * Clone this FieldImage.
@@ -91,7 +93,7 @@ FieldImage.prototype.EDITABLE = false;
 
 /**
  * Install this text on a block.
- * @param {!Blockly.Block} block The block containing this text.
+ * @param {!Block} block The block containing this text.
  */
 FieldImage.prototype.init = function(block) {
   if (this.sourceBlock_) {
@@ -103,7 +105,7 @@ FieldImage.prototype.init = function(block) {
   // Configure the field to be transparent with respect to tooltips.
   var topElement = this.rectElement_ || this.imageElement_;
   topElement.tooltip = this.sourceBlock_;
-  Blockly.Tooltip.bindMouseEvents(topElement);
+  Tooltip.bindMouseEvents(topElement);
 };
 
 /**
@@ -148,7 +150,7 @@ FieldImage.prototype.setValue = function(src) {
   }
   this.src_ = src;
   this.imageElement_.setAttributeNS('http://www.w3.org/1999/xlink',
-      'xlink:href', util.isString(src) ? src : '');
+      'xlink:href', typeof src === 'string' ? src : '');
 };
 
 /**
@@ -163,8 +165,3 @@ FieldImage.prototype.setText = function(alt) {
   }
   this.text_ = alt;
 };
-
-return FieldImage;
-
-});
-

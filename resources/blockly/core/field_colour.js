@@ -25,15 +25,15 @@
  */
 'use strict';
 
-// goog.require('Blockly.Field');
-
-var util = require('util');
+import Blockly from './blockly';
+import Field from './field';
+import WidgetDiv from './widgetdiv';
+import {inherits} from './utils';
+import {getAbsoluteXY_} from './utils';
 
 // Insert JS and CSS into body.
 $('head').append('<link rel="stylesheet" href="/bower_components/colpick/css/colpick.css" type="text/css" />');
 $('head').append('<script src="/bower_components/colpick/js/colpick.js" type="text/javascript" />');
-
-module.exports = (function (Blockly) {
 
 /**
  * Class for a colour input field.
@@ -43,7 +43,7 @@ module.exports = (function (Blockly) {
  *     return value becomes the selected colour, unless it is undefined, in
  *     which case the new colour stands, or it is null, in which case the change
  *     is aborted.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 var FieldColour = function(colour, opt_changeHandler) {
@@ -51,10 +51,12 @@ var FieldColour = function(colour, opt_changeHandler) {
 
   this.changeHandler_ = opt_changeHandler;
   this.borderRect_.style['fillOpacity'] = 1;
+
   // Set the initial state.
   this.setValue(colour);
 };
-util.inherits(FieldColour, Blockly.Field);
+inherits(FieldColour, Field);
+export default FieldColour;
 
 /**
  * Clone this FieldColour.
@@ -74,7 +76,7 @@ FieldColour.prototype.CURSOR = 'default';
  * Close the colour picker if this input is being deleted.
  */
 FieldColour.prototype.dispose = function() {
-  Blockly.WidgetDiv.hideIfOwner(this);
+  WidgetDiv.hideIfOwner(this);
   FieldColour.super_.prototype.dispose.call(this);
 };
 
@@ -106,7 +108,7 @@ FieldColour.prototype.showEditor_ = function() {
   var thisObj = this;
   var oldValue = this.getValue();
 
-  Blockly.WidgetDiv.show(this, function() {
+  WidgetDiv.show(this, function() {
     if (oldValue !== thisObj.getValue()) {
       thisObj.emit("changed", thisObj.getValue());
     }
@@ -134,7 +136,7 @@ FieldColour.prototype.showEditor_ = function() {
     }
   };
 
-  var $widget = $('<div>').colpick(options).appendTo($(Blockly.WidgetDiv.DIV));
+  var $widget = $('<div>').colpick(options).appendTo($(WidgetDiv.DIV));
 
   // Position the palette to line up with the field.
   // Record windowSize and scrollOffset before adding the palette.
@@ -146,7 +148,7 @@ FieldColour.prototype.showEditor_ = function() {
   var pickerWidth = $widget.outerWidth()
   var pickerHeight = $widget.outerHeight()
 
-  var xy = Blockly.getAbsoluteXY_(this.borderRect_);
+  var xy = getAbsoluteXY_(this.borderRect_);
 
   // getBBox gives an error in polyfilled browser.
   var borderBBox;
@@ -176,10 +178,6 @@ FieldColour.prototype.showEditor_ = function() {
       xy.x = boundsX + offsetX - pickerWidth;
     }
   }
-  Blockly.WidgetDiv.position(xy.x, xy.y, { height: boundsY, width: boundsX }, { height: offsetY, width: offsetX });
+  WidgetDiv.position(xy.x, xy.y, { height: boundsY, width: boundsX }, { height: offsetY, width: offsetX });
 
 };
-
-return FieldColour;
-
-});

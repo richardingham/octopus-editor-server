@@ -24,18 +24,23 @@
  */
 'use strict';
 
+import Blockly from '../core/blockly';
+import Blocks from '../core/blocks';
+import Msg from '../core/msg';
+import FieldColour from '../core/field_colour';
+import {MATH_CATEGORY_HUE} from '../colourscheme';
 
-Blockly.Blocks['colour_picker'] = {
+Blocks['colour_picker'] = {
   /**
    * Block for colour picker.
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    this.setHelpUrl(Blockly.Msg.COLOUR_PICKER_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setHelpUrl(Msg.COLOUR_PICKER_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField(new Blockly.FieldColour('#ff0000'), 'COLOUR');
+        .appendField(new FieldColour('#ff0000'), 'COLOUR');
     this.setOutput(true, 'Colour');
-    this.setTooltip(Blockly.Msg.COLOUR_PICKER_TOOLTIP);
+    this.setTooltip(Msg.COLOUR_PICKER_TOOLTIP);
   }
 };

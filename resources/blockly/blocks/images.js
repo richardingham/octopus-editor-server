@@ -24,38 +24,46 @@
  */
 'use strict';
 
-Blockly.Blocks['image_findcolour'] = {
+import Blockly from '../core/blockly';
+import Blocks from '../core/blocks';
+import Msg from '../core/msg';
+import FieldDropdown from '../core/field_dropdown';
+import FieldTextInput from '../core/field_textinput';
+import {MATH_CATEGORY_HUE} from '../colourscheme';
+import {numberValidator} from '../core/validators';
+
+Blocks['image_findcolour'] = {
   /**
    * Block for filtering a colour of an image
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
     var OPERATORS =
         [['red', 'RED'],
          ['green', 'GREEN'],
          ['blue', 'BLUE']];
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
         .appendField('select')
-        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP');
+        .appendField(new FieldDropdown(OPERATORS), 'OP');
   }
 };
 
-Blockly.Blocks['image_threshold'] = {
+Blocks['image_threshold'] = {
   /**
    * Block for filtering an image
    * @this Blockly.Block
    */
   init: function() {
-    this.fieldNumber_ = new Blockly.FieldTextInput(
+    this.fieldNumber_ = new FieldTextInput(
       '0',
-      Blockly.FieldTextInput.numberValidator
+      numberValidator
     );
     //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
@@ -64,14 +72,14 @@ Blockly.Blocks['image_threshold'] = {
   }
 };
 
-Blockly.Blocks['image_erode'] = {
+Blocks['image_erode'] = {
   /**
    * Block for eroding an image
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
@@ -79,14 +87,14 @@ Blockly.Blocks['image_erode'] = {
   }
 };
 
-Blockly.Blocks['image_invert'] = {
+Blocks['image_invert'] = {
   /**
    * Block for eroding an image
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
@@ -94,14 +102,14 @@ Blockly.Blocks['image_invert'] = {
   }
 };
 
-Blockly.Blocks['image_colourdistance'] = {
+Blocks['image_colourdistance'] = {
   /**
    * Block for colourDistance function
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
@@ -112,14 +120,14 @@ Blockly.Blocks['image_colourdistance'] = {
   }
 };
 
-Blockly.Blocks['image_huedistance'] = {
+Blocks['image_huedistance'] = {
   /**
    * Block for colourDistance function
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
@@ -130,10 +138,10 @@ Blockly.Blocks['image_huedistance'] = {
   }
 };
 
-Blockly.Blocks['image_intensityfn'] = {
+Blocks['image_intensityfn'] = {
   /**
    * Block for finding max pixel value of a grayscale image
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
     var OPERATORS =
@@ -142,32 +150,32 @@ Blockly.Blocks['image_intensityfn'] = {
          ['mean', 'MEAN'],
          ['median', 'MEDIAN']];
     //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Number');
     this.appendValueInput('INPUT')
         .setCheck('Image')
         .appendField('Calculate')
-        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP')
+        .appendField(new FieldDropdown(OPERATORS), 'OP')
         .appendField('intensity');
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
   }
 };
 
-Blockly.Blocks['image_crop'] = {
+Blocks['image_crop'] = {
   /**
    * Block for cropping an image
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    var iv = Blockly.FieldTextInput.nonnegativeIntegerValidator;
-    this.fieldX_ = new Blockly.FieldTextInput('0', iv);
-    this.fieldY_ = new Blockly.FieldTextInput('0', iv);
-    this.fieldH_ = new Blockly.FieldTextInput('0', iv);
-    this.fieldW_ = new Blockly.FieldTextInput('0', iv);
+    var iv = FieldTextInput.nonnegativeIntegerValidator;
+    this.fieldX_ = new FieldTextInput('0', iv);
+    this.fieldY_ = new FieldTextInput('0', iv);
+    this.fieldH_ = new FieldTextInput('0', iv);
+    this.fieldW_ = new FieldTextInput('0', iv);
 
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
     this.setTooltip('Crop an image, from top-left coordinate (x, y) to create an image size (w, h)')
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Image');
     this.appendValueInput('INPUT')
         .setCheck('Image')
@@ -185,10 +193,10 @@ Blockly.Blocks['image_crop'] = {
   }
 };
 
-Blockly.Blocks['image_tonumber'] = {
+Blocks['image_tonumber'] = {
   /**
    * Block for getting a number from an image
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
     var OPERATORS =
@@ -196,12 +204,12 @@ Blockly.Blocks['image_tonumber'] = {
          ['centroid y', 'CENTROIDY'],
          ['size x', 'SIZEX'],
          ['size y', 'SIZEY']];
-    //this.setHelpUrl(Blockly.Msg.MATH_SINGLE_HELPURL);
-    this.setColour(Blockly.MATH_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.MATH_SINGLE_HELPURL);
+    this.setColour(MATH_CATEGORY_HUE);
     this.setOutput(true, 'Number');
     this.appendValueInput('INPUT')
         .setCheck('Image')
         .appendField('calculate')
-        .appendField(new Blockly.FieldDropdown(OPERATORS), 'OP');
+        .appendField(new FieldDropdown(OPERATORS), 'OP');
   }
 };

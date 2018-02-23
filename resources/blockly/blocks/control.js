@@ -24,52 +24,60 @@
  */
 'use strict';
 
+import Blockly from '../core/blockly';
+import Blocks from '../core/blocks';
+import Msg from '../core/msg';
+import FieldDropdown from '../core/field_dropdown';
+import FieldFlydown from '../core/field_flydown';
+import FieldLexicalVariable from '../core/field_lexical_variable';
+import {withMutation, withVariableDropdown} from './mixins';
+import {CONTROL_CATEGORY_HUE} from '../colourscheme';
 
-Blockly.Blocks['controls_run'] = {
+Blocks['controls_run'] = {
   /**
    * Block for run statement
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.CONTROLS_WAIT_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.CONTROLS_WAIT_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField('run')
-		.appendField(new Blockly.FieldDropdown([
+		.appendField(new FieldDropdown([
 			['immediately', 'IMMEDIATELY'],
 			['paused', 'PAUSED']
 		]), 'MODE');
     this.appendStatementInput('STACK');
-    this.setTooltip('Runs the sequence on execution'); //Blockly.Msg.CONTROLS_WAIT_TOOLTIP);
+    this.setTooltip('Runs the sequence on execution'); //Msg.CONTROLS_WAIT_TOOLTIP);
   }
 };
 
-Blockly.Blocks['controls_if'] = {
+Blocks['controls_if'] = {
   /**
    * Block for if/elseif/else condition.
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.setHelpUrl(Msg.CONTROLS_IF_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendValueInput('IF0')
         .setCheck('Boolean')
-        .appendField(Blockly.Msg.CONTROLS_IF_MSG_IF);
+        .appendField(Msg.CONTROLS_IF_MSG_IF);
     this.appendStatementInput('DO0')
-        .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+        .appendField(Msg.CONTROLS_IF_MSG_THEN);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
 
     var thisBlock = this;
     this.setTooltip(function() {
       if (!thisBlock.mutation_.elseif && !thisBlock.mutation_.else) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_1;
+        return Msg.CONTROLS_IF_TOOLTIP_1;
       } else if (!thisBlock.mutation_.elseif && thisBlock.mutation_.else) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_2;
+        return Msg.CONTROLS_IF_TOOLTIP_2;
       } else if (thisBlock.mutation_.elseif && !thisBlock.mutation_.else) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_3;
+        return Msg.CONTROLS_IF_TOOLTIP_3;
       } else if (thisBlock.mutation_.elseif && thisBlock.mutation_.else) {
-        return Blockly.Msg.CONTROLS_IF_TOOLTIP_4;
+        return Msg.CONTROLS_IF_TOOLTIP_4;
       }
       return '';
     });
@@ -83,15 +91,15 @@ Blockly.Blocks['controls_if'] = {
           name: 'IF',
           type: 'value',
           check: 'Boolean',
-          text: Blockly.Msg.CONTROLS_IF_MSG_ELSEIF
+          text: Msg.CONTROLS_IF_MSG_ELSEIF
         }, {
           name: 'DO',
           type: 'statement',
-          text: Blockly.Msg.CONTROLS_IF_MSG_THEN
+          text: Msg.CONTROLS_IF_MSG_THEN
         }],
         editor: {
-          text: Blockly.Msg.CONTROLS_IF_ELSEIF_TITLE_ELSEIF,
-          tooltip: Blockly.Msg.CONTROLS_IF_ELSEIF_TOOLTIP
+          text: Msg.CONTROLS_IF_ELSEIF_TITLE_ELSEIF,
+          tooltip: Msg.CONTROLS_IF_ELSEIF_TOOLTIP
         }
       }, {
         name: 'else',
@@ -100,16 +108,16 @@ Blockly.Blocks['controls_if'] = {
         input: [{
           name: 'ELSE',
           type: 'statement',
-          text: Blockly.Msg.CONTROLS_IF_MSG_ELSE
+          text: Msg.CONTROLS_IF_MSG_ELSE
         }],
         editor: {
-          text: Blockly.Msg.CONTROLS_IF_ELSE_TITLE_ELSE,
-          tooltip: Blockly.Msg.CONTROLS_IF_ELSE_TOOLTIP
+          text: Msg.CONTROLS_IF_ELSE_TITLE_ELSE,
+          tooltip: Msg.CONTROLS_IF_ELSE_TOOLTIP
         }
       }],
       editor: {
-        text: Blockly.Msg.CONTROLS_IF_IF_TITLE_IF,
-        tooltip: Blockly.Msg.CONTROLS_IF_IF_TOOLTIP
+        text: Msg.CONTROLS_IF_IF_TITLE_IF,
+        tooltip: Msg.CONTROLS_IF_IF_TOOLTIP
       },
       postUpdate: function (mutation) {
         if (mutation.else > 0) {
@@ -121,16 +129,16 @@ Blockly.Blocks['controls_if'] = {
   }
 };
 
-Blockly.Blocks['controls_parallel'] = {
+Blocks['controls_parallel'] = {
   /**
    * Block for parallel sequence
    * @this Blockly.Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENTS_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.CONTROLS_DEPENDENTS_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField("run in parallel"); //Blockly.Msg.CONTROLS_PARALLEL_STACK);
+        .appendField("run in parallel"); //Msg.CONTROLS_PARALLEL_STACK);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
 
@@ -144,28 +152,28 @@ Blockly.Blocks['controls_parallel'] = {
         },
         editor: {
           text: 'block',
-          //tooltip: Blockly.Msg.
+          //tooltip: Msg.
         }
       }],
       editor: {
         text: 'blocks',
-        //tooltip: Blockly.Msg.
+        //tooltip: Msg.
       }
     };
     withMutation.call(this, this.mutationConfig);
   }
 };
 
-Blockly.Blocks['controls_dependents'] = {
+Blocks['controls_dependents'] = {
   /**
    * Block for sequence with dependents
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
     //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENTS_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField("run with controls"); //Blockly.Msg.CONTROLS_DEPENDENTS_STACK);
+        .appendField("run with controls"); //Msg.CONTROLS_DEPENDENTS_STACK);
     this.appendStatementInput('STACK');
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -183,27 +191,27 @@ Blockly.Blocks['controls_dependents'] = {
         },
         editor: {
           text: 'control',
-          //tooltip: Blockly.Msg.
+          //tooltip: Msg.
         }
       }],
       editor: {
         text: 'controls',
-        //tooltip: Blockly.Msg.
+        //tooltip: Msg.
       }
     };
     withMutation.call(this, this.mutationConfig);
   }
 };
 
-Blockly.Blocks['controls_bind'] = {
+Blocks['controls_bind'] = {
   /**
    * Block for a bind control.
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    this.setHelpUrl(Blockly.Msg.MATH_CHANGE_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
-    this.fieldVar_ = new Blockly.FieldLexicalVariable(" ", { readonly: false });
+    //this.setHelpUrl(Msg.MATH_CHANGE_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
+    this.fieldVar_ = new FieldLexicalVariable(" ", { readonly: false });
     this.fieldVar_.setBlock(this);
     this.setInputsInline(true);
     this.appendValueInput('VALUE')
@@ -220,19 +228,19 @@ Blockly.Blocks['controls_bind'] = {
 };
 
 
-Blockly.Blocks['controls_statemonitor'] = {
+Blocks['controls_statemonitor'] = {
   /**
    * Block for statemonitor control
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENTS_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.CONTROLS_DEPENDENTS_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput('TRIGGER_MSG')
-        .appendField("if any false:"); //Blockly.Msg.CONTROLS_STATEMONITOR_TRIGGER);
+        .appendField("if any false:"); //Msg.CONTROLS_STATEMONITOR_TRIGGER);
     this.appendStatementInput('TRIGGER');
     this.appendDummyInput('RESET_MSG')
-        .appendField("if all true:"); //Blockly.Msg.CONTROLS_STATEMONITOR_TRIGGER);
+        .appendField("if all true:"); //Msg.CONTROLS_STATEMONITOR_TRIGGER);
     this.appendStatementInput('RESET');
     this.setOutput(true, 'Control');
 
@@ -268,14 +276,14 @@ Blockly.Blocks['controls_statemonitor'] = {
 };
 
 
-Blockly.Blocks['controls_dependent_stack'] = {
+Blocks['controls_dependent_stack'] = {
   /**
    * Block for dependent stack control
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.CONTROLS_DEPENDENT_STACK_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.CONTROLS_DEPENDENT_STACK_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField("run stack:");
     this.appendStatementInput('STACK');

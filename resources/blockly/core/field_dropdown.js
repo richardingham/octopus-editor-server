@@ -26,9 +26,11 @@
  */
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Field from './field';
+import WidgetDiv from './widgetdiv';
+import {inherits} from './utils';
+import {getAbsoluteXY_, shortestStringLength, commonWordPrefix, commonWordSuffix, createSvgElement} from './utils';
 
 /**
  * Class for an editable dropdown field.
@@ -39,7 +41,7 @@ module.exports = (function (Blockly) {
  *     If it returns a value, that value (which must be one of the options) will
  *     become selected in place of the newly selected option, unless the return
  *     value is null, in which case the change is aborted.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 var FieldDropdown = function(menuGenerator, opt_changeHandler) {
@@ -50,7 +52,7 @@ var FieldDropdown = function(menuGenerator, opt_changeHandler) {
   this.value_ = firstTuple[1];
 
   // Add dropdown arrow: "option ▾" (LTR) or "▾ אופציה" (RTL)
-  this.arrow_ = Blockly.createSvgElement('tspan', {}, null);
+  this.arrow_ = createSvgElement('tspan', {}, null);
   this.arrow_.appendChild(document.createTextNode(
       Blockly.RTL ? FieldDropdown.ARROW_CHAR + ' ' :
                     ' ' + FieldDropdown.ARROW_CHAR));
@@ -58,7 +60,8 @@ var FieldDropdown = function(menuGenerator, opt_changeHandler) {
   // Call parent's constructor.
   FieldDropdown.super_.call(this, firstTuple[0]);
 };
-util.inherits(FieldDropdown, Blockly.Field);
+inherits(FieldDropdown, Field);
+export default FieldDropdown;
 
 /**
  * Horizontal distance that a checkmark ovehangs the dropdown.
@@ -89,7 +92,7 @@ FieldDropdown.prototype.CURSOR = 'default';
  * @private
  */
 FieldDropdown.prototype.showEditor_ = function() {
-  Blockly.WidgetDiv.show(this, function () {
+  WidgetDiv.show(this, function () {
     thisField.menu.closemenu();
   });
   var thisField = this;
@@ -107,7 +110,7 @@ FieldDropdown.prototype.showEditor_ = function() {
       thisField.setValue(value);
       thisField.emit("changed", value);
     }
-    Blockly.WidgetDiv.hideIfOwner(thisField);
+    WidgetDiv.hideIfOwner(thisField);
   }
 
   var options = this.getOptions_().map(function (option) {
@@ -116,7 +119,7 @@ FieldDropdown.prototype.showEditor_ = function() {
   var menu = new ContextMenu(options, callback, { selectable: true });
   this.menu = menu;
 
-  var xy = Blockly.getAbsoluteXY_(this.borderRect_);
+  var xy = getAbsoluteXY_(this.borderRect_);
   var borderBBox = this.borderRect_.getBBox();
   menu.showForBox(xy, borderBBox);
 };
@@ -130,13 +133,13 @@ FieldDropdown.prototype.trimOptions_ = function() {
   this.prefixField = null;
   this.suffixField = null;
   var options = this.menuGenerator_;
-  if (!util.isArray(options) || options.length < 2) {
+  if (!Array.isArray(options) || options.length < 2) {
     return;
   }
   var strings = options.map(function(t) {return t[0];});
-  var shortest = Blockly.shortestStringLength(strings);
-  var prefixLength = Blockly.commonWordPrefix(strings, shortest);
-  var suffixLength = Blockly.commonWordSuffix(strings, shortest);
+  var shortest = shortestStringLength(strings);
+  var prefixLength = commonWordPrefix(strings, shortest);
+  var suffixLength = commonWordSuffix(strings, shortest);
   if (!prefixLength && !suffixLength) {
     return;
   }
@@ -168,7 +171,7 @@ FieldDropdown.prototype.trimOptions_ = function() {
  * @private
  */
 FieldDropdown.prototype.getOptions_ = function() {
-  if (util.isFunction(this.menuGenerator_)) {
+  if (typeof this.menuGenerator_ === 'function') {
     return this.menuGenerator_.call(this);
   }
   return /** @type {!Array.<!Array.<string>>} */ (this.menuGenerator_);
@@ -236,10 +239,6 @@ FieldDropdown.prototype.setText = function(text) {
  * Close the dropdown menu if this input is being deleted.
  */
 FieldDropdown.prototype.dispose = function() {
-  Blockly.WidgetDiv.hideIfOwner(this);
+  WidgetDiv.hideIfOwner(this);
   FieldDropdown.super_.prototype.dispose.call(this);
 };
-
-return FieldDropdown;
-
-});

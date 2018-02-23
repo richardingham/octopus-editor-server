@@ -374,7 +374,7 @@
         this.container = $(el);
 
         opts.item_class = opts.item_class || 'grid-stack-item';
-        var is_nested = this.container.closest('.' + opts.item_class).size() > 0;
+        var is_nested = this.container.closest('.' + opts.item_class).length > 0;
 
         this.opts = _.defaults(opts || {}, {
             width: parseInt(this.container.attr('data-gs-width')) || 12,

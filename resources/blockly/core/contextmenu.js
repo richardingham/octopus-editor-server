@@ -24,9 +24,12 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Xml from './xml';
+import WidgetDiv from './widgetdiv';
 
 var Menu = {};
+export default Menu;
 
 /**
  * Which block is the context menu attached to?
@@ -40,7 +43,7 @@ Menu.currentBlock = null;
  * @param {!Array.<!Object>} options Array of menu options.
  */
 Menu.show = function(e, options) {
-  Blockly.WidgetDiv.show(Menu, function () {
+  WidgetDiv.show(Menu, function () {
     if (this.menu) {
       this.menu.closemenu();
     }
@@ -78,7 +81,7 @@ Menu.hide = function() {
     this.menu.closemenu();
   }
   this.menu = null;
-  Blockly.WidgetDiv.hideIfOwner(Menu);
+  WidgetDiv.hideIfOwner(Menu);
   Menu.currentBlock = null;
 };
 
@@ -91,7 +94,7 @@ Menu.hide = function() {
  */
 Menu.callbackFactory = function(block, xml) {
   return function() {
-    var newBlock = Blockly.Xml.domToBlock(block.workspace, xml);
+    var newBlock = Xml.domToBlock(block.workspace, xml);
     // Move the new block next to the old block.
     var xy = block.getRelativeToSurfaceXY();
     if (Blockly.RTL) {
@@ -104,7 +107,3 @@ Menu.callbackFactory = function(block, xml) {
     newBlock.select();
   };
 };
-
-return Menu;
-
-});

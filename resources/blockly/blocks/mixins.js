@@ -1,5 +1,11 @@
+import Blockly from '../core/blockly';
+import Block from '../core/block';
+import Blocks from '../core/blocks';
+import Mutator from '../core/mutator';
+import Names from '../core/names';
+import {GlobalScope} from '../core/variables';
 
-var extend = function (defaults, options) {
+export function extend (defaults, options) {
     var extended = {};
     var prop;
     for (prop in defaults) {
@@ -15,24 +21,67 @@ var extend = function (defaults, options) {
     return extended;
 };
 
-function withVariableDropdown (field, fieldName) {
+export function withVariableDefinition (block, fieldClass, fieldFlydownLocation, defaultVariableName, isGlobal, createVariableFunction) {
+  var field = new fieldClass(
+    defaultVariableName, //Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
+    true, // isEditable
+    fieldFlydownLocation,
+    renameVariable
+  );
 
-  function changeParent_ () {
-		var val = field.getFullVariableName();
-		var scope = this.getVariableScope();
-		var newVar = scope && scope.getScopedVariable(field.getFullVariableName());
-		if (newVar) {
-			field.setValue(newVar);
-		}
-	};
+  if (isGlobal) {
+    var scope = GlobalScope;
+  } else {
+    scope = block.getVariableScope();
+  }
 
-  this.on("parent-changed", changeParent_);
+  if (!block.isInFlyout) {
+    block.variable_ = (createVariableFunction || createVariable)();
+    field.setValue(block.variable_.getVarName());
+  }
 
+  function renameVariable (newName) {
+    var oldName = field.getValue();
+
+    if (block.variable_) {
+      if (oldName === newName) {
+        return newName;
+      }
+
+      block.variable_.setName(newName);
+      return block.variable_.getVarName();
+    }
+  };
+
+  function createVariable () {
+    return scope.addVariable(defaultVariableName);
+  };
+
+  block.getVars = function () {
+    return [field.getValue()];
+  };
+
+  block.getVariable = function () {
+    return block.variable_;
+  };
+
+  block.disposed = function () {
+    if (block.variable_) {
+      block.variable_.getScope().removeVariable(this.variable_.getVarName());
+      block.variable_ = null;
+    }
+  }
+
+  return field;
+}
+
+// withLexicalVariable
+export function withVariableDropdown (field, fieldName) {
   /**
    * Get the variable currently referenced by this block,
    * accounting for scope.
-   * @return {Blockly.Variable} variable The variable.
-   * @this Blockly.Block
+   * @return {Variable} variable The variable.
+   * @this Block
    */
   this.getVariable = function getVariable () {
     var scope = this.getVariableScope();
@@ -40,26 +89,32 @@ function withVariableDropdown (field, fieldName) {
   };
 
   /**
-   * Notification that a variable is renaming.
-   * If the name matches one of this block's variables, rename it.
-   * @param {string} oldName Previous name of variable.
-   * @param {string} newName Renamed variable.
-   * @param {Blockly.Variable} variable The variable in question.
-   * @this Blockly.Block
+   * Return all variables referenced by this block.
+   * @return {!Array.<string>} List of variable names.
+   * @this Block
    */
-  this.renameVar = function renameVar (oldName, newName, variable) {
-    if (Blockly.Names.equals(oldName, field.getFullVariableName())) {
-      field.setValue(variable);
+  this.getVars = function getVars () {
+    return [field.getFullVariableName()];
+  };
+
+  function changeParent_ () {
+    var val = field.getFullVariableName();
+    var scope = this.getVariableScope();
+    var newVar = scope && scope.getScopedVariable(field.getFullVariableName());
+    if (newVar) {
+      field.setValue(newVar);
     }
   };
+
+  this.on("parent-changed", changeParent_);
 
   /**
    * Emit an event that this variable's name has changed
    * @param {string} name New (full) name of variable.
-   * @this Blockly.Block
+   * @this Block
    */
   this.announceRename = function announceRename (name) {
-    if (Blockly.Names.equals(name, field.getVariableName())) {
+    if (Names.equals(name, field.getVariableName())) {
       var attributeName = field.getAttributeName();
       if (attributeName !== '') {
         name += '::' + attributeName;
@@ -69,16 +124,21 @@ function withVariableDropdown (field, fieldName) {
   };
 
   /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
+   * Notification that a variable is renaming.
+   * If the name matches one of this block's variables, rename it.
+   * @param {string} oldName Previous name of variable.
+   * @param {string} newName Renamed variable.
+   * @param {Variable} variable The variable in question.
+   * @this Block
    */
-  this.getVars = function getVars () {
-    return [field.getFullVariableName()];
+  this.renameVar = function renameVar (oldName, newName, variable) {
+    if (Names.equals(oldName, field.getFullVariableName())) {
+      field.setValue(variable);
+    }
   };
 }
 
-function withMutation (mutationOptions) {
+export function withMutation (mutationOptions) {
   this.mutation_ = {};
   var defaultMutation = {};
 
@@ -110,8 +170,8 @@ function withMutation (mutationOptions) {
   mutationOptions.editor.block = mutationOptions.editor.block || this.type + '_mut_container';
 
   // Create mutation editor blocks
-  if (typeof Blockly.Blocks[mutationOptions.editor.block] === 'undefined') {
-    Blockly.Blocks[mutationOptions.editor.block] = mutator_stack(
+  if (typeof Blocks[mutationOptions.editor.block] === 'undefined') {
+    Blocks[mutationOptions.editor.block] = mutator_stack(
       this.getColour(),
       mutationOptions.editor.text || '',
       mutationOptions.editor.tooltip || ''
@@ -120,7 +180,7 @@ function withMutation (mutationOptions) {
     for (var i = 0, m = mutationParts.length; i < m; i++) {
       part = mutationParts[i];
 
-      Blockly.Blocks[part.editor.block] = mutator_child(
+      Blocks[part.editor.block] = mutator_child(
         this.getColour(),
         part.editor.text || '',
         part.editor.tooltip || '',
@@ -130,7 +190,7 @@ function withMutation (mutationOptions) {
   }
 
   // Set up mutator
-  this.setMutator(new Blockly.Mutator(editorBlocks));
+  this.setMutator(new Mutator(editorBlocks));
 
   // Function to check whether the mutation has changed from
   // the defaults. Used in mutationToDom()
@@ -148,7 +208,7 @@ function withMutation (mutationOptions) {
   /**
    * Create JSON to represent the number of test inputs.
    * @return {String} JSON representation of mutation.
-   * @this Blockly.Block
+   * @this Block
    */
   this.mutationToJSON = function mutationToJSON () {
     return JSON.stringify(this.mutation_);
@@ -157,7 +217,7 @@ function withMutation (mutationOptions) {
   /**
    * Parse JSON to restore the dependents inputs.
    * @param {!String} JSON representation of mutation.
-   * @this Blockly.Block
+   * @this Block
    */
   this.JSONToMutation = function JSONToMutation (obj) {
     var mutation = {};
@@ -174,7 +234,7 @@ function withMutation (mutationOptions) {
   /**
    * Create XML to represent the number of dependents inputs.
    * @return {Element} XML storage element.
-   * @this Blockly.Block
+   * @this Block
    */
   this.mutationToDom = function mutationToDom () {
     if (mutationDefault.call(this)) {
@@ -190,7 +250,7 @@ function withMutation (mutationOptions) {
   /**
    * Parse XML to restore the dependents inputs.
    * @param {!Element} xmlElement XML storage element.
-   * @this Blockly.Block
+   * @this Block
    */
   this.domToMutation = function domToMutation (xmlElement) {
     var mutation = {};
@@ -286,12 +346,12 @@ function withMutation (mutationOptions) {
 
   /**
    * Populate the mutator's dialog with this block's components.
-   * @param {!Blockly.Workspace} workspace Mutator's workspace.
-   * @return {!Blockly.Block} Root block in mutator.
-   * @this Blockly.Block
+   * @param {!Workspace} workspace Mutator's workspace.
+   * @return {!Block} Root block in mutator.
+   * @this Block
    */
   this.decompose = function (workspace) {
-    var containerBlock = Blockly.Block.obtain(
+    var containerBlock = Block.obtain(
       workspace,
       mutationOptions.editor.block
     );
@@ -303,7 +363,7 @@ function withMutation (mutationOptions) {
       part = mutationParts[i];
 
       for (var x = 0; x < this.mutation_[part.name]; x++) {
-        var itemBlock = Blockly.Block.obtain(workspace, part.editor.block);
+        var itemBlock = Block.obtain(workspace, part.editor.block);
         itemBlock.initSvg();
         connection.connect(itemBlock.previousConnection);
         connection = itemBlock.nextConnection;
@@ -315,8 +375,8 @@ function withMutation (mutationOptions) {
 
   /**
    * Reconfigure this block based on the mutator dialog's components.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this Blockly.Block
+   * @param {!Block} containerBlock Root block in mutator.
+   * @this Block
    */
   this.compose = function(containerBlock) {
     var clauseBlock = containerBlock.getInputTargetBlock('STACK');
@@ -356,8 +416,8 @@ function withMutation (mutationOptions) {
 
   /**
    * Store pointers to any connected child blocks.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this Blockly.Block
+   * @param {!Block} containerBlock Root block in mutator.
+   * @this Block
    */
   this.saveConnections = function (containerBlock) {
     var part, input, inputName, inputOptions;

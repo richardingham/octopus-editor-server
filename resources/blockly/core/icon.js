@@ -24,14 +24,16 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import BlockSvg from './block_svg';
+import {bindEvent_, unbindEvent_, addClass_, removeClass_, getRelativeXY_, createSvgElement} from './utils';
 
 /**
  * Class for an icon.
- * @param {Blockly.Block} block The block associated with this icon.
+ * @param {Block} block The block associated with this icon.
  * @constructor
  */
-var Icon = function(block) {
+export default function Icon (block) {
   this.block_ = block;
 };
 
@@ -42,7 +44,7 @@ Icon.RADIUS = 8;
 
 /**
  * Bubble UI (if visible).
- * @type {Blockly.Bubble}
+ * @type {Bubble}
  * @private
  */
 Icon.prototype.bubble_ = null;
@@ -67,9 +69,9 @@ Icon.prototype.createIcon_ = function() {
   /* Here's the markup that will be generated:
   <g class="blocklyIconGroup"></g>
   */
-  this.iconGroup_ = Blockly.createSvgElement('g', {}, null);
+  this.iconGroup_ = createSvgElement('g', {}, null);
   this.block_.getSvgRoot().appendChild(this.iconGroup_);
-  Blockly.bindEvent_(this.iconGroup_, 'mouseup', this, this.iconClick_);
+  bindEvent_(this.iconGroup_, 'mouseup', this, this.iconClick_);
   this.updateEditable();
 };
 
@@ -91,10 +93,10 @@ Icon.prototype.dispose = function() {
  */
 Icon.prototype.updateEditable = function() {
   if (!this.block_.isInFlyout) {
-    Blockly.addClass_(/** @type {!Element} */ (this.iconGroup_),
+    addClass_(/** @type {!Element} */ (this.iconGroup_),
                       'blocklyIconGroup');
   } else {
-    Blockly.removeClass_(/** @type {!Element} */ (this.iconGroup_),
+    removeClass_(/** @type {!Element} */ (this.iconGroup_),
                          'blocklyIconGroup');
   }
 };
@@ -149,9 +151,9 @@ Icon.prototype.renderIcon = function(cursorX) {
       'translate(' + cursorX + ', ' + TOP_MARGIN + ')');
   this.computeIconLocation();
   if (Blockly.RTL) {
-    cursorX -= Blockly.BlockSvg.SEP_SPACE_X;
+    cursorX -= BlockSvg.SEP_SPACE_X;
   } else {
-    cursorX += diameter + Blockly.BlockSvg.SEP_SPACE_X;
+    cursorX += diameter + BlockSvg.SEP_SPACE_X;
   }
   return cursorX;
 };
@@ -176,7 +178,7 @@ Icon.prototype.setIconLocation = function(x, y) {
 Icon.prototype.computeIconLocation = function() {
   // Find coordinates for the centre of the icon and update the arrow.
   var blockXY = this.block_.getRelativeToSurfaceXY();
-  var iconXY = Blockly.getRelativeXY_(this.iconGroup_);
+  var iconXY = getRelativeXY_(this.iconGroup_);
   var newX = blockXY.x + iconXY.x + Icon.RADIUS;
   var newY = blockXY.y + iconXY.y + Icon.RADIUS;
   if (newX !== this.iconX_ || newY !== this.iconY_) {
@@ -191,7 +193,3 @@ Icon.prototype.computeIconLocation = function() {
 Icon.prototype.getIconLocation = function() {
   return {x: this.iconX_, y: this.iconY_};
 };
-
-return Icon;
-
-});

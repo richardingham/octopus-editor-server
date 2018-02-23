@@ -23,15 +23,17 @@
  * @author spertus@google.com (Ellen Spertus)
  */
 'use strict';
-var assert = require('assert');
+import Blockly from './blockly';
+import Block from './block';
+import {assert} from './utils';
 
-module.exports = (function (Blockly) {
 /**
  * Name space for the Blocks singleton.
  * Blocks gets populated in the blocks files, possibly through calls to
  * Blocks.addTemplate().
  */
-var Blocks= {};
+var Blocks = {};
+export default Blocks;
 
 /**
  * Create a block template and add it as a field to Blocks with the
@@ -111,7 +113,7 @@ Blocks.addTemplate = function(details) {
   var block = {};
   /**
    * Build up template.
-   * @this Blockly.Block
+   * @this Block
    */
   block.init = function() {
     var thisBlock = this;
@@ -160,7 +162,7 @@ Blocks.addTemplate = function(details) {
     if (details.inline) {
       this.setInlineInputs(details.inline);
     }
-    Blockly.Block.prototype.interpolateMsg.apply(this, interpArgs);
+    Block.prototype.interpolateMsg.apply(this, interpArgs);
   };
 
   if (details.switchable) {
@@ -182,8 +184,3 @@ Blocks.addTemplate = function(details) {
   // Add new block to Blocks.
   Blocks[details.blockName] = block;
 };
-
-return Blocks;
-
-});
-

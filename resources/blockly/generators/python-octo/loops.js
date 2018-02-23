@@ -3,7 +3,7 @@
  * Visual Blocks Language
  *
  * Copyright 2012 Google Inc.
- * https://github.com/google/Blockly.PythonOcto
+ * https://github.com/google/PythonOcto
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,77 +25,72 @@
  */
 'use strict';
 
-Blockly.PythonOcto.LOOP_PASS = '[]';
+import {ORDER, FUNCTION_NAME_PLACEHOLDER_, INDENT} from '../python-octo-constants';
+import {getVariableName, getDistinctName, provideFunction, statementToCode, valueToCode, prefixLines, addLoopTrap, scrub, quote} from '../python-octo-methods';
+import PythonOcto from '../python-octo-blocks';
 
-Blockly.PythonOcto['controls_repeat'] = function(block) {
+
+const LOOP_PASS = '[]';
+
+PythonOcto['controls_repeat'] = function(block) {
   // Repeat n times (internal number).
   var repeats = parseInt(block.getFieldValue('TIMES'), 10);
-  var branch = Blockly.PythonOcto.statementToCode(block, 'DO');
-  branch = Blockly.PythonOcto.addLoopTrap(branch, block.id) ||
-      Blockly.PythonOcto.LOOP_PASS;
-  var code = 'loop_while(False,\n' + Blockly.PythonOcto.prefixLines(branch + ',\nmin_calls = ' + repeats, Blockly.PythonOcto.INDENT) + '\n)';
+  var branch = statementToCode(block, 'DO');
+  branch = addLoopTrap(branch, block.id) || LOOP_PASS;
+  var code = 'loop_while(False,\n' + prefixLines(branch + ',\nmin_calls = ' + repeats, INDENT) + '\n)';
   return code;
 };
 
-Blockly.PythonOcto['controls_repeat_ext'] = function(block) {
+PythonOcto['controls_repeat_ext'] = function(block) {
   // Repeat n times (external number).
-  var repeats = Blockly.PythonOcto.valueToCode(block, 'TIMES',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
-  //if (Blockly.PythonOcto.isNumber(repeats)) {
+  var repeats = valueToCode(block, 'TIMES', ORDER.NONE) || '0';
+  //if (typeof repeats === 'number') {
   //  repeats = parseInt(repeats, 10);
   //} else {
   //  repeats = 'int(' + repeats + ')';
   //}
-  var branch = Blockly.PythonOcto.statementToCode(block, 'DO');
-  branch = Blockly.PythonOcto.addLoopTrap(branch, block.id) ||
-      Blockly.PythonOcto.LOOP_PASS;
-  var code = 'loop_while(False,\n' + Blockly.PythonOcto.prefixLines(branch + ',\nmin_calls = ' + repeats, Blockly.PythonOcto.INDENT) + '\n)';
+  var branch = statementToCode(block, 'DO');
+  branch = addLoopTrap(branch, block.id) || LOOP_PASS;
+  var code = 'loop_while(False,\n' + prefixLines(branch + ',\nmin_calls = ' + repeats, INDENT) + '\n)';
   return code;
 };
 
-Blockly.PythonOcto['controls_whileUntil'] = function(block) {
+PythonOcto['controls_whileUntil'] = function(block) {
   // Do while/until loop.
   var until = block.getFieldValue('MODE') === 'UNTIL';
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'BOOL',
-      Blockly.PythonOcto.ORDER_NONE) || (until ? 'True' : 'False');
-  var branch = Blockly.PythonOcto.statementToCode(block, 'DO');
-  branch = Blockly.PythonOcto.addLoopTrap(branch, block.id) ||
-      Blockly.PythonOcto.LOOP_PASS;
-  var code = (until ? 'loop_until(' : 'loop_while(') + argument0 + ',\n' + Blockly.PythonOcto.prefixLines(branch, Blockly.PythonOcto.INDENT) + '\n)';
+  var argument0 = valueToCode(block, 'BOOL', ORDER.NONE) || (until ? 'True' : 'False');
+  var branch = statementToCode(block, 'DO');
+  branch = addLoopTrap(branch, block.id) || LOOP_PASS;
+  var code = (until ? 'loop_until(' : 'loop_while(') + argument0 + ',\n' + prefixLines(branch, INDENT) + '\n)';
   return code;
 };
 
-Blockly.PythonOcto['controls_for'] = function(block) {
+PythonOcto['controls_for'] = function(block) {
   // For loop.
-  var variable0 = Blockly.PythonOcto.variableDB_.getName(
-      block.getFieldValue('VAR'), Blockly.PythonOcto.Variables.NAME_TYPE);
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'FROM',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'TO',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
-  var increment = Blockly.PythonOcto.valueToCode(block, 'BY',
-      Blockly.PythonOcto.ORDER_NONE) || '1';
-  var branch = Blockly.PythonOcto.statementToCode(block, 'DO');
-  branch = Blockly.PythonOcto.addLoopTrap(branch, block.id) ||
-      Blockly.PythonOcto.LOOP_PASS;
+  var variable0 = getVariableName(block.getVariable());
+  var argument0 = valueToCode(block, 'FROM', ORDER.NONE) || '0';
+  var argument1 = valueToCode(block, 'TO', ORDER.NONE) || '0';
+  var increment = valueToCode(block, 'BY', ORDER.NONE) || '1';
+  var branch = statementToCode(block, 'DO');
+  branch = addLoopTrap(branch, block.id) || LOOP_PASS;
 
   var code = '';
   var range;
 
   // Helper functions.
   var defineUpRange = function() {
-    return Blockly.PythonOcto.provideFunction_(
+    return provideFunction(
         'upRange',
-        ['def ' + Blockly.PythonOcto.FUNCTION_NAME_PLACEHOLDER_ +
+        ['def ' + FUNCTION_NAME_PLACEHOLDER_ +
             '(start, stop, step):',
          '  while start <= stop:',
          '    yield start',
          '    start += abs(step)']);
   };
   var defineDownRange = function() {
-    return Blockly.PythonOcto.provideFunction_(
+    return provideFunction(
         'downRange',
-        ['def ' + Blockly.PythonOcto.FUNCTION_NAME_PLACEHOLDER_ +
+        ['def ' + FUNCTION_NAME_PLACEHOLDER_ +
             '(start, stop, step):',
          '  while start >= stop:',
          '    yield start',
@@ -108,8 +103,8 @@ Blockly.PythonOcto['controls_for'] = function(block) {
         defineDownRange() + '(' + start + ', ' + end + ', ' + inc + ')';
   };
 
-  if (Blockly.PythonOcto.isNumber(argument0) && Blockly.PythonOcto.isNumber(argument1) &&
-      Blockly.PythonOcto.isNumber(increment)) {
+  if (typeof argument0 === 'number' && typeof argument1 === 'number' &&
+      typeof increment === 'number') {
     // All parameters are simple numbers.
     argument0 = parseFloat(argument0);
     argument1 = parseFloat(argument1);
@@ -147,7 +142,7 @@ Blockly.PythonOcto['controls_for'] = function(block) {
   } else {
     // Cache non-trivial values to variables to prevent repeated look-ups.
     var scrub = function(arg, suffix) {
-      if (Blockly.PythonOcto.isNumber(arg)) {
+      if (typeof arg === 'number') {
         // Simple number.
         arg = parseFloat(arg);
       } else if (arg.match(/^\w+$/)) {
@@ -155,8 +150,7 @@ Blockly.PythonOcto['controls_for'] = function(block) {
         arg = 'float(' + arg + ')';
       } else {
         // It's complicated.
-        var varName = Blockly.PythonOcto.variableDB_.getDistinctName(
-            variable0 + suffix, Blockly.PythonOcto.Variables.NAME_TYPE);
+        var varName = getDistinctName(variable0 + suffix);
         code += varName + ' = float(' + arg + ')\n';
         arg = varName;
       }
@@ -181,20 +175,17 @@ Blockly.PythonOcto['controls_for'] = function(block) {
   return code;
 };
 
-Blockly.PythonOcto['controls_forEach'] = function(block) {
+PythonOcto['controls_forEach'] = function(block) {
   // For each loop.
-  var variable0 = Blockly.PythonOcto.variableDB_.getName(
-      block.getFieldValue('VAR'), Blockly.PythonOcto.Variables.NAME_TYPE);
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'LIST',
-      Blockly.PythonOcto.ORDER_RELATIONAL) || '[]';
-  var branch = Blockly.PythonOcto.statementToCode(block, 'DO');
-  branch = Blockly.PythonOcto.addLoopTrap(branch, block.id) ||
-      Blockly.PythonOcto.LOOP_PASS;
+  var variable0 = getVariableName(block.getVariable());
+  var argument0 = valueToCode(block, 'LIST', ORDER.RELATIONAL) || '[]';
+  var branch = statementToCode(block, 'DO');
+  branch = addLoopTrap(branch, block.id) || LOOP_PASS;
   var code = 'for ' + variable0 + ' in ' + argument0 + ':\n' + branch;
   return code;
 };
 
-Blockly.PythonOcto['controls_flow_statements'] = function(block) {
+PythonOcto['controls_flow_statements'] = function(block) {
   // Flow statements: continue, break.
   switch (block.getFieldValue('FLOW')) {
     case 'BREAK':

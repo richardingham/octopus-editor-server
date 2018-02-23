@@ -24,62 +24,66 @@
  */
 'use strict';
 
-Blockly.PythonOcto['image_findcolour'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+import {ORDER} from '../python-octo-constants';
+import {valueToCode} from '../python-octo-methods';
+import PythonOcto from '../python-octo-blocks';
+
+PythonOcto['image_findcolour'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var code = 'image.select(' + input + ', "' + block.getFieldValue('OP').toLowerCase() + '")';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_threshold'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+PythonOcto['image_threshold'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var code = 'image.threshold(' + input + ', ' + parseInt(block.getFieldValue('THRESHOLD')) + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_erode'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+PythonOcto['image_erode'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var code = 'image.erode(' + input + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_invert'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+PythonOcto['image_invert'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var code = 'image.invert(' + input + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_colourdistance'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
-  var colour = Blockly.PythonOcto.valueToCode(block, 'COLOUR', Blockly.PythonOcto.ORDER_NONE) || '\'#000000\'';
+PythonOcto['image_colourdistance'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
+  var colour = valueToCode(block, 'COLOUR', ORDER.NONE) || '\'#000000\'';
   var code = 'image.colorDistance(' + [input, colour].join(', ') + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_huedistance'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
-  var colour = Blockly.PythonOcto.valueToCode(block, 'COLOUR', Blockly.PythonOcto.ORDER_NONE) || '\'#000000\'';
+PythonOcto['image_huedistance'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
+  var colour = valueToCode(block, 'COLOUR', ORDER.NONE) || '\'#000000\'';
   var code = 'image.hueDistance(' + [input, colour].join(', ') + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_intensityfn'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+PythonOcto['image_intensityfn'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var code = 'image.intensity(' + input + ', \'' + block.getFieldValue('OP') + '\')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_crop'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+PythonOcto['image_crop'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var x = parseInt(block.getFieldValue('X'));
   var y = parseInt(block.getFieldValue('Y'));
   var w = parseInt(block.getFieldValue('W'));
   var h = parseInt(block.getFieldValue('H'));
   var code = 'image.crop(' + [input, x, y, w, h].join(', ') + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['image_tonumber'] = function(block) {
-  var input = Blockly.PythonOcto.valueToCode(block, 'INPUT', Blockly.PythonOcto.ORDER_NONE) || 'None';
+PythonOcto['image_tonumber'] = function(block) {
+  var input = valueToCode(block, 'INPUT', ORDER.NONE) || 'None';
   var code = 'image.calculate(' + input + ', "' + block.getFieldValue('OP') + '")';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };

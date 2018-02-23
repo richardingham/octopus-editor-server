@@ -24,7 +24,8 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import {bindEvent_, unbindEvent_, isRightButton, mouseToSvg, getSvgXY_, createSvgElement} from './utils';
 
 var removeNode = function(node) {
   return node && node.parentNode ? node.parentNode.removeChild(node) : null;
@@ -32,7 +33,7 @@ var removeNode = function(node) {
 
 /**
  * Class for a pair of scrollbars.  Horizontal and vertical.
- * @param {!Blockly.Workspace} workspace Workspace to bind the scrollbars to.
+ * @param {!Workspace} workspace Workspace to bind the scrollbars to.
  * @constructor
  */
 var ScrollbarPair = function(workspace) {
@@ -40,7 +41,7 @@ var ScrollbarPair = function(workspace) {
   this.oldHostMetrics_ = null;
   this.hScroll = new Scrollbar(workspace, true, true);
   this.vScroll = new Scrollbar(workspace, false, true);
-  this.corner_ = Blockly.createSvgElement('rect',
+  this.corner_ = createSvgElement('rect',
       {'height': Scrollbar.scrollbarThickness,
       'width': Scrollbar.scrollbarThickness,
       'style': 'fill: #fff'}, null);
@@ -52,7 +53,7 @@ var ScrollbarPair = function(workspace) {
  * Unlink from all DOM elements to prevent memory leaks.
  */
 ScrollbarPair.prototype.dispose = function() {
-  Blockly.unbindEvent_(this.onResizeWrapper_);
+  unbindEvent_(this.onResizeWrapper_);
   this.onResizeWrapper_ = null;
   removeNode(this.corner_);
   this.corner_ = null;
@@ -141,7 +142,7 @@ ScrollbarPair.prototype.set = function(x, y) {
  * Class for a pure SVG scrollbar.
  * This technique offers a scrollbar that is guaranteed to work, but may not
  * look or behave like the system's scrollbars.
- * @param {!Blockly.Workspace} workspace Workspace to bind the scrollbar to.
+ * @param {!Workspace} workspace Workspace to bind the scrollbar to.
  * @param {boolean} horizontal True if horizontal, false if vertical.
  * @param {boolean} opt_pair True if the scrollbar is part of a horiz/vert pair.
  * @constructor
@@ -167,9 +168,9 @@ var Scrollbar = function(workspace, horizontal, opt_pair) {
     this.svgKnob_.setAttribute('x', 3);
   }
   var scrollbar = this;
-  this.onMouseDownBarWrapper_ = Blockly.bindEvent_(this.svgBackground_,
+  this.onMouseDownBarWrapper_ = bindEvent_(this.svgBackground_,
       'mousedown', scrollbar, scrollbar.onMouseDownBar_);
-  this.onMouseDownKnobWrapper_ = Blockly.bindEvent_(this.svgKnob_,
+  this.onMouseDownKnobWrapper_ = bindEvent_(this.svgKnob_,
       'mousedown', scrollbar, scrollbar.onMouseDownKnob_);
 };
 
@@ -187,12 +188,12 @@ Scrollbar.scrollbarThickness =
 Scrollbar.prototype.dispose = function() {
   this.onMouseUpKnob_();
   if (this.onResizeWrapper_) {
-    Blockly.unbindEvent_(this.onResizeWrapper_);
+    unbindEvent_(this.onResizeWrapper_);
     this.onResizeWrapper_ = null;
   }
-  Blockly.unbindEvent_(this.onMouseDownBarWrapper_);
+  unbindEvent_(this.onMouseDownBarWrapper_);
   this.onMouseDownBarWrapper_ = null;
-  Blockly.unbindEvent_(this.onMouseDownKnobWrapper_);
+  unbindEvent_(this.onMouseDownKnobWrapper_);
   this.onMouseDownKnobWrapper_ = null;
 
   removeNode(this.svgGroup_);
@@ -306,11 +307,11 @@ Scrollbar.prototype.createDom_ = function() {
     <rect class="blocklyScrollbarKnob" rx="7" ry="7" />
   </g>
   */
-  this.svgGroup_ = Blockly.createSvgElement('g', {}, null);
-  this.svgBackground_ = Blockly.createSvgElement('rect',
+  this.svgGroup_ = createSvgElement('g', {}, null);
+  this.svgBackground_ = createSvgElement('rect',
       {'class': 'blocklyScrollbarBackground'}, this.svgGroup_);
   var radius = Math.floor((Scrollbar.scrollbarThickness - 6) / 2);
-  this.svgKnob_ = Blockly.createSvgElement('rect',
+  this.svgKnob_ = createSvgElement('rect',
       {'class': 'blocklyScrollbarKnob', 'rx': radius, 'ry': radius},
       this.svgGroup_);
   Scrollbar.insertAfter_(this.svgGroup_,
@@ -357,16 +358,16 @@ Scrollbar.prototype.setVisible = function(visible) {
  */
 Scrollbar.prototype.onMouseDownBar_ = function(e) {
   this.onMouseUpKnob_();
-  if (Blockly.isRightButton(e)) {
+  if (isRightButton(e)) {
     // Right-click.
     // Scrollbars have no context menu.
     e.stopPropagation();
     return;
   }
-  var mouseXY = Blockly.mouseToSvg(e);
+  var mouseXY = mouseToSvg(e);
   var mouseLocation = this.horizontal_ ? mouseXY.x : mouseXY.y;
 
-  var knobXY = Blockly.getSvgXY_(this.svgKnob_);
+  var knobXY = getSvgXY_(this.svgKnob_);
   var knobStart = this.horizontal_ ? knobXY.x : knobXY.y;
   var knobLength = parseFloat(
       this.svgKnob_.getAttribute(this.horizontal_ ? 'width' : 'height'));
@@ -395,7 +396,7 @@ Scrollbar.prototype.onMouseDownBar_ = function(e) {
  */
 Scrollbar.prototype.onMouseDownKnob_ = function(e) {
   this.onMouseUpKnob_();
-  if (Blockly.isRightButton(e)) {
+  if (isRightButton(e)) {
     // Right-click.
     // Scrollbars have no context menu.
     e.stopPropagation();
@@ -406,9 +407,9 @@ Scrollbar.prototype.onMouseDownKnob_ = function(e) {
       this.svgKnob_.getAttribute(this.horizontal_ ? 'x' : 'y'));
   // Record the current mouse position.
   this.startDragMouse = this.horizontal_ ? e.clientX : e.clientY;
-  Scrollbar.onMouseUpWrapper_ = Blockly.bindEvent_(document,
+  Scrollbar.onMouseUpWrapper_ = bindEvent_(document,
       'mouseup', this, this.onMouseUpKnob_);
-  Scrollbar.onMouseMoveWrapper_ = Blockly.bindEvent_(document,
+  Scrollbar.onMouseMoveWrapper_ = bindEvent_(document,
       'mousemove', this, this.onMouseMoveKnob_);
   e.stopPropagation();
 };
@@ -436,11 +437,11 @@ Scrollbar.prototype.onMouseUpKnob_ = function() {
   Blockly.removeAllRanges();
   Blockly.hideChaff(true);
   if (Scrollbar.onMouseUpWrapper_) {
-    Blockly.unbindEvent_(Scrollbar.onMouseUpWrapper_);
+    unbindEvent_(Scrollbar.onMouseUpWrapper_);
     Scrollbar.onMouseUpWrapper_ = null;
   }
   if (Scrollbar.onMouseMoveWrapper_) {
-    Blockly.unbindEvent_(Scrollbar.onMouseMoveWrapper_);
+    unbindEvent_(Scrollbar.onMouseMoveWrapper_);
     Scrollbar.onMouseMoveWrapper_ = null;
   }
 };
@@ -516,7 +517,4 @@ Scrollbar.insertAfter_ = function(newNode, refNode) {
   }
 };
 
-Blockly.Scrollbar = Scrollbar;
-Blockly.ScrollbarPair = ScrollbarPair;
-
-});
+export {Scrollbar, ScrollbarPair};

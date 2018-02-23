@@ -24,21 +24,14 @@
  */
 'use strict';
 
-// TODO(scr): Fix circular dependencies
-// goog.require('Blockly.Block');
-
-// goog.require('Blockly.FieldVariable');
-// goog.require('Blockly.Names');
-// goog.require('Blockly.Workspace');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Blocks from './blocks';
+import Block from './block';
+import Workspace from './workspace';
+import Names from './names';
 
 var Procedures = {};
-
-/**
- * Category to separate procedure names from variables and generated functions.
- */
-Procedures.NAME_TYPE = 'PROCEDURE';
+export default Procedures;
 
 /**
  * Find all user-created procedure definitions.
@@ -68,8 +61,8 @@ Procedures.allProcedures = function() {
     }
   }
 
-  proceduresNoReturn.sort(Blockly.Procedures.procTupleComparator_);
-  proceduresReturn.sort(Blockly.Procedures.procTupleComparator_);
+  proceduresNoReturn.sort(Procedures.procTupleComparator_);
+  proceduresReturn.sort(Procedures.procTupleComparator_);
   return [proceduresNoReturn, proceduresReturn, sequencesReturn];
 };
 
@@ -96,7 +89,7 @@ Procedures.procTupleComparator_ = function(ta, tb) {
 /**
  * Ensure two identically-named procedures don't exist.
  * @param {string} name Proposed procedure name.
- * @param {!Blockly.Block} block Block to disambiguate.
+ * @param {!Block} block Block to disambiguate.
  * @return {string} Non-colliding name.
  */
 Procedures.findLegalName = function(name, block) {
@@ -120,8 +113,8 @@ Procedures.findLegalName = function(name, block) {
  * Does this procedure have a legal name?  Illegal names include names of
  * procedures already defined.
  * @param {string} name The questionable name.
- * @param {!Blockly.Workspace} workspace The workspace to scan for collisions.
- * @param {Blockly.Block} opt_exclude Optional block to exclude from
+ * @param {!Workspace} workspace The workspace to scan for collisions.
+ * @param {Block} opt_exclude Optional block to exclude from
  *     comparisons (one doesn't want to collide with oneself).
  * @return {boolean} True if the name is legal.
  */
@@ -135,7 +128,7 @@ Procedures.isLegalName = function(name, workspace, opt_exclude) {
     var func = blocks[x].getProcedureDef;
     if (func) {
       var procName = func.call(blocks[x]);
-      if (Blockly.Names.equals(procName[0], name)) {
+      if (Names.equals(procName[0], name)) {
         return false;
       }
     }
@@ -147,7 +140,7 @@ Procedures.isLegalName = function(name, workspace, opt_exclude) {
  * Rename a procedure.  Called by the editable field.
  * @param {string} text The proposed new name.
  * @return {string} The accepted name.
- * @this {!Blockly.FieldVariable}
+ * @this {!FieldVariable}
  */
 Procedures.rename = function(text) {
   // Strip leading and trailing whitespace.  Beyond this, all names are legal.
@@ -168,16 +161,16 @@ Procedures.rename = function(text) {
 
 /**
  * Construct the blocks required by the flyout for the procedure category.
- * @param {!Array.<!Blockly.Block>} blocks List of blocks to show.
+ * @param {!Array.<!Block>} blocks List of blocks to show.
  * @param {!Array.<number>} gaps List of widths between blocks.
  * @param {number} margin Standard margin width for calculating gaps.
- * @param {!Blockly.Workspace} workspace The flyout's workspace.
+ * @param {!Workspace} workspace The flyout's workspace.
  */
 Procedures.flyoutCategory = function(blocks, gaps, margin, workspace) {
   var defaultBlocks = ['procedures_defnoreturn', 'procedures_defreturn', 'procedures_ifreturn', 'procedures_namedsequence'];
   for (var x = 0; x < defaultBlocks.length; x++) {
-    if (Blockly.Blocks[defaultBlocks[x]]) {
-      var block = Blockly.Block.obtain(workspace, defaultBlocks[x]);
+    if (Blocks[defaultBlocks[x]]) {
+      var block = Block.obtain(workspace, defaultBlocks[x]);
       block.initSvg();
       blocks.push(block);
       gaps.push(margin * 2);
@@ -190,7 +183,7 @@ Procedures.flyoutCategory = function(blocks, gaps, margin, workspace) {
 
   function populateProcedures(procedureList, templateName) {
     for (var x = 0; x < procedureList.length; x++) {
-      var block = Blockly.Block.obtain(workspace, templateName);
+      var block = Block.obtain(workspace, templateName);
       block.setFieldValue(procedureList[x][0], 'NAME');
       var tempIds = [];
       for (var t = 0; t < procedureList[x][1].length; t++) {
@@ -203,7 +196,7 @@ Procedures.flyoutCategory = function(blocks, gaps, margin, workspace) {
     }
   }
 
-  var tuple = Blockly.Procedures.allProcedures();
+  var tuple = Procedures.allProcedures();
   populateProcedures(tuple[0], 'procedures_callnoreturn');
   populateProcedures(tuple[1], 'procedures_callreturn');
   populateProcedures(tuple[2], 'procedures_callnamedsequence');
@@ -212,8 +205,8 @@ Procedures.flyoutCategory = function(blocks, gaps, margin, workspace) {
 /**
  * Find all the callers of a named procedure.
  * @param {string} name Name of procedure.
- * @param {!Blockly.Workspace} workspace The workspace to find callers in.
- * @return {!Array.<!Blockly.Block>} Array of caller blocks.
+ * @param {!Workspace} workspace The workspace to find callers in.
+ * @return {!Array.<!Block>} Array of caller blocks.
  */
 Procedures.getCallers = function(name, workspace) {
   var callers = [];
@@ -224,7 +217,7 @@ Procedures.getCallers = function(name, workspace) {
     if (func) {
       var procName = func.call(blocks[x]);
       // Procedure name may be null if the block is only half-built.
-      if (procName && Blockly.Names.equals(procName, name)) {
+      if (procName && Names.equals(procName, name)) {
         callers.push(blocks[x]);
       }
     }
@@ -236,7 +229,7 @@ Procedures.getCallers = function(name, workspace) {
  * When a procedure definition is disposed of, find and dispose of all its
  *     callers.
  * @param {string} name Name of deleted procedure definition.
- * @param {!Blockly.Workspace} workspace The workspace to delete callers from.
+ * @param {!Workspace} workspace The workspace to delete callers from.
  */
 Procedures.disposeCallers = function(name, workspace) {
   var callers = Procedures.getCallers(name, workspace);
@@ -249,7 +242,7 @@ Procedures.disposeCallers = function(name, workspace) {
  * When a procedure definition changes its parameters, find and edit all its
  * callers.
  * @param {string} name Name of edited procedure definition.
- * @param {!Blockly.Workspace} workspace The workspace to delete callers from.
+ * @param {!Workspace} workspace The workspace to delete callers from.
  * @param {!Array.<string>} paramNames Array of new parameter names.
  * @param {!Array.<string>} paramIds Array of unique parameter IDs.
  */
@@ -263,8 +256,8 @@ Procedures.mutateCallers = function(name, workspace, paramNames, paramIds, start
 /**
  * Find the definition block for the named procedure.
  * @param {string} name Name of procedure.
- * @param {!Blockly.Workspace} workspace The workspace to search.
- * @return {Blockly.Block} The procedure definition block, or null not found.
+ * @param {!Workspace} workspace The workspace to search.
+ * @return {Block} The procedure definition block, or null not found.
  */
 Procedures.getDefinition = function(name, workspace) {
   var blocks = workspace.getAllBlocks();
@@ -272,7 +265,7 @@ Procedures.getDefinition = function(name, workspace) {
     var func = blocks[x].getProcedureDef;
     if (func) {
       var tuple = func.call(blocks[x]);
-      if (tuple && Blockly.Names.equals(tuple[0], name)) {
+      if (tuple && Names.equals(tuple[0], name)) {
         return blocks[x];
       }
     }
@@ -326,7 +319,3 @@ Procedures.removeProcedureValues = function(name, workspace) {
     }
   }
 };
-
-return Procedures;
-
-});

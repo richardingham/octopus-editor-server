@@ -24,12 +24,12 @@
  */
 'use strict';
 
-// goog.require('Blockly.Field');
-
-var util = require('util');
-var assert = require('assert');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Field from './field';
+import WidgetDiv from './widgetdiv';
+import {inherits, assert} from './utils';
+import {bindEvent_, unbindEvent_, addClass_, removeClass_, getAbsoluteXY_} from './utils';
+import {numberValidator} from './validators';
 
 /**
  * Class for an editable text field.
@@ -38,7 +38,7 @@ module.exports = (function (Blockly) {
  *     to validate any constraints on what the user entered.  Takes the new
  *     text as an argument and returns either the accepted text, a replacement
  *     text, or null to abort the change.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 var FieldTextInput = function(text, opt_changeHandler) {
@@ -46,7 +46,8 @@ var FieldTextInput = function(text, opt_changeHandler) {
 
   this.changeHandler_ = opt_changeHandler;
 };
-util.inherits(FieldTextInput, Blockly.Field);
+inherits(FieldTextInput, Field);
+export default FieldTextInput;
 
 /**
  * Clone this FieldTextInput.
@@ -66,7 +67,7 @@ FieldTextInput.prototype.CURSOR = 'text';
  * Close the input widget if this input is being deleted.
  */
 FieldTextInput.prototype.dispose = function() {
-  Blockly.WidgetDiv.hideIfOwner(this);
+  WidgetDiv.hideIfOwner(this);
   FieldTextInput.super_.prototype.dispose.call(this);
 };
 
@@ -88,7 +89,7 @@ FieldTextInput.prototype.setText = function(text) {
       text = validated;
     }
   }
-  Blockly.Field.prototype.setText.call(this, text);
+  Field.prototype.setText.call(this, text);
 };
 
 var _isMobile = (function (a) {
@@ -123,8 +124,8 @@ FieldTextInput.prototype.showEditor_ = function(opt_quietInput) {
     return;
   }
 
-  Blockly.WidgetDiv.show(this, this.widgetDispose_());
-  var div = Blockly.WidgetDiv.DIV;
+  WidgetDiv.show(this, this.widgetDispose_());
+  var div = WidgetDiv.DIV;
   // Create the input.
   var htmlInput = document.createElement('input');
   htmlInput.setAttribute('class', 'blocklyHtmlInput');
@@ -142,13 +143,13 @@ FieldTextInput.prototype.showEditor_ = function(opt_quietInput) {
 
   // Bind to keyup -- trap Enter and Esc; resize after every keystroke.
   htmlInput.onKeyUpWrapper_ =
-      Blockly.bindEvent_(htmlInput, 'keyup', this, this.onHtmlInputChange_);
+      bindEvent_(htmlInput, 'keyup', this, this.onHtmlInputChange_);
   // Bind to keyPress -- repeatedly resize when holding down a key.
   htmlInput.onKeyPressWrapper_ =
-      Blockly.bindEvent_(htmlInput, 'keypress', this, this.onHtmlInputChange_);
+      bindEvent_(htmlInput, 'keypress', this, this.onHtmlInputChange_);
   var workspaceSvg = this.sourceBlock_.workspace.getCanvas();
   htmlInput.onWorkspaceChangeWrapper_ =
-      Blockly.bindEvent_(workspaceSvg, 'blocklyWorkspaceChange', this,
+      bindEvent_(workspaceSvg, 'blocklyWorkspaceChange', this,
       this.resizeEditor_);
 };
 
@@ -161,11 +162,11 @@ FieldTextInput.prototype.onHtmlInputChange_ = function(e) {
   var htmlInput = FieldTextInput.htmlInput_;
   if (e.keyCode == 13) {
     // Enter
-    Blockly.WidgetDiv.hide();
+    WidgetDiv.hide();
   } else if (e.keyCode == 27) {
     // Esc
     this.setText(htmlInput.defaultValue);
-    Blockly.WidgetDiv.hide();
+    WidgetDiv.hide();
   } else {
     // Update source block.
     var text = htmlInput.value;
@@ -189,15 +190,15 @@ FieldTextInput.prototype.onHtmlInputChange_ = function(e) {
  */
 FieldTextInput.prototype.validate_ = function() {
   var valid = true;
-  assert(util.isObject(FieldTextInput.htmlInput_));
   var htmlInput = FieldTextInput.htmlInput_;
+  assert(typeof htmlInput === 'object' && htmlInput !== null);
   if (this.changeHandler_) {
     valid = this.changeHandler_(htmlInput.value);
   }
   if (valid === null) {
-    Blockly.addClass_(htmlInput, 'blocklyInvalidInput');
+    addClass_(htmlInput, 'blocklyInvalidInput');
   } else {
-    Blockly.removeClass_(htmlInput, 'blocklyInvalidInput');
+    removeClass_(htmlInput, 'blocklyInvalidInput');
   }
 };
 
@@ -206,10 +207,10 @@ FieldTextInput.prototype.validate_ = function() {
  * @private
  */
 FieldTextInput.prototype.resizeEditor_ = function() {
-  var div = Blockly.WidgetDiv.DIV;
+  var div = WidgetDiv.DIV;
   var bBox = this.fieldGroup_.getBBox();
   div.style.width = bBox.width + 'px';
-  var xy = Blockly.getAbsoluteXY_(this.borderRect_);
+  var xy = getAbsoluteXY_(this.borderRect_);
   // In RTL mode block fields and LTR input fields the left edge moves,
   // whereas the right edge is fixed.  Reposition the editor.
   if (Blockly.RTL) {
@@ -248,12 +249,12 @@ FieldTextInput.prototype.widgetDispose_ = function() {
     }
     thisField.setText(text);
     thisField.sourceBlock_.rendered && thisField.sourceBlock_.render();
-    Blockly.unbindEvent_(htmlInput.onKeyUpWrapper_);
-    Blockly.unbindEvent_(htmlInput.onKeyPressWrapper_);
-    Blockly.unbindEvent_(htmlInput.onWorkspaceChangeWrapper_);
+    unbindEvent_(htmlInput.onKeyUpWrapper_);
+    unbindEvent_(htmlInput.onKeyPressWrapper_);
+    unbindEvent_(htmlInput.onWorkspaceChangeWrapper_);
     FieldTextInput.htmlInput_ = null;
     // Delete the width property.
-    Blockly.WidgetDiv.DIV.style.width = 'auto';
+    WidgetDiv.DIV.style.width = 'auto';
     thisField.announceChanged(text);
   };
 };
@@ -262,30 +263,7 @@ FieldTextInput.prototype.announceChanged = function (name) {
   this.emit("changed", name);
 };
 
-function numberValidator(text, integer, nonnegative) {
-  // TODO: Handle cases like 'ten', '1.203,14', etc.
-  // 'O' is sometimes mistaken for '0' by inexperienced users.
-  text = text.replace(/O/ig, '0');
-  // Strip out thousands separators.
-  text = text.replace(/,/g, '');
 
-  var n = parseFloat(text);
-  if (isNaN(n)) return null;
-
-  if (nonnegative) {
-    n = Math.max(0, n);
-  }
-
-  if (integer) {
-    return String(Math.floor(n));
-  } else {
-    var s = String(n);
-    if (s.indexOf('.') === -1 && text.indexOf('.') !== -1 && parseInt(text || 0) === n) {
-      return s + '.0';
-    }
-    return s;
-  }
-}
 
 /**
  * Ensure that only a number may be entered.
@@ -322,7 +300,3 @@ FieldTextInput.nonnegativeIntegerValidator = function(text) {
 FieldTextInput.nonnegativeNumberValidator = function(text) {
   return numberValidator(text, false, true);
 };
-
-return FieldTextInput;
-
-});

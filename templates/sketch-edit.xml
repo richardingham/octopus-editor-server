@@ -2,27 +2,28 @@
 <head>
 	<title>Edit Sketch</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<script src="/bower_components/bootstrap/js/modal.js"></script>
 
-	<script type="text/javascript" src="/resources/contextmenu/contextmenu.js"></script>
-	<script type="text/javascript" src="/resources/prettify/prettify.js"></script>
+	<!-- jQuery -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
-	<script type="text/javascript" src="/resources/blockly/dist/blockly.js"></script>
-	<script type="text/javascript" src="/resources/blockly/overrides.js"></script>
-	<script type="text/javascript" src="/resources/blockly/colourscheme.js"></script>
-	<script type="text/javascript" src="/resources/blockly/msg/messages.js"></script>
-	<script type="text/javascript" src="/resources/blockly/dist/blocks.js"></script>
-	<script type="text/javascript" src="/resources/blockly/dist/python-octo.js"></script>
+	<!-- tinycolor -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/tinycolor/1.4.1/tinycolor.min.js"></script>
 
-	<script type="text/javascript" src="/resources/sketch-edit.js"></script>
+	<!-- Bootstrap -->
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
 
-	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
-	<link rel="stylesheet" href="/resources/contextmenu/dropdown.css" />
-	<link rel="stylesheet" href="/resources/prettify/prettify.css" />
+	<script src="/resources/pack/blockly.js"></script>
+	<script src="/resources/blockly/msg/messages.js"></script>
+	<script src="/resources/pack/octopus-generator.js"></script>
+	<script src="/resources/prettify/prettify.js"></script>
+	<script src="/resources/contextmenu/contextmenu.js"></script>
+	<script src="/resources/sketch-edit.js"></script>
+
 	<link rel="stylesheet" href="/resources/blockly/blockly.css" />
-	<link rel="stylesheet" href="/resources/blockly/ext.css" />
+	<link rel="stylesheet" href="/resources/prettify/prettify.css" />
+	<link rel="stylesheet" href="/resources/contextmenu/dropdown.css" />
 	<link rel="stylesheet" href="/resources/sketch-edit.css" />
 
 </head>

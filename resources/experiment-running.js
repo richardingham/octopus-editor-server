@@ -1,4 +1,4 @@
-$(function ($) {
+jQuery(function ($) {
 
   var experiment = {
     sketch: $('#viewer').data('sketch'),
@@ -149,7 +149,7 @@ $(function ($) {
   };
 
   streams.changed = function () {
-    var streamNames = _(graphs).pluck('streams').flatten().uniq().value();
+    var streamNames = _(graphs).map('streams').flatten().uniq().value();
 
     _socketSend("experiment", "choose-streams", {
       streams: streamNames

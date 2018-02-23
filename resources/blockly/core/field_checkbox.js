@@ -24,11 +24,10 @@
  */
 'use strict';
 
-// goog.require('Blockly.Field');
-
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Field from './field';
+import {createSvgElement} from './utils';
+import {inherits} from './utils';
 
 /**
  * Class for a checkbox field.
@@ -37,7 +36,7 @@ module.exports = (function (Blockly) {
  *     option is selected.  Its sole argument is the new checkbox state.  If
  *     it returns a value, this becomes the new checkbox state, unless the
  *     value is null, in which case the change is aborted.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 var FieldCheckbox = function(state, opt_changeHandler) {
@@ -46,14 +45,15 @@ var FieldCheckbox = function(state, opt_changeHandler) {
   this.changeHandler_ = opt_changeHandler;
   // The checkbox doesn't use the inherited text element.
   // Instead it uses a custom checkmark element that is either visible or not.
-  this.checkElement_ = Blockly.createSvgElement('text',
+  this.checkElement_ = createSvgElement('text',
       {'class': 'blocklyText', 'x': -3}, this.fieldGroup_);
   var textNode = document.createTextNode('\u2713');
   this.checkElement_.appendChild(textNode);
   // Set the initial state.
   this.setValue(state);
 };
-util.inherits(FieldCheckbox, Blockly.Field);
+inherits(FieldCheckbox, Field);
+export default Field;
 
 /**
  * Clone this FieldCheckbox.
@@ -110,8 +110,3 @@ FieldCheckbox.prototype.showEditor_ = function() {
     this.setValue(String(newState).toUpperCase());
   }
 };
-
-return FieldCheckbox;
-
-});
-

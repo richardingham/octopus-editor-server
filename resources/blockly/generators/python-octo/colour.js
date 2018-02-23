@@ -24,9 +24,11 @@
  */
 'use strict';
 
+import {ORDER} from '../python-octo-constants';
+import PythonOcto from '../python-octo-blocks';
 
-Blockly.PythonOcto['colour_picker'] = function(block) {
+PythonOcto['colour_picker'] = function(block) {
   // Colour picker.
   var code = '\'' + block.getFieldValue('COLOUR') + '\'';
-  return [code, Blockly.PythonOcto.ORDER_ATOMIC];
+  return [code, ORDER.ATOMIC];
 };

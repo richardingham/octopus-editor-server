@@ -1,5 +1,5 @@
 
-$(function ($) {
+jQuery(function ($) {
   $('#stored table').DataTable({
     order: [[1, 'desc']],
     columns: [

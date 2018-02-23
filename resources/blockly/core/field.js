@@ -26,10 +26,13 @@
  */
 'use strict';
 
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
+import EventEmitter  from 'events';
+import Blockly from './blockly';
+import Block from './block';
+import BlockSvg from './block_svg';
+import {inherits} from './utils';
+import {bindEvent_, unbindEvent_, addClass_, removeClass_, isRightButton, createSvgElement} from './utils';
 
-module.exports = (function (Blockly) {
 
 /**
  * Class for an editable field.
@@ -39,14 +42,14 @@ module.exports = (function (Blockly) {
 var Field = function(text) {
   this.sourceBlock_ = null;
   // Build the DOM.
-  this.fieldGroup_ = Blockly.createSvgElement('g', {}, null);
-  this.borderRect_ = Blockly.createSvgElement('rect',
+  this.fieldGroup_ = createSvgElement('g', {}, null);
+  this.borderRect_ = createSvgElement('rect',
       {'rx': 4,
        'ry': 4,
-       'x': -Blockly.BlockSvg.SEP_SPACE_X / 2,
+       'x': -BlockSvg.SEP_SPACE_X / 2,
        'y': -12,
        'height': 16}, this.fieldGroup_);
-  this.textElement_ = Blockly.createSvgElement('text',
+  this.textElement_ = createSvgElement('text',
       {'class': 'blocklyText'}, this.fieldGroup_);
   this.size_ = {height: 25, width: 0};
   this.setText(text);
@@ -54,7 +57,8 @@ var Field = function(text) {
 
   EventEmitter.call(this);
 };
-util.inherits(Field, EventEmitter);
+inherits(Field, EventEmitter);
+export default Field;
 
 /**
  * Clone this Field.  This must be implemented by all classes derived from
@@ -79,7 +83,7 @@ Field.prototype.EDITABLE = true;
 
 /**
  * Install this field on a block.
- * @param {!Blockly.Block} block The block containing this field.
+ * @param {!Block} block The block containing this field.
  */
 Field.prototype.init = function(block) {
   if (this.sourceBlock_) {
@@ -89,7 +93,7 @@ Field.prototype.init = function(block) {
   this.updateEditable();
   block.getSvgRoot().appendChild(this.fieldGroup_);
   this.mouseUpWrapper_ =
-      Blockly.bindEvent_(this.fieldGroup_, 'mouseup', this, this.onMouseUp_);
+      bindEvent_(this.fieldGroup_, 'mouseup', this, this.onMouseUp_);
   // Bump to set the colours for dropdown arrows.
   this.setText(null);
 };
@@ -99,7 +103,7 @@ Field.prototype.init = function(block) {
  */
 Field.prototype.dispose = function() {
   if (this.mouseUpWrapper_) {
-    Blockly.unbindEvent_(this.mouseUpWrapper_);
+    unbindEvent_(this.mouseUpWrapper_);
     this.mouseUpWrapper_ = null;
   }
   this.sourceBlock_ = null;
@@ -118,15 +122,15 @@ Field.prototype.updateEditable = function() {
     return;
   }
   if (this.sourceBlock_.isEditable()) {
-    Blockly.addClass_(/** @type {!Element} */ (this.fieldGroup_),
+    addClass_(/** @type {!Element} */ (this.fieldGroup_),
                       'blocklyEditableText');
-    Blockly.removeClass_(/** @type {!Element} */ (this.fieldGroup_),
+    removeClass_(/** @type {!Element} */ (this.fieldGroup_),
                          'blocklyNoNEditableText');
     this.fieldGroup_.style.cursor = this.CURSOR;
   } else {
-    Blockly.addClass_(/** @type {!Element} */ (this.fieldGroup_),
+    addClass_(/** @type {!Element} */ (this.fieldGroup_),
                       'blocklyNonEditableText');
-    Blockly.removeClass_(/** @type {!Element} */ (this.fieldGroup_),
+    removeClass_(/** @type {!Element} */ (this.fieldGroup_),
                          'blocklyEditableText');
     this.fieldGroup_.style.cursor = '';
   }
@@ -174,7 +178,7 @@ Field.prototype.render_ = function() {
   }
   if (this.borderRect_) {
     this.borderRect_.setAttribute('width',
-        width + Blockly.BlockSvg.SEP_SPACE_X);
+        width + BlockSvg.SEP_SPACE_X);
   }
   this.size_.width = width;
 };
@@ -278,10 +282,10 @@ Field.prototype.onMouseUp_ = function(e) {
     // Unlike the real events, these have a layerX and layerY set.
     return;
   } else */
-  if (Blockly.isRightButton(e)) {
+  if (isRightButton(e)) {
     // Right-click.
     return;
-  } else if (Blockly.Block.dragMode_ == 2) {
+  } else if (Block.dragMode_ == 2) {
     // Drag operation is concluding.  Don't open the editor.
     return;
   } else if (this.sourceBlock_.isEditable()) {
@@ -298,8 +302,3 @@ Field.prototype.onMouseUp_ = function(e) {
 Field.prototype.setTooltip = function(newTip) {
   // Non-abstract sub-classes may wish to implement this.  See FieldLabel.
 };
-
-return Field;
-
-});
-

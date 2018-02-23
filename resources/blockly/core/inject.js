@@ -24,33 +24,30 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Workspace from './workspace';
+import {ScrollbarPair} from './scrollbar';
+import Xml from './xml';
+import Toolbox from './toolbox';
+import Tooltip from './tooltip';
+import WidgetDiv from './widgetdiv';
+import {bindEvent_, unbindEvent_, fireUiEvent, createSvgElement} from './utils';
 
 /**
  * Initialize the SVG document with various handlers.
  * @param {!Element} container Containing element.
  * @param {Object} opt_options Optional dictionary of options.
  */
-Blockly.inject = function(container, opt_options) {
+export function inject (container, opt_options) {
   if (opt_options) {
-    Blockly.parseOptions_(opt_options);
+    parseOptions_(opt_options);
   }
-  var startUi = function() {
-    Blockly.createDom_(container);
-    Blockly.init_();
 
-    // Allow time for the polymer element to attach
-    setTimeout(Blockly.svgResize, 10);
-  };
-  /*if (Blockly.enableRealtime) {
-    var realtimeElement = document.getElementById('realtime');
-    if (realtimeElement) {
-      realtimeElement.style.display = 'block';
-    }
-    Blockly.Realtime.startRealtime(startUi, container, Blockly.realtimeOptions);
-  } else {*/
-    startUi();
-  //}
+  createDom_(container);
+  init_();
+
+  // Allow time for the polymer element to attach
+  setTimeout(Blockly.svgResize, 10);
 };
 
 /**
@@ -59,7 +56,7 @@ Blockly.inject = function(container, opt_options) {
  * @return {Node} DOM tree of blocks or null.
  * @private
  */
-Blockly.parseToolboxTree_ = function(tree) {
+function parseToolboxTree_ (tree) {
   if (tree) {
     if (typeof tree != 'string' && typeof XSLTProcessor == 'undefined') {
       // In this case the tree will not have been properly built by the
@@ -69,7 +66,7 @@ Blockly.parseToolboxTree_ = function(tree) {
       tree = tree.outerHTML;
     }
     if (typeof tree == 'string') {
-      tree = Blockly.Xml.textToDom(tree);
+      tree = Xml.textToDom(tree);
     }
   } else {
     tree = null;
@@ -82,7 +79,7 @@ Blockly.parseToolboxTree_ = function(tree) {
  * @param {!Object} options Dictionary of options.
  * @private
  */
-Blockly.parseOptions_ = function(options) {
+function parseOptions_ (options) {
   var readOnly = !!options['readOnly'];
   if (readOnly) {
     var hasCategories = false;
@@ -142,7 +139,7 @@ Blockly.parseOptions_ = function(options) {
  * @param {!Element} container Containing element.
  * @private
  */
-Blockly.createDom_ = function(container) {
+function createDom_ (container) {
   // Sadly browsers (Chrome vs Firefox) are currently inconsistent in laying
   // out content in RTL mode.  Therefore Blockly forces the use of LTR,
   // then manually positions content in RTL as needed.
@@ -162,7 +159,7 @@ Blockly.createDom_ = function(container) {
     ...
   </svg>
   */
-  var svg = Blockly.createSvgElement('svg', {
+  var svg = createSvgElement('svg', {
     'xmlns': 'http://www.w3.org/2000/svg',
     'xmlns:html': 'http://www.w3.org/1999/xhtml',
     'xmlns:xlink': 'http://www.w3.org/1999/xlink',
@@ -174,7 +171,7 @@ Blockly.createDom_ = function(container) {
     ... filters go here ...
   </defs>
   */
-  var defs = Blockly.createSvgElement('defs', {}, svg);
+  var defs = createSvgElement('defs', {}, svg);
   var filter, feSpecularLighting, feMerge, pattern;
   /*
     <filter id="blocklyEmboss">
@@ -190,19 +187,19 @@ Blockly.createDom_ = function(container) {
                    k1="0" k2="1" k3="1" k4="0"/>
     </filter>
   */
-  filter = Blockly.createSvgElement('filter', {'id': 'blocklyEmboss'}, defs);
-  Blockly.createSvgElement('feGaussianBlur',
+  filter = createSvgElement('filter', {'id': 'blocklyEmboss'}, defs);
+  createSvgElement('feGaussianBlur',
       {'in': 'SourceAlpha', 'stdDeviation': 1, 'result': 'blur'}, filter);
-  feSpecularLighting = Blockly.createSvgElement('feSpecularLighting',
+  feSpecularLighting = createSvgElement('feSpecularLighting',
       {'in': 'blur', 'surfaceScale': 1, 'specularConstant': 0.5,
       'specularExponent': 10, 'lighting-color': 'white', 'result': 'specOut'},
       filter);
-  Blockly.createSvgElement('fePointLight',
+  createSvgElement('fePointLight',
       {'x': -5000, 'y': -10000, 'z': 20000}, feSpecularLighting);
-  Blockly.createSvgElement('feComposite',
+  createSvgElement('feComposite',
       {'in': 'specOut', 'in2': 'SourceAlpha', 'operator': 'in',
       'result': 'specOut'}, filter);
-  Blockly.createSvgElement('feComposite',
+  createSvgElement('feComposite',
       {'in': 'SourceGraphic', 'in2': 'specOut', 'operator': 'arithmetic',
       'k1': 0, 'k2': 1, 'k3': 1, 'k4': 0}, filter);
   /*
@@ -215,23 +212,23 @@ Blockly.createDom_ = function(container) {
       </feMerge>
     </filter>
   */
-  filter = Blockly.createSvgElement('filter',
+  filter = createSvgElement('filter',
       {'id': 'blocklyTrashcanShadowFilter'}, defs);
-  Blockly.createSvgElement('feGaussianBlur',
+  createSvgElement('feGaussianBlur',
       {'in': 'SourceAlpha', 'stdDeviation': 2, 'result': 'blur'}, filter);
-  Blockly.createSvgElement('feOffset',
+  createSvgElement('feOffset',
       {'in': 'blur', 'dx': 1, 'dy': 1, 'result': 'offsetBlur'}, filter);
-  feMerge = Blockly.createSvgElement('feMerge', {}, filter);
-  Blockly.createSvgElement('feMergeNode', {'in': 'offsetBlur'}, feMerge);
-  Blockly.createSvgElement('feMergeNode', {'in': 'SourceGraphic'}, feMerge);
+  feMerge = createSvgElement('feMerge', {}, filter);
+  createSvgElement('feMergeNode', {'in': 'offsetBlur'}, feMerge);
+  createSvgElement('feMergeNode', {'in': 'SourceGraphic'}, feMerge);
   /*
     <filter id="blocklyShadowFilter">
       <feGaussianBlur stdDeviation="2"/>
     </filter>
   */
-  filter = Blockly.createSvgElement('filter',
+  filter = createSvgElement('filter',
       {'id': 'blocklyShadowFilter'}, defs);
-  Blockly.createSvgElement('feGaussianBlur', {'stdDeviation': 2}, filter);
+  createSvgElement('feGaussianBlur', {'stdDeviation': 2}, filter);
   /*
     <pattern id="blocklyDisabledPattern" patternUnits="userSpaceOnUse"
              width="10" height="10">
@@ -239,14 +236,14 @@ Blockly.createDom_ = function(container) {
       <path d="M 0 0 L 10 10 M 10 0 L 0 10" stroke="#cc0" />
     </pattern>
   */
-  pattern = Blockly.createSvgElement('pattern',
+  pattern = createSvgElement('pattern',
       {'id': 'blocklyDisabledPattern', 'patternUnits': 'userSpaceOnUse',
        'width': 10, 'height': 10}, defs);
-  Blockly.createSvgElement('rect',
+  createSvgElement('rect',
       {'width': 10, 'height': 10, 'fill': '#aaa'}, pattern);
-  Blockly.createSvgElement('path',
+  createSvgElement('path',
       {'d': 'M 0 0 L 10 10 M 10 0 L 0 10', 'stroke': '#cc0'}, pattern);
-  Blockly.mainWorkspace = new Blockly.Workspace(
+  Blockly.mainWorkspace = new Workspace(
       Blockly.getMainWorkspaceMetrics_,
       Blockly.setMainWorkspaceMetrics_);
   svg.appendChild(Blockly.mainWorkspace.createDom());
@@ -266,10 +263,10 @@ Blockly.createDom_ = function(container) {
   });
 
   if (!Blockly.readOnly) {
-    Blockly.Toolbox.createDom(svg, container);
+    Toolbox.createDom(svg, container);
   }
 
-  svg.appendChild(Blockly.Tooltip.createDom());
+  svg.appendChild(Tooltip.createDom());
 
   // The SVG is now fully assembled.  Add it to the container.
   container.appendChild(svg);
@@ -277,10 +274,10 @@ Blockly.createDom_ = function(container) {
   Blockly.svgResize();
 
   // Create an HTML container for popup overlays (e.g. editor widgets).
-  Blockly.WidgetDiv.DIV = document.createElement('div');
-  Blockly.WidgetDiv.DIV.setAttribute('class', 'blocklyWidgetDiv');
-  Blockly.WidgetDiv.DIV.style.direction = Blockly.RTL ? 'rtl' : 'ltr';
-  document.body.appendChild(Blockly.WidgetDiv.DIV);
+  WidgetDiv.DIV = document.createElement('div');
+  WidgetDiv.DIV.setAttribute('class', 'blocklyWidgetDiv');
+  WidgetDiv.DIV.style.direction = Blockly.RTL ? 'rtl' : 'ltr';
+  document.body.appendChild(WidgetDiv.DIV);
 };
 
 
@@ -288,41 +285,41 @@ Blockly.createDom_ = function(container) {
  * Initialize Blockly with various handlers.
  * @private
  */
-Blockly.init_ = function() {
+function init_ () {
   // Bind events for scrolling the workspace.
   // Most of these events should be bound to the SVG's surface.
   // However, 'mouseup' has to be on the whole document so that a block dragged
   // out of bounds and released will know that it has been released.
   // Also, 'keydown' has to be on the whole document since the browser doesn't
   // understand a concept of focus on the SVG image.
-  Blockly.bindEvent_(Blockly.svg, 'mousedown', null, Blockly.onMouseDown_);
-  Blockly.bindEvent_(Blockly.svg, 'contextmenu', null, Blockly.onContextMenu_);
-  Blockly.bindEvent_(Blockly.WidgetDiv.DIV, 'contextmenu', null,
+  bindEvent_(Blockly.svg, 'mousedown', null, Blockly.onMouseDown_);
+  bindEvent_(Blockly.svg, 'contextmenu', null, Blockly.onContextMenu_);
+  bindEvent_(WidgetDiv.DIV, 'contextmenu', null,
                      Blockly.onContextMenu_);
 
   if (!Blockly.documentEventsBound_) {
     // Only bind the window/document events once.
     // Destroying and reinjecting Blockly should not bind again.
-    Blockly.bindEvent_(window, 'resize', document, Blockly.svgResize);
-    Blockly.bindEvent_(document, 'keydown', null, Blockly.onKeyDown_);
+    bindEvent_(window, 'resize', document, Blockly.svgResize);
+    bindEvent_(document, 'keydown', null, Blockly.onKeyDown_);
     // Don't use bindEvent_ for document's mouseup since that would create a
     // corresponding touch handler that would squeltch the ability to interact
     // with non-Blockly elements.
     document.addEventListener('mouseup', Blockly.onMouseUp_, false);
     // Some iPad versions don't fire resize after portrait to landscape change.
     //if (goog.userAgent.IPAD) {
-      Blockly.bindEvent_(window, 'orientationchange', document, function() {
-        Blockly.fireUiEvent(window, 'resize');
+      bindEvent_(window, 'orientationchange', document, function() {
+        fireUiEvent(window, 'resize');
       });
     //}
     Blockly.documentEventsBound_ = true;
   }
 
-  Blockly.Toolbox.init();
+  Toolbox.init();
 
   if (Blockly.hasScrollbars) {
     Blockly.mainWorkspace.scrollbar =
-        new Blockly.ScrollbarPair(Blockly.mainWorkspace);
+        new ScrollbarPair(Blockly.mainWorkspace);
     Blockly.mainWorkspace.scrollbar.resize();
   }
 
@@ -339,18 +336,14 @@ Blockly.init_ = function() {
     var soundBinds = [];
     var unbindSounds = function() {
       while (soundBinds.length) {
-        Blockly.unbindEvent_(soundBinds.pop());
+        unbindEvent_(soundBinds.pop());
       }
       Blockly.preloadAudio_();
     };
     // Android ignores any sound not loaded as a result of a user action.
     soundBinds.push(
-        Blockly.bindEvent_(document, 'mousemove', null, unbindSounds));
+        bindEvent_(document, 'mousemove', null, unbindSounds));
     soundBinds.push(
-        Blockly.bindEvent_(document, 'touchstart', null, unbindSounds));
+        bindEvent_(document, 'touchstart', null, unbindSounds));
   }
 };
-
-
-
-});

@@ -24,7 +24,11 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import BlockSvg from './block_svg';
+import {Scrollbar} from './scrollbar';
+import {bindEvent_, unbindEvent_, createSvgElement, fireUiEvent, isRightButton} from './utils';
+
 
 /**
  * Class for UI bubble.
@@ -75,14 +79,15 @@ var Bubble = function(workspace, content, shape,
   this.rendered_ = true;
 
   if (!Blockly.readOnly) {
-    Blockly.bindEvent_(this.bubbleBack_, 'mousedown', this,
+    bindEvent_(this.bubbleBack_, 'mousedown', this,
                        this.bubbleMouseDown_);
     if (this.resizeGroup_) {
-      Blockly.bindEvent_(this.resizeGroup_, 'mousedown', this,
+      bindEvent_(this.resizeGroup_, 'mousedown', this,
                          this.resizeMouseDown_);
     }
   }
 };
+export default Bubble;
 
 /**
  * Width of the border around the bubble.
@@ -130,11 +135,11 @@ Bubble.onMouseMoveWrapper_ = null;
  */
 Bubble.unbindDragEvents_ = function() {
   if (Bubble.onMouseUpWrapper_) {
-    Blockly.unbindEvent_(Bubble.onMouseUpWrapper_);
+    unbindEvent_(Bubble.onMouseUpWrapper_);
     Bubble.onMouseUpWrapper_ = null;
   }
   if (Bubble.onMouseMoveWrapper_) {
-    Blockly.unbindEvent_(Bubble.onMouseMoveWrapper_);
+    unbindEvent_(Bubble.onMouseMoveWrapper_);
     Bubble.onMouseMoveWrapper_ = null;
   }
 };
@@ -210,27 +215,27 @@ Bubble.prototype.createDom_ = function(content, hasResize) {
     [...content goes here...]
   </g>
   */
-  this.bubbleGroup_ = Blockly.createSvgElement('g', {}, null);
-  var bubbleEmboss = Blockly.createSvgElement('g',
+  this.bubbleGroup_ = createSvgElement('g', {}, null);
+  var bubbleEmboss = createSvgElement('g',
       {'filter': 'url(#blocklyEmboss)'}, this.bubbleGroup_);
-  this.bubbleArrow_ = Blockly.createSvgElement('path', {}, bubbleEmboss);
-  this.bubbleBack_ = Blockly.createSvgElement('rect',
+  this.bubbleArrow_ = createSvgElement('path', {}, bubbleEmboss);
+  this.bubbleBack_ = createSvgElement('rect',
       {'class': 'blocklyDraggable', 'x': 0, 'y': 0,
       'rx': Bubble.BORDER_WIDTH, 'ry': Bubble.BORDER_WIDTH},
       bubbleEmboss);
   if (hasResize) {
-    this.resizeGroup_ = Blockly.createSvgElement('g',
+    this.resizeGroup_ = createSvgElement('g',
         {'class': Blockly.RTL ? 'blocklyResizeSW' : 'blocklyResizeSE'},
         this.bubbleGroup_);
     var resizeSize = 2 * Bubble.BORDER_WIDTH;
-    Blockly.createSvgElement('polygon',
+    createSvgElement('polygon',
         {'points': '0,x x,x x,0'.replace(/x/g, resizeSize.toString())},
         this.resizeGroup_);
-    Blockly.createSvgElement('line',
+    createSvgElement('line',
         {'class': 'blocklyResizeLine',
         'x1': resizeSize / 3, 'y1': resizeSize - 1,
         'x2': resizeSize - 1, 'y2': resizeSize / 3}, this.resizeGroup_);
-    Blockly.createSvgElement('line',
+    createSvgElement('line',
         {'class': 'blocklyResizeLine',
         'x1': resizeSize * 2 / 3, 'y1': resizeSize - 1,
         'x2': resizeSize - 1, 'y2': resizeSize * 2 / 3}, this.resizeGroup_);
@@ -249,7 +254,7 @@ Bubble.prototype.createDom_ = function(content, hasResize) {
 Bubble.prototype.bubbleMouseDown_ = function(e) {
   this.promote_();
   Bubble.unbindDragEvents_();
-  if (Blockly.isRightButton(e)) {
+  if (isRightButton(e)) {
     // Right-click.
     return;
   } else if (Blockly.isTargetInput_(e)) {
@@ -266,9 +271,9 @@ Bubble.prototype.bubbleMouseDown_ = function(e) {
   }
   this.dragDeltaY = this.relativeTop_ - e.clientY;
 
-  Bubble.onMouseUpWrapper_ = Blockly.bindEvent_(document,
+  Bubble.onMouseUpWrapper_ = bindEvent_(document,
       'mouseup', this, Bubble.unbindDragEvents_);
-  Bubble.onMouseMoveWrapper_ = Blockly.bindEvent_(document,
+  Bubble.onMouseMoveWrapper_ = bindEvent_(document,
       'mousemove', this, this.bubbleMouseMove_);
   Blockly.hideChaff();
   // This event has been handled.  No need to bubble up to the document.
@@ -300,7 +305,7 @@ Bubble.prototype.bubbleMouseMove_ = function(e) {
 Bubble.prototype.resizeMouseDown_ = function(e) {
   this.promote_();
   Bubble.unbindDragEvents_();
-  if (Blockly.isRightButton(e)) {
+  if (isRightButton(e)) {
     // Right-click.
     return;
   }
@@ -314,9 +319,9 @@ Bubble.prototype.resizeMouseDown_ = function(e) {
   }
   this.resizeDeltaHeight = this.height_ - e.clientY;
 
-  Bubble.onMouseUpWrapper_ = Blockly.bindEvent_(document,
+  Bubble.onMouseUpWrapper_ = bindEvent_(document,
       'mouseup', this, Bubble.unbindDragEvents_);
-  Bubble.onMouseMoveWrapper_ = Blockly.bindEvent_(document,
+  Bubble.onMouseMoveWrapper_ = bindEvent_(document,
       'mousemove', this, this.resizeMouseMove_);
   Blockly.hideChaff();
   // This event has been handled.  No need to bubble up to the document.
@@ -352,7 +357,7 @@ Bubble.prototype.resizeMouseMove_ = function(e) {
  * @param {!Function} callback The function to call on resize.
  */
 Bubble.prototype.registerResizeEvent = function(thisObject, callback) {
-  Blockly.bindEvent_(this.bubbleGroup_, 'resize', thisObject, callback);
+  bindEvent_(this.bubbleGroup_, 'resize', thisObject, callback);
 };
 
 /**
@@ -385,15 +390,15 @@ Bubble.prototype.setAnchorLocation = function(x, y) {
 Bubble.prototype.layoutBubble_ = function() {
   // Compute the preferred bubble location.
   var relativeLeft = -this.width_ / 4;
-  var relativeTop = -this.height_ - Blockly.BlockSvg.MIN_BLOCK_Y;
+  var relativeTop = -this.height_ - BlockSvg.MIN_BLOCK_Y;
   // Prevent the bubble from being off-screen.
   var metrics = this.workspace_.getMetrics();
   if (Blockly.RTL) {
     if (this.anchorX_ - metrics.viewLeft - relativeLeft - this.width_ <
-        Blockly.Scrollbar.scrollbarThickness) {
+        Scrollbar.scrollbarThickness) {
       // Slide the bubble right until it is onscreen.
       relativeLeft = this.anchorX_ - metrics.viewLeft - this.width_ -
-        Blockly.Scrollbar.scrollbarThickness;
+        Scrollbar.scrollbarThickness;
     } else if (this.anchorX_ - metrics.viewLeft - relativeLeft >
                metrics.viewWidth) {
       // Slide the bubble left until it is onscreen.
@@ -405,11 +410,11 @@ Bubble.prototype.layoutBubble_ = function() {
       relativeLeft = metrics.viewLeft - this.anchorX_;
     } else if (metrics.viewLeft + metrics.viewWidth <
         this.anchorX_ + relativeLeft + this.width_ +
-        Blockly.BlockSvg.SEP_SPACE_X +
-        Blockly.Scrollbar.scrollbarThickness) {
+        BlockSvg.SEP_SPACE_X +
+        Scrollbar.scrollbarThickness) {
       // Slide the bubble left until it is onscreen.
       relativeLeft = metrics.viewLeft + metrics.viewWidth - this.anchorX_ -
-          this.width_ - Blockly.Scrollbar.scrollbarThickness;
+          this.width_ - Scrollbar.scrollbarThickness;
     }
   }
   if (this.anchorY_ + relativeTop < metrics.viewTop) {
@@ -454,7 +459,7 @@ Bubble.prototype.setBubbleSize = function(width, height) {
   var doubleBorderWidth = 2 * Bubble.BORDER_WIDTH;
   // Minimum size of a bubble.
   width = Math.max(width, doubleBorderWidth + 45);
-  height = Math.max(height, doubleBorderWidth + Blockly.BlockSvg.FIELD_HEIGHT);
+  height = Math.max(height, doubleBorderWidth + BlockSvg.FIELD_HEIGHT);
   this.width_ = width;
   this.height_ = height;
   this.bubbleBack_.setAttribute('width', width);
@@ -480,7 +485,7 @@ Bubble.prototype.setBubbleSize = function(width, height) {
     this.renderArrow_();
   }
   // Fire an event to allow the contents to resize.
-  Blockly.fireUiEvent(this.bubbleGroup_, 'resize');
+  fireUiEvent(this.bubbleGroup_, 'resize');
 };
 
 /**
@@ -582,7 +587,3 @@ Bubble.prototype.dispose = function() {
   this.content_ = null;
   this.shape_ = null;
 };
-
-return Bubble;
-
-});

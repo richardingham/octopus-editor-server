@@ -9,9 +9,9 @@
 
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import FieldFlydown from './field_flydown';
+import {inherits} from './utils';
 
 /**
  * Class for a parameter declaration field with flyout menu of getter/setter blocks on mouse over
@@ -19,7 +19,7 @@ module.exports = (function (Blockly) {
  * @param {boolean} isEditable Indicates whether the the name in the flydown is editable.
  * @param {opt_additionalChangeHandler} function A one-arg function indicating what to do in addition to
  *   renaming lexical variables. May be null/undefined to indicate nothing extra to be done.
- * @extends {Blockly.FieldFlydown}
+ * @extends {FieldFlydown}
  * @constructor
  */
 // [lyn, 10/26/13] Added opt_additionalChangeHandler to handle propagation of renaming
@@ -41,7 +41,8 @@ var FieldParameterFlydown = function(name, isEditable, displayLocation, opt_addi
   }
   FieldParameterFlydown.super_.call(this, name, isEditable, displayLocation, changeHandler);
 };
-util.inherits(FieldParameterFlydown, Blockly.FieldFlydown);
+inherits(FieldParameterFlydown, FieldFlydown);
+export default FieldParameterFlydown;
 
 FieldParameterFlydown.prototype.fieldCSSClassName = 'blocklyFieldParameter'
 
@@ -147,7 +148,3 @@ FieldParameterFlydown.addHorizontalVerticalOption = function (block, options) {
     }
   }
 }
-
-return FieldParameterFlydown;
-
-});

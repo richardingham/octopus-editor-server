@@ -26,9 +26,10 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
 
 var WidgetDiv = {};
+export default WidgetDiv;
 
 /**
  * The HTML container.  Set once by inject.js's Blockly.createDom_.
@@ -127,7 +128,3 @@ WidgetDiv.position = function(anchorX, anchorY, windowSize,
   WidgetDiv.DIV.style.left = anchorX + 'px';
   WidgetDiv.DIV.style.top = anchorY + 'px';
 };
-
-return WidgetDiv;
-
-});

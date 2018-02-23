@@ -1,5 +1,5 @@
 
-$(function ($) {
+jQuery(function ($) {
 
   Blockly.inject($('#blockly')[0], {
       path: '/resources/blockly/'
@@ -14,11 +14,13 @@ $(function ($) {
     }
 
     $('#code pre').html(prettyPrintOne(
-      Blockly.PythonOcto.workspaceToCode(),
+      PythonOctoGenerator.workspaceToCode(
+        Blockly.getMainWorkspace().getTopBlocks(true)
+      ),
       'python'
     ));
   }
-  Blockly.addChangeListener(updateCode);
+  Blockly.addWorkspaceChangeListener(updateCode);
 
   // Sketch / Experiment
   var sketchId = $('#blockly').data('sketch');
@@ -158,7 +160,7 @@ $(function ($) {
   function sketchLoaded (sketch) {
       sketchRenamed(sketch.title);
 
-      var workspace = Blockly.mainWorkspace;
+      var workspace = Blockly.getMainWorkspace();
       var moveBlocks = {};
 
       var event, data, block, input;
@@ -166,7 +168,7 @@ $(function ($) {
           event = sketch.events[i];
           data = event.data;
           if (event.type === "AddBlock") {
-              block = Blockly.Block.obtain(workspace, data.type, data.id);
+              block = Blockly.createBlock(workspace, data.type, data.id);
 
               for (var field in data.fields) {
                   block.setFieldValue(data.fields[field], field);
@@ -219,7 +221,7 @@ $(function ($) {
       }
 
       // Force re-evaluation of variable names upon loading.
-      var topBlocks = Blockly.mainWorkspace.getTopBlocks();
+      var topBlocks = workspace.getTopBlocks();
       for (i = 0, m = topBlocks.length; i < m; i++) {
           topBlocks[i].setParent(null);
       }
@@ -241,7 +243,7 @@ $(function ($) {
       ];
 
       blockEvents.forEach(function (type) {
-          Blockly.on("block-" + type, function (data) {
+          Blockly.addEventListener("block-" + type, function (data) {
               blockEvent({
                   eventType: type,
                   data: data
@@ -256,7 +258,7 @@ $(function ($) {
   }
 
   function blockChanged (command, payload) {
-    var workspace = Blockly.mainWorkspace;
+    var workspace = Blockly.getMainWorkspace();
     var block;
 
     if (command === "transaction") {
@@ -265,7 +267,7 @@ $(function ($) {
     if (command === "created") {
       workspace.startEmitTransaction();
 
-      block = Blockly.Block.obtain(workspace, payload.type, payload.id);
+      block = Blockly.createBlock(workspace, payload.type, payload.id);
       block.initSvg();
       block.render();
 
@@ -345,7 +347,7 @@ $(function ($) {
   }
 
   function clearBlockStates () {
-    Blockly.mainWorkspace.getAllBlocks().forEach(function (block) {
+    Blockly.getMainWorkspace().getAllBlocks().forEach(function (block) {
       block.setRunningState("ready");
     });
   }
@@ -441,15 +443,15 @@ $(function ($) {
     var activate = !item.is('.active');
 
     $('#toolbox .active').removeClass('active');
-    Blockly.Toolbox.flyout_.hide();
+    Blockly.hideToolbox();
 
     if (activate) {
       item.addClass('active');
-      Blockly.Toolbox.flyout_.show(item.data('blocks'));
+      Blockly.showToolbox(item.data('blocks'));
     }
   });
 
-  Blockly.on("hide-toolbox", function () {
+  Blockly.addEventListener("hide-toolbox", function () {
     // If the toolbar is closed by Blockly (e.g. by clicking in the svg area)
     // deselect the menu item.
     $('#toolbox .active').removeClass('active');
@@ -500,23 +502,23 @@ $(function ($) {
 
     function insertXMLFragmentBlock (text) {
       var block, blockY, blockH, maxY = 0;
-      var workspace = Blockly.mainWorkspace;
+      var workspace = Blockly.getMainWorkspace();
       var topBlocks = workspace.getTopBlocks();
 
       for (var i = 0, m = topBlocks.length; i < m; i++) {
         block = topBlocks[i];
         blockY = block.getRelativeToSurfaceXY().y;
-        blockH = unwrap(block.svg_.svgGroup_).getBBox().height;
+        blockH = block.svg_.svgGroup_.getBBox().height;
         maxY = Math.max(maxY, blockY + blockH + 10);
       }
       try {
-        var dom = Blockly.Xml.textToDom(text);
+        var dom = Blockly.xmlTextToDom(text);
         $(dom).children('block').each(function () {
           block = Blockly.Xml.domToBlock(workspace, this);
           block.moveTo(0, maxY);
 
           blockY = block.getRelativeToSurfaceXY().y;
-          blockH = unwrap(block.svg_.svgGroup_).getBBox().height;
+          blockH = block.svg_.svgGroup_.getBBox().height;
           maxY = Math.max(maxY, blockY + blockH + 10);
         });
       } catch (e) {
@@ -544,8 +546,8 @@ $(function ($) {
   });
 
   $('#btn-download').on('click', function () {
-    var xmlDom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
-    var xmlText = Blockly.Xml.domToPrettyText(xmlDom);
+    var workspace = Blockly.getMainWorkspace();
+    var xmlText = Blockly.exportWorkspaceToXml(workspace);
 
     // Create an <a> element to contain the download.
     var a = window.document.createElement('a');
@@ -577,10 +579,11 @@ $(function ($) {
       updateCode();
     }
 
-    Blockly.mainWorkspace.render();
+    Blockly.getMainWorkspace().render();
   });
 
   $('#btn-lock').on('click', function (e) {
+    var workspace = Blockly.getMainWorkspace();
     var locked = $(this).toggleClass('active').is('.active');
     $('#editor').toggleClass('locked', locked);
     $('i', this)
@@ -589,16 +592,16 @@ $(function ($) {
 
     if (locked) {
       Blockly.hideChaff();
-      Blockly.mainWorkspace.getAllBlocks().forEach(function (block) {
+      workspace.getAllBlocks().forEach(function (block) {
         block.setEditable(false);
         block.setMovable(false);
       });
     } else {
-      Blockly.mainWorkspace.getAllBlocks().forEach(function (block) {
+      workspace.getAllBlocks().forEach(function (block) {
         block.setEditable(true);
         block.setMovable(true);
       });
     }
-    Blockly.mainWorkspace.render();
+    workspace.render();
   });
 });

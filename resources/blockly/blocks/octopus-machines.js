@@ -24,6 +24,20 @@
  */
 'use strict';
 
+import Blockly from '../core/blockly';
+import Blocks from '../core/blocks';
+import Block from '../core/block';
+import Msg from '../core/msg';
+import Mutator from '../core/mutator';
+import {GlobalScope} from '../core/variables';
+import FieldDropdown from '../core/field_dropdown';
+import FieldTextInput from '../core/field_textinput';
+import FieldFlydown from '../core/field_flydown';
+import FieldMachineFlydown from '../core/field_machine_flydown';
+import {withVariableDefinition} from './mixins.js';
+import {MACHINES_CATEGORY_HUE} from '../colourscheme';
+import {_extend as extend} from '../core/utils';
+import {numberValidator} from '../core/validators';
 
 var _R2R4_vars = [{
   name: "status", title: "Status", type: "String", readonly: true
@@ -105,14 +119,60 @@ var machineBlock = {
     var default_name = this.machineDefaultName || "reactor";
 
     var thisBlock = this;
-    this.fieldName_ = new Blockly.FieldMachineFlydown(
-      default_name, //Blockly.Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME,
-      Blockly.FieldFlydown.DISPLAY_BELOW,
-      this.rename_.bind(this)
+
+    function createMachineVariable () {
+      var machineVars = thisBlock.machineVars;
+      var machineVar = GlobalScope.addVariable(default_name, "machine");
+      machineVar.setType("component");
+      machineVar.setReadonly("true");
+
+      if (thisBlock.machineVarFlags) {
+        machineVar.flags = thisBlock.machineVarFlags;
+      }
+
+      addParts(machineVar, machineVars, "");
+      return machineVar;
+    }
+
+    function addParts (variable, parts, titlePart) {
+      var part;
+      for (var i = 0; i < parts.length; i++) {
+        part = parts[i];
+        var display = titlePart + _ARROW_CHAR + part.title;
+        var partVar = variable.addAttribute(part.name);
+        partVar.setMenu(part.title);
+        partVar.setDisplay(display);
+        partVar.setType(part.parts ? "component" : part.type);
+        partVar.setReadonly(part.readonly || part.parts);
+
+        if (part.flags) {
+          partVar.flags = part.flags;
+        }
+
+        if (part.options) {
+          partVar.flags.options = part.options;
+        }
+
+        if (part.unit) {
+          partVar.flags.unit = part.unit;
+        }
+
+        if (part.parts) {
+          addParts(partVar, part.parts, display);
+        }
+      }
+    }
+
+    this.fieldName_ = withVariableDefinition(
+      this, FieldMachineFlydown,
+      FieldFlydown.DISPLAY_BELOW,
+      default_name,
+      true,
+      createMachineVariable
     );
 
     //this.setHelpUrl('http://www.example.com/');
-    this.setColour(Blockly.MACHINES_CATEGORY_HUE);
+    this.setColour(MACHINES_CATEGORY_HUE);
     this.appendDummyInput()
         .appendField(this.machineTitle + " ")
         .appendField(this.fieldName_, 'NAME');
@@ -124,48 +184,6 @@ var machineBlock = {
     this.setInputsInline(false);
 
     if (!this.isInFlyout) {
-      var machineVars = this.machineVars;
-      var machineVar = Blockly.GlobalScope.addVariable(default_name, "machine");
-      machineVar.setType("component");
-      machineVar.setReadonly("true");
-
-      if (this.machineVarFlags) {
-        machineVar.flags = this.machineVarFlags;
-      }
-
-      var addParts = function (variable, parts, titlePart) {
-        var part;
-        for (var i = 0; i < parts.length; i++) {
-          part = parts[i];
-          var display = titlePart + _ARROW_CHAR + part.title;
-          var partVar = variable.addAttribute(part.name);
-          partVar.setMenu(part.title);
-          partVar.setDisplay(display);
-          partVar.setType(part.parts ? "component" : part.type);
-          partVar.setReadonly(part.readonly || part.parts);
-
-          if (part.flags) {
-            partVar.flags = part.flags;
-          }
-
-          if (part.options) {
-            partVar.flags.options = part.options;
-          }
-
-          if (part.unit) {
-            partVar.flags.unit = part.unit;
-          }
-
-          if (part.parts) {
-            addParts(partVar, part.parts, display);
-          }
-        }
-      }
-
-      addParts(machineVar, machineVars, "");
-      this.variable_ = machineVar;
-      this.getField_('NAME').setValue(machineVar.getVarName());
-
       if (this.machineOptions) {
         // Decide whether or not there are options requiring draggable blocks
         var options = this.machineOptions, multi = false;
@@ -173,12 +191,12 @@ var machineBlock = {
           multi |= !!options[i].multi;
         }
         this.mutation = {};
-        this.setMutator(new Blockly.Mutator(
+        this.setMutator(new Mutator(
           multi ? ['machine_quark_argument'] : []
         ));
 
         this.decompose = function decompose (workspace) {
-          var containerBlock = Blockly.Block.obtain(workspace, 'machine_quark');
+          var containerBlock = Block.obtain(workspace, 'machine_quark');
           var mutation = thisBlock.mutation;
           containerBlock.initSvg();
           var opt;
@@ -190,7 +208,7 @@ var machineBlock = {
               var connection = containerBlock.getInput(opt.name).connection;
               if (mutation[opt.name] && mutation[opt.name].length) {
                 for (var x = 0; x < mutation[opt.name].length; x++) {
-                  var subBlock = Blockly.Block.obtain(workspace, 'machine_quark_argument');
+                  var subBlock = Block.obtain(workspace, 'machine_quark_argument');
                   subBlock.setFieldValue(mutation[opt.name][x], 'VALUE');
                   subBlock.initSvg();
                   connection.connect(subBlock.previousConnection);
@@ -200,7 +218,7 @@ var machineBlock = {
             } else {
               if (opt.options) {
                 containerBlock.appendDummyInput()
-                  .appendField(new Blockly.FieldDropdown(
+                  .appendField(new FieldDropdown(
                     opt.options.map(function (o) { return [o, o]; })
                   ), opt.name);
                 if (mutation[opt.name]) {
@@ -209,14 +227,14 @@ var machineBlock = {
               } else if (opt.type == "Number") {
                 containerBlock.appendDummyInput()
                   .appendField(opt.title + ": ")
-                  .appendField(new Blockly.FieldTextInput(
+                  .appendField(new FieldTextInput(
                     (mutation[opt.name] && mutation[opt.name].toString && mutation[opt.name].toString()) || '0',
-                    Blockly.FieldTextInput.numberValidator
+                    numberValidator
                   ), opt.name);
               } else if (opt.type == "String") {
                 containerBlock.appendDummyInput()
                   .appendField(opt.title + ": ")
-                  .appendField(new Blockly.FieldTextInput(mutation[opt.name] || ''), opt.name);
+                  .appendField(new FieldTextInput(mutation[opt.name] || ''), opt.name);
               }
             }
           }
@@ -310,84 +328,59 @@ var machineBlock = {
       }
     }
   },
+};
 
-  /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
-   */
-  getVars: function() {
-    return [this.getFieldValue('NAME')];
-  },
-
-  rename_: function (newName) {
-    var oldName = this.getFieldValue('NAME');
-    if (oldName === newName && this.variable_) {
-      return newName;
-    }
-    this.variable_.setName(newName);
-    return this.variable_.getVarName();
-  },
-
-  disposed: function () {
-    if (this.variable_) {
-      this.variable_.getScope().removeVariable(this.variable_.getVarName());
-    }
+Blocks['machine_quark'] = {
+  init: function() {
+    //this.setHelpUrl(Msg.CONTROLS_IF_HELPURL);
+    this.setColour(MACHINES_CATEGORY_HUE);
   }
 };
 
-
-Blockly.Blocks['machine_quark'] = {
+Blocks['machine_quark_argument'] = {
   init: function() {
-    //this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
-    this.setColour(Blockly.MACHINES_CATEGORY_HUE);
-  }
-};
-
-Blockly.Blocks['machine_quark_argument'] = {
-  init: function() {
-    //this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
-    this.setColour(Blockly.MACHINES_CATEGORY_HUE);
+    //this.setHelpUrl(Msg.CONTROLS_IF_HELPURL);
+    this.setColour(MACHINES_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField(new Blockly.FieldTextInput(''), 'VALUE');
+        .appendField(new FieldTextInput(''), 'VALUE');
     this.setPreviousStatement(true);
     this.setNextStatement(true);
   }
 };
 
-Blockly.Blocks['machine_vapourtec_R2R4'] = extend(machineBlock, {
+Blocks['machine_vapourtec_R2R4'] = extend({
   machineTitle: "Vapourtec R2+/R4",
   machineVars: _R2R4_vars,
   machineVarFlags: { providesGSIOC: true }
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_knauer_K120'] = extend(machineBlock, {
+Blocks['machine_knauer_K120'] = extend({
   machineTitle: "Knauer K120",
   machineDefaultName: "pump",
   machineVars: _K120_vars,
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_knauer_S100'] = extend(machineBlock, {
+Blocks['machine_knauer_S100'] = extend({
   machineTitle: "Knauer S100",
   machineDefaultName: "pump",
   machineVars: _S100_vars,
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_vici_multivalve'] = extend(machineBlock, {
+Blocks['machine_vici_multivalve'] = extend({
   machineTitle: "VICI multi-position valve",
   machineDefaultName: "valve",
   machineVars: _MultiValve_vars,
   machineOptions: _MultiValve_options,
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_mt_icir'] = extend(machineBlock, {
+Blocks['machine_mt_icir'] = extend({
   machineTitle: "MT FlowIR",
   machineDefaultName: "ir",
   machineVars: _iCIR_vars,
   machineOptions: _iCIR_options,
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
+Blocks['machine_wpi_aladdin'] = extend({
   machineTitle: "WPI Aladdin syringe pump",
   machineDefaultName: "pump",
   machineVars: [
@@ -400,9 +393,9 @@ Blockly.Blocks['machine_wpi_aladdin'] = extend(machineBlock, {
   machineOptions: [
     { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
   ]
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
+Blocks['machine_phidgets_phsensor'] = extend({
   machineTitle: "Phidgets pH Sensor",
   machineDefaultName: "phsensor",
   machineVars: [
@@ -413,42 +406,42 @@ Blockly.Blocks['machine_phidgets_phsensor'] = extend(machineBlock, {
     { name: "min_change", title: "Minimum pH Change", type: "Number", min: 0 }
   ],
   machineConnectionType: "PhidgetConnection"
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_imageprovider'] = extend(machineBlock, {
+Blocks['machine_imageprovider'] = extend({
   machineTitle: "Image Provider",
   machineDefaultName: "camera",
   machineVars: [
     { name: "image", title: "Image", type: "Image", readonly: true }
   ],
   machineConnectionType: "CameraConnection"
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_singletracker'] = extend(machineBlock, {
+Blocks['machine_singletracker'] = extend({
   machineTitle: "Single Tracker",
   machineDefaultName: "tracker",
   machineVars: _SingleTracker_vars,
   machineConnectionType: "CameraConnection"
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_multitracker'] = extend(machineBlock, {
+Blocks['machine_multitracker'] = extend({
   machineTitle: "Multi Tracker",
   machineDefaultName: "tracker",
   machineVars: _MultiTracker_vars,
   machineOptions: _MultiTracker_options,
   machineConnectionType: "CameraConnection"
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_omega_hh306a'] = extend(machineBlock, {
+Blocks['machine_omega_hh306a'] = extend({
   machineTitle: "Omega HH306A",
   machineDefaultName: "thermocouple",
   machineVars: [
     { name: "temp1", title: "Temperature 1", type: "Number", readonly: true },
     { name: "temp2", title: "Temperature 2", type: "Number", readonly: true }
   ]
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
+Blocks['machine_harvard_phd2000'] = extend({
   machineTitle: "Harvard PHD2000 infuse-only syringe pump",
   machineDefaultName: "pump",
   machineVars: [
@@ -460,18 +453,18 @@ Blockly.Blocks['machine_harvard_phd2000'] = extend(machineBlock, {
   machineOptions: [
     { name: "syringe_diameter", title: "Syringe Diameter /mm", type: "Number", min: 0 }
   ]
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_mt_sics_balance'] = extend(machineBlock, {
+Blocks['machine_mt_sics_balance'] = extend({
   machineTitle: "MT Balance (SICS)",
   machineDefaultName: "balance",
   machineVars: [
     { name: "status", title: "Status", type: "String", readonly: true },
     { name: "weight", title: "Weight", type: "Number", readonly: true }
   ]
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_startech_powerremotecontrol'] = extend(machineBlock, {
+Blocks['machine_startech_powerremotecontrol'] = extend({
   machineTitle: "StarTech Power Remote Control",
   machineDefaultName: "powerswitch",
   machineVars: [
@@ -485,9 +478,9 @@ Blockly.Blocks['machine_startech_powerremotecontrol'] = extend(machineBlock, {
     { name: "port7", title: "Port 7", type: "String", options: ['off', 'on'] },
     { name: "port8", title: "Port 8", type: "String", options: ['off', 'on'] }
   ]
-});
+}, machineBlock);
 
-Blockly.Blocks['machine_gilson_FractionCollector203B'] = extend(machineBlock, {
+Blocks['machine_gilson_FractionCollector203B'] = extend({
   machineTitle: "Gilson Fraction Collector 203B",
   machineDefaultName: "fractioncollector",
   machineVars: [
@@ -495,4 +488,4 @@ Blockly.Blocks['machine_gilson_FractionCollector203B'] = extend(machineBlock, {
     { name: "valve", title: "Valve", type: "String", options: ['waste', 'collect'] }
   ],
   machineConnectionType: "GSIOCConnection"
-});
+}, machineBlock);

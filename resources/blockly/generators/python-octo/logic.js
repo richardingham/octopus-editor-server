@@ -25,7 +25,11 @@
  */
 'use strict';
 
-Blockly.PythonOcto['logic_compare'] = function(block) {
+import {ORDER} from '../python-octo-constants';
+import {valueToCode} from '../python-octo-methods';
+import PythonOcto from '../python-octo-blocks';
+
+PythonOcto['logic_compare'] = function(block) {
   // Comparison operator.
   var OPERATORS = {
     'EQ': '==',
@@ -36,20 +40,19 @@ Blockly.PythonOcto['logic_compare'] = function(block) {
     'GTE': '>='
   };
   var operator = OPERATORS[block.getFieldValue('OP')];
-  var order = Blockly.PythonOcto.ORDER_RELATIONAL;
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'A', order) || '0';
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'B', order) || '0';
+  var order = ORDER.RELATIONAL;
+  var argument0 = valueToCode(block, 'A', order) || '0';
+  var argument1 = valueToCode(block, 'B', order) || '0';
   var code = argument0 + ' ' + operator + ' ' + argument1;
   return [code, order];
 };
 
-Blockly.PythonOcto['logic_operation'] = function(block) {
+PythonOcto['logic_operation'] = function(block) {
   // Operations 'and', 'or'.
   var operator = (block.getFieldValue('OP') == 'AND') ? 'and' : 'or';
-  var order = (operator == 'and') ? Blockly.PythonOcto.ORDER_LOGICAL_AND :
-      Blockly.PythonOcto.ORDER_LOGICAL_OR;
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'A', order);
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'B', order);
+  var order = (operator == 'and') ? ORDER.LOGICAL_AND : ORDER.LOGICAL_OR;
+  var argument0 = valueToCode(block, 'A', order);
+  var argument1 = valueToCode(block, 'B', order);
   if (!argument0 && !argument1) {
     // If there are no arguments, then the return value is false.
     argument0 = 'False';
@@ -68,33 +71,29 @@ Blockly.PythonOcto['logic_operation'] = function(block) {
   return [code, order];
 };
 
-Blockly.PythonOcto['logic_negate'] = function(block) {
+PythonOcto['logic_negate'] = function(block) {
   // Negation.
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'BOOL',
-      Blockly.PythonOcto.ORDER_LOGICAL_NOT) || 'True';
+  var argument0 = valueToCode(block, 'BOOL', ORDER.LOGICAL_NOT) || 'True';
   var code = 'False == ' + argument0;
-  return [code, Blockly.PythonOcto.ORDER_RELATIONAL];
+  return [code, ORDER.RELATIONAL];
 };
 
-Blockly.PythonOcto['logic_boolean'] = function(block) {
+PythonOcto['logic_boolean'] = function(block) {
   // Boolean values true and false.
   var code = (block.getFieldValue('BOOL') == 'TRUE') ? 'True' : 'False';
-  return [code, Blockly.PythonOcto.ORDER_ATOMIC];
+  return [code, ORDER.ATOMIC];
 };
 
-Blockly.PythonOcto['logic_null'] = function(block) {
+PythonOcto['logic_null'] = function(block) {
   // Null data type.
-  return ['None', Blockly.PythonOcto.ORDER_ATOMIC];
+  return ['None', ORDER.ATOMIC];
 };
 
-Blockly.PythonOcto['logic_ternary'] = function(block) {
+PythonOcto['logic_ternary'] = function(block) {
   // Ternary operator.
-  var value_if = Blockly.PythonOcto.valueToCode(block, 'IF',
-      Blockly.PythonOcto.ORDER_CONDITIONAL) || 'False';
-  var value_then = Blockly.PythonOcto.valueToCode(block, 'THEN',
-      Blockly.PythonOcto.ORDER_CONDITIONAL) || 'None';
-  var value_else = Blockly.PythonOcto.valueToCode(block, 'ELSE',
-      Blockly.PythonOcto.ORDER_CONDITIONAL) || 'None';
+  var value_if = valueToCode(block, 'IF', ORDER.CONDITIONAL) || 'False';
+  var value_then = valueToCode(block, 'THEN', ORDER.CONDITIONAL) || 'None';
+  var value_else = valueToCode(block, 'ELSE', ORDER.CONDITIONAL) || 'None';
   var code = value_then + ' if ' + value_if + ' else ' + value_else;
-  return [code, Blockly.PythonOcto.ORDER_CONDITIONAL];
+  return [code, ORDER.CONDITIONAL];
 };

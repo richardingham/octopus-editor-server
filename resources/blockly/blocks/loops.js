@@ -24,64 +24,75 @@
  */
 'use strict';
 
+import Blockly from '../core/blockly';
+import Blocks from '../core/blocks';
+import Block from '../core/block';
+import Msg from '../core/msg';
+import Names from '../core/names';
+import FieldLexicalParameterFlydown from '../core/field_lexical_parameter_flydown';
+import FieldDropdown from '../core/field_dropdown';
+import FieldFlydown from '../core/field_flydown';
+import FieldTextInput from '../core/field_textinput';
+import {withVariableDefinition} from './mixins.js';
+import {CONTROL_CATEGORY_HUE} from '../colourscheme';
 
-Blockly.Blocks['controls_repeat'] = {
+Blocks['controls_repeat'] = {
   /**
    * Block for repeat n times (internal number).
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    this.setHelpUrl(Blockly.Msg.CONTROLS_REPEAT_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    this.setHelpUrl(Msg.CONTROLS_REPEAT_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField(Blockly.Msg.CONTROLS_REPEAT_TITLE_REPEAT)
-        .appendField(new Blockly.FieldTextInput('10',
-            Blockly.FieldTextInput.nonnegativeIntegerValidator), 'TIMES')
-        .appendField(Blockly.Msg.CONTROLS_REPEAT_TITLE_TIMES);
+        .appendField(Msg.CONTROLS_REPEAT_TITLE_REPEAT)
+        .appendField(new FieldTextInput('10',
+            FieldTextInput.nonnegativeIntegerValidator), 'TIMES')
+        .appendField(Msg.CONTROLS_REPEAT_TITLE_TIMES);
     this.appendStatementInput('DO')
-        .appendField(Blockly.Msg.CONTROLS_REPEAT_INPUT_DO);
+        .appendField(Msg.CONTROLS_REPEAT_INPUT_DO);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
-    this.setTooltip(Blockly.Msg.CONTROLS_REPEAT_TOOLTIP);
+    this.setTooltip(Msg.CONTROLS_REPEAT_TOOLTIP);
   }
 };
 
-Blockly.Blocks['controls_repeat_ext'] = {
+Blocks['controls_repeat_ext'] = {
   /**
    * Block for repeat n times (external number).
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
-    this.setHelpUrl(Blockly.Msg.CONTROLS_REPEAT_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
-    this.interpolateMsg(Blockly.Msg.CONTROLS_REPEAT_TITLE,
+    this.setHelpUrl(Msg.CONTROLS_REPEAT_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
+    this.interpolateMsg(Msg.CONTROLS_REPEAT_TITLE,
                         ['TIMES', 'Number', Blockly.ALIGN_RIGHT],
                         Blockly.ALIGN_RIGHT);
     this.appendStatementInput('DO')
-        .appendField(Blockly.Msg.CONTROLS_REPEAT_INPUT_DO);
+        .appendField(Msg.CONTROLS_REPEAT_INPUT_DO);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     this.setInputsInline(true);
-    this.setTooltip(Blockly.Msg.CONTROLS_REPEAT_TOOLTIP);
+    this.setTooltip(Msg.CONTROLS_REPEAT_TOOLTIP);
   }
 };
 
-Blockly.Blocks['controls_whileUntil'] = {
+Blocks['controls_whileUntil'] = {
   /**
    * Block for 'do while/until' loop.
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
     var OPERATORS =
-        [[Blockly.Msg.CONTROLS_WHILEUNTIL_OPERATOR_WHILE, 'WHILE'],
-         [Blockly.Msg.CONTROLS_WHILEUNTIL_OPERATOR_UNTIL, 'UNTIL']];
-    this.setHelpUrl(Blockly.Msg.CONTROLS_WHILEUNTIL_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+        [[Msg.CONTROLS_WHILEUNTIL_OPERATOR_WHILE, 'WHILE'],
+         [Msg.CONTROLS_WHILEUNTIL_OPERATOR_UNTIL, 'UNTIL']];
+    this.setHelpUrl(Msg.CONTROLS_WHILEUNTIL_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendValueInput('BOOL')
         .setCheck('Boolean')
-        .appendField(new Blockly.FieldDropdown(OPERATORS), 'MODE');
+        .appendField(new FieldDropdown(OPERATORS), 'MODE');
     this.appendStatementInput('DO')
-        .appendField(Blockly.Msg.CONTROLS_WHILEUNTIL_INPUT_DO);
+        .appendField(Msg.CONTROLS_WHILEUNTIL_INPUT_DO);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     // Assign 'this' to a variable for use in the tooltip closure below.
@@ -89,155 +100,108 @@ Blockly.Blocks['controls_whileUntil'] = {
     this.setTooltip(function() {
       var op = thisBlock.getFieldValue('MODE');
       var TOOLTIPS = {
-        'WHILE': Blockly.Msg.CONTROLS_WHILEUNTIL_TOOLTIP_WHILE,
-        'UNTIL': Blockly.Msg.CONTROLS_WHILEUNTIL_TOOLTIP_UNTIL
+        'WHILE': Msg.CONTROLS_WHILEUNTIL_TOOLTIP_WHILE,
+        'UNTIL': Msg.CONTROLS_WHILEUNTIL_TOOLTIP_UNTIL
       };
       return TOOLTIPS[op];
     });
   }
 };
 
-Blockly.Blocks['controls_for'] = {
+Blocks['controls_for'] = {
   /**
    * Block for 'for' loop.
-   * @this Blockly.Block
+   * @this Block
    */
+  definesScope: true,
   init: function() {
-    this.setHelpUrl(Blockly.Msg.CONTROLS_FOR_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    var variableField = withVariableDefinition(this,
+      FieldLexicalParameterFlydown,
+      FieldFlydown.DISPLAY_BELOW,
+      'name', //Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME
+    );
+    this.variable_.setReadonly(true);
+
+    this.setHelpUrl(Msg.CONTROLS_FOR_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField(Blockly.Msg.CONTROLS_FOR_INPUT_WITH)
-        .appendField(new Blockly.FieldVariable(null), 'VAR');
-    this.interpolateMsg(Blockly.Msg.CONTROLS_FOR_INPUT_FROM_TO_BY,
+        .appendField(Msg.CONTROLS_FOR_INPUT_WITH)
+        .appendField(variableField, 'VAR');
+    this.interpolateMsg(Msg.CONTROLS_FOR_INPUT_FROM_TO_BY,
                         ['FROM', 'Number', Blockly.ALIGN_RIGHT],
                         ['TO', 'Number', Blockly.ALIGN_RIGHT],
                         ['BY', 'Number', Blockly.ALIGN_RIGHT],
                         Blockly.ALIGN_RIGHT);
     this.appendStatementInput('DO')
-        .appendField(Blockly.Msg.CONTROLS_FOR_INPUT_DO);
+        .appendField(Msg.CONTROLS_FOR_INPUT_DO);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
     this.setInputsInline(true);
-    // Assign 'this' to a variable for use in the tooltip closure below.
-    var thisBlock = this;
+
     this.setTooltip(function() {
-      return Blockly.Msg.CONTROLS_FOR_TOOLTIP.replace('%1',
-          thisBlock.getFieldValue('VAR'));
+      return Msg.CONTROLS_FOR_TOOLTIP.replace('%1', variableField.getValue());
     });
   },
-  /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
-   */
-  getVars: function() {
-    return [this.getFieldValue('VAR')];
-  },
-  /**
-   * Notification that a variable is renaming.
-   * If the name matches one of this block's variables, rename it.
-   * @param {string} oldName Previous name of variable.
-   * @param {string} newName Renamed variable.
-   * @this Blockly.Block
-   */
-  renameVar: function(oldName, newName) {
-    if (Blockly.Names.equals(oldName, this.getFieldValue('VAR'))) {
-      this.setFieldValue(newName, 'VAR');
-    }
-  },
-  /**
-   * Add menu option to create getter block for loop variable.
-   * @param {!Array} options List of menu options to add to.
-   * @this Blockly.Block
-   */
-  /*customContextMenu: function(options) {
-    if (!this.isCollapsed()) {
-      var option = {enabled: true};
-      var name = this.getFieldValue('VAR');
-      option.text = Blockly.Msg.VARIABLES_SET_CREATE_GET.replace('%1', name);
-      var xmlField = goog.dom.createDom('field', null, name);
-      xmlField.setAttribute('name', 'VAR');
-      var xmlBlock = goog.dom.createDom('block', null, xmlField);
-      xmlBlock.setAttribute('type', 'variables_get');
-      option.callback = Blockly.ContextMenu.callbackFactory(this, xmlBlock);
-      options.push(option);
-    }
-  }*/
 };
 
-Blockly.Blocks['controls_forEach'] = {
+Blocks['controls_forEach'] = {
   /**
    * Block for 'for each' loop.
-   * @this Blockly.Block
+   * @this Block
    */
+  definesScope: true,
   init: function() {
-    this.setHelpUrl(Blockly.Msg.CONTROLS_FOREACH_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+    var variableField = withVariableDefinition(this,
+      FieldLexicalParameterFlydown,
+      FieldFlydown.DISPLAY_BELOW,
+      'name', //Msg.LANG_VARIABLES_GLOBAL_DECLARATION_NAME
+    );
+    this.variable_.setReadonly(true);
+
+    this.setHelpUrl(Msg.CONTROLS_FOREACH_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendValueInput('LIST')
         .setCheck('Array')
-        .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_ITEM)
-        .appendField(new Blockly.FieldVariable(null), 'VAR')
-        .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_INLIST);
-    if (Blockly.Msg.CONTROLS_FOREACH_INPUT_INLIST_TAIL) {
+        .appendField(Msg.CONTROLS_FOREACH_INPUT_ITEM)
+        .appendField(variableField, 'VAR')
+        .appendField(Msg.CONTROLS_FOREACH_INPUT_INLIST);
+    if (Msg.CONTROLS_FOREACH_INPUT_INLIST_TAIL) {
       this.appendDummyInput()
-          .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_INLIST_TAIL);
+          .appendField(Msg.CONTROLS_FOREACH_INPUT_INLIST_TAIL);
       this.setInputsInline(true);
     }
     this.appendStatementInput('DO')
-        .appendField(Blockly.Msg.CONTROLS_FOREACH_INPUT_DO);
+        .appendField(Msg.CONTROLS_FOREACH_INPUT_DO);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
-    // Assign 'this' to a variable for use in the tooltip closure below.
-    var thisBlock = this;
+
     this.setTooltip(function() {
-      return Blockly.Msg.CONTROLS_FOREACH_TOOLTIP.replace('%1',
-          thisBlock.getFieldValue('VAR'));
+      return Msg.CONTROLS_FOREACH_TOOLTIP.replace('%1', variableField.getValue());
     });
-  },
-  /**
-   * Return all variables referenced by this block.
-   * @return {!Array.<string>} List of variable names.
-   * @this Blockly.Block
-   */
-  getVars: function() {
-    return [this.getFieldValue('VAR')];
-  },
-  /**
-   * Notification that a variable is renaming.
-   * If the name matches one of this block's variables, rename it.
-   * @param {string} oldName Previous name of variable.
-   * @param {string} newName Renamed variable.
-   * @this Blockly.Block
-   */
-  renameVar: function(oldName, newName) {
-    if (Blockly.Names.equals(oldName, this.getFieldValue('VAR'))) {
-      this.setFieldValue(newName, 'VAR');
-    }
-  },
-  customContextMenu: Blockly.Blocks['controls_for'].customContextMenu
+  }
 };
 
-Blockly.Blocks['controls_flow_statements'] = {
+Blocks['controls_flow_statements'] = {
   /**
    * Block for flow statements: continue, break.
-   * @this Blockly.Block
+   * @this Block
    */
   init: function() {
     var OPERATORS =
-        [[Blockly.Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_BREAK, 'BREAK'],
-         [Blockly.Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_CONTINUE, 'CONTINUE']];
-    this.setHelpUrl(Blockly.Msg.CONTROLS_FLOW_STATEMENTS_HELPURL);
-    this.setColour(Blockly.CONTROL_CATEGORY_HUE);
+        [[Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_BREAK, 'BREAK'],
+         [Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_CONTINUE, 'CONTINUE']];
+    this.setHelpUrl(Msg.CONTROLS_FLOW_STATEMENTS_HELPURL);
+    this.setColour(CONTROL_CATEGORY_HUE);
     this.appendDummyInput()
-        .appendField(new Blockly.FieldDropdown(OPERATORS), 'FLOW');
+        .appendField(new FieldDropdown(OPERATORS), 'FLOW');
     this.setPreviousStatement(true);
     // Assign 'this' to a variable for use in the tooltip closure below.
     var thisBlock = this;
     this.setTooltip(function() {
       var op = thisBlock.getFieldValue('FLOW');
       var TOOLTIPS = {
-        'BREAK': Blockly.Msg.CONTROLS_FLOW_STATEMENTS_TOOLTIP_BREAK,
-        'CONTINUE': Blockly.Msg.CONTROLS_FLOW_STATEMENTS_TOOLTIP_CONTINUE
+        'BREAK': Msg.CONTROLS_FLOW_STATEMENTS_TOOLTIP_BREAK,
+        'CONTINUE': Msg.CONTROLS_FLOW_STATEMENTS_TOOLTIP_CONTINUE
       };
       return TOOLTIPS[op];
     });
@@ -245,7 +209,7 @@ Blockly.Blocks['controls_flow_statements'] = {
   /**
    * Called whenever anything on the workspace changes.
    * Add warning if this flow block is not nested inside a loop.
-   * @this Blockly.Block
+   * @this Block
    */
   onchange: function() {
     if (!this.workspace) {
@@ -269,7 +233,7 @@ Blockly.Blocks['controls_flow_statements'] = {
     if (legal) {
       this.setWarningText(null);
     } else {
-      this.setWarningText(Blockly.Msg.CONTROLS_FLOW_STATEMENTS_WARNING);
+      this.setWarningText(Msg.CONTROLS_FLOW_STATEMENTS_WARNING);
     }
   }
 };

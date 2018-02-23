@@ -24,14 +24,16 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Block from './block';
+import {bindEvent_, unbindEvent_, mouseToSvg, getSvgXY_, createSvgElement} from './utils';
 
 /**
  * Class for a trash can.
- * @param {!Blockly.Workspace} workspace The workspace to sit in.
+ * @param {!Workspace} workspace The workspace to sit in.
  * @constructor
  */
-var Trashcan = function(workspace) {
+export default function Trashcan (workspace) {
   this.workspace_ = workspace;
 };
 
@@ -154,29 +156,29 @@ Trashcan.prototype.createDom = function() {
     <image width="47" height="15" href="media/trashlid.png"></image>
   </g>
   */
-  this.svgGroup_ = Blockly.createSvgElement('g',
+  this.svgGroup_ = createSvgElement('g',
       {'filter': 'url(#blocklyTrashcanShadowFilter)'}, null);
 
-  var clip = Blockly.createSvgElement('clipPath',
+  var clip = createSvgElement('clipPath',
       {'id': 'blocklyTrashBodyClipPath'},
       this.svgGroup_);
-  Blockly.createSvgElement('rect',
+  createSvgElement('rect',
       {'width': this.WIDTH_, 'height': this.BODY_HEIGHT_,
        'y': this.LID_HEIGHT_},
       clip);
-  var body = Blockly.createSvgElement('image',
+  var body = createSvgElement('image',
       {'width': Blockly.SPRITE.width, 'height': Blockly.SPRITE.height, 'y': -32,
        'clip-path': 'url(#blocklyTrashBodyClipPath)'},
       this.svgGroup_);
   body.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href',
       Blockly.pathToBlockly + Blockly.SPRITE.url);
 
-  var clip = Blockly.createSvgElement('clipPath',
+  var clip = createSvgElement('clipPath',
       {'id': 'blocklyTrashLidClipPath'},
       this.svgGroup_);
-  Blockly.createSvgElement('rect',
+  createSvgElement('rect',
       {'width': this.WIDTH_, 'height': this.LID_HEIGHT_}, clip);
-  this.svgLid_ = Blockly.createSvgElement('image',
+  this.svgLid_ = createSvgElement('image',
       {'width': Blockly.SPRITE.width, 'height': Blockly.SPRITE.height, 'y': -32,
        'clip-path': 'url(#blocklyTrashLidClipPath)'},
       this.svgGroup_);
@@ -193,7 +195,7 @@ Trashcan.prototype.init = function() {
   this.setOpen_(false);
   this.position_();
   // If the document resizes, reposition the trash can.
-  Blockly.bindEvent_(window, 'resize', this, this.position_);
+  bindEvent_(window, 'resize', this, this.position_);
 };
 
 /**
@@ -249,8 +251,8 @@ Trashcan.prototype.onMouseMove = function(e) {
   if (!this.svgGroup_) {
     return;
   }
-  var mouseXY = Blockly.mouseToSvg(e);
-  var trashXY = Blockly.getSvgXY_(this.svgGroup_);
+  var mouseXY = mouseToSvg(e);
+  var trashXY = getSvgXY_(this.svgGroup_);
   var over = (mouseXY.x > trashXY.x - this.MARGIN_HOTSPOT_) &&
              (mouseXY.x < trashXY.x + this.WIDTH_ + this.MARGIN_HOTSPOT_) &&
              (mouseXY.y > trashXY.y - this.MARGIN_HOTSPOT_) &&
@@ -299,7 +301,3 @@ Trashcan.prototype.animateLid_ = function() {
 Trashcan.prototype.close = function() {
   this.setOpen_(false);
 };
-
-return Trashcan;
-
-});

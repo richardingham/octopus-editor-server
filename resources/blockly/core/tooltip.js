@@ -29,11 +29,14 @@
  */
 'use strict';
 
-var util = require('util');
+import Blockly from './blockly';
+import Block from './block';
+import WidgetDiv from './widgetdiv';
+import {bindEvent_, unbindEvent_, mouseToSvg, createSvgElement} from './utils';
 
-module.exports = (function (Blockly) {
 
 var Tooltip = {};
+export default Tooltip;
 
 /**
  * Is a tooltip currently showing?
@@ -142,16 +145,16 @@ Tooltip.createDom = function() {
   </g>
   */
   var svgGroup = /** @type {!SVGGElement} */ (
-      Blockly.createSvgElement('g', {'class': 'blocklyHidden'}, null));
+      createSvgElement('g', {'class': 'blocklyHidden'}, null));
   Tooltip.svgGroup_ = svgGroup;
   Tooltip.svgShadow_ = /** @type {!SVGRectElement} */ (
-      Blockly.createSvgElement(
+      createSvgElement(
           'rect', {'class': 'blocklyTooltipShadow', 'x': 2, 'y': 2}, svgGroup));
   Tooltip.svgBackground_ = /** @type {!SVGRectElement} */ (
-      Blockly.createSvgElement(
+      createSvgElement(
           'rect', {'class': 'blocklyTooltipBackground'}, svgGroup));
   Tooltip.svgText_ = /** @type {!SVGTextElement} */ (
-      Blockly.createSvgElement(
+      createSvgElement(
           'text', {'class': 'blocklyTooltipText'}, svgGroup));
   return svgGroup;
 };
@@ -161,9 +164,9 @@ Tooltip.createDom = function() {
  * @param {!Element} element SVG element onto which tooltip is to be bound.
  */
 Tooltip.bindMouseEvents = function(element) {
-  Blockly.bindEvent_(element, 'mouseover', null, Tooltip.onMouseOver_);
-  Blockly.bindEvent_(element, 'mouseout', null, Tooltip.onMouseOut_);
-  Blockly.bindEvent_(element, 'mousemove', null, Tooltip.onMouseMove_);
+  bindEvent_(element, 'mouseover', null, Tooltip.onMouseOver_);
+  bindEvent_(element, 'mouseout', null, Tooltip.onMouseOut_);
+  bindEvent_(element, 'mousemove', null, Tooltip.onMouseMove_);
 };
 
 /**
@@ -176,7 +179,7 @@ Tooltip.onMouseOver_ = function(e) {
   // If the tooltip is an object, treat it as a pointer to the next object in
   // the chain to look at.  Terminate when a string or function is found.
   var element = e.target;
-  while (!util.isString(element.tooltip) && !util.isFunction(element.tooltip)) {
+  while (!typeof element.tooltip === 'string' && !typeof element.tooltip === 'function') {
     element = element.tooltip;
   }
   if (Tooltip.element_ != element) {
@@ -216,17 +219,17 @@ Tooltip.onMouseMove_ = function(e) {
   if (!Tooltip.element_ || !Tooltip.element_.tooltip) {
     // No tooltip here to show.
     return;
-  } else if (Blockly.Block.dragMode_ != 0) {
+  } else if (Block.dragMode_ != 0) {
     // Don't display a tooltip during a drag.
     return;
-  } else if (Blockly.WidgetDiv.isVisible()) {
+  } else if (WidgetDiv.isVisible()) {
     // Don't display a tooltip if a widget is open (tooltip would be under it).
     return;
   }
   if (Tooltip.visible) {
     // Compute the distance between the mouse position when the tooltip was
     // shown and the current mouse position.  Pythagorean theorem.
-    var mouseXY = Blockly.mouseToSvg(e);
+    var mouseXY = mouseToSvg(e);
     var dx = Tooltip.lastXY_.x - mouseXY.x;
     var dy = Tooltip.lastXY_.y - mouseXY.y;
     var dr = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
@@ -237,7 +240,7 @@ Tooltip.onMouseMove_ = function(e) {
     // The mouse moved, clear any previously scheduled tooltip.
     window.clearTimeout(Tooltip.showPid_);
     // Maybe this time the mouse will stay put.  Schedule showing of tooltip.
-    Tooltip.lastXY_ = Blockly.mouseToSvg(e);
+    Tooltip.lastXY_ = mouseToSvg(e);
     Tooltip.showPid_ =
         window.setTimeout(Tooltip.show_, Tooltip.HOVER_MS);
   }
@@ -272,14 +275,17 @@ Tooltip.show_ = function() {
   }
   // Get the new text.
   var tip = Tooltip.element_.tooltip;
-  if (util.isFunction(tip)) {
+  if (typeof tip === 'function') {
     tip = tip();
+  }
+  if (typeof tip !== 'string') {
+    return;
   }
   tip = Tooltip.wrap_(tip, Tooltip.LIMIT);
   // Create new text, line by line.
   var lines = tip.split('\n');
   for (var i = 0; i < lines.length; i++) {
-    var tspanElement = Blockly.createSvgElement('tspan',
+    var tspanElement = createSvgElement('tspan',
         {'dy': '1em', 'x': Tooltip.MARGINS}, Tooltip.svgText_);
     var textNode = document.createTextNode(lines[i]);
     tspanElement.appendChild(textNode);
@@ -493,7 +499,3 @@ Tooltip.wrapToText_ = function(words, wordBreaks) {
   }
   return text.join('');
 };
-
-return Tooltip;
-
-});

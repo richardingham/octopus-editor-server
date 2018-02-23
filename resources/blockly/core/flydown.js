@@ -11,9 +11,12 @@
  */
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Flyout from './flyout';
+import Block from './block';
+import BlockSvg from './block_svg';
+import {inherits} from './utils';
+import {bindEvent_, unbindEvent_, addClass_, removeClass_, isRightButton, createSvgElement} from './utils';
 
 /**
  * Class for a flydown.
@@ -22,7 +25,8 @@ module.exports = (function (Blockly) {
 var Flydown = function() {
   Flydown.super_.call(this);
 };
-util.inherits(Flydown, Blockly.Flyout);
+inherits(Flydown, Flyout);
+export default Flydown;
 
 /**
  * Previous CSS class for this flydown
@@ -40,7 +44,7 @@ Flydown.prototype.VERTICAL_SEPARATION_FACTOR = 1;
 
 /**
  * Creates the flydown's DOM.  Only needs to be called once.  Overrides the flyout createDom method.
- * @param {!String} cssClassName The name of the CSS class for this flydown. 
+ * @param {!String} cssClassName The name of the CSS class for this flydown.
  * @return {!Element} The flydown's SVG group.
  */
 Flydown.prototype.createDom = function(cssClassName) {
@@ -51,8 +55,8 @@ Flydown.prototype.createDom = function(cssClassName) {
   </g>
   */
   this.previousCSSClassName_ = cssClassName; // Remember class name for later
-  this.svgGroup_ = Blockly.createSvgElement('g', {'class': cssClassName}, null);
-  this.svgBackground_ = Blockly.createSvgElement('path', {}, this.svgGroup_);
+  this.svgGroup_ = createSvgElement('g', {'class': cssClassName}, null);
+  this.svgBackground_ = createSvgElement('path', {}, this.svgGroup_);
   this.svgGroup_.appendChild(this.workspace_.createDom());
   return this.svgGroup_;
 };
@@ -63,19 +67,19 @@ Flydown.prototype.createDom = function(cssClassName) {
  */
 Flydown.prototype.setCSSClass = function(newCSSClassName) {
   if (newCSSClassName !== this.previousCSSClassName_) {
-    Blockly.removeClass_(this.svgGroup_, this.previousCSSClassName_);
-    Blockly.addClass_(this.svgGroup_, newCSSClassName);
+    removeClass_(this.svgGroup_, this.previousCSSClassName_);
+    addClass_(this.svgGroup_, newCSSClassName);
     this.previousCSSClassName_ = newCSSClassName;
   }
 }
 
 /**
  * Initializes the Flydown.
- * @param {!Blockly.Workspace} workspace The workspace in which to create new
+ * @param {!Workspace} workspace The workspace in which to create new
  *     blocks.
  */
 Flydown.prototype.init = function(workspace) {
-  Blockly.Flyout.prototype.init.call(this, workspace, false); // Flydowns have no scrollbar
+  Flyout.prototype.init.call(this, workspace, false); // Flydowns have no scrollbar
 }
 
 /**
@@ -131,7 +135,7 @@ Flydown.prototype.reflow = function() {
     flydownWidth = Math.max(flydownWidth, blockHW.width);
     flydownHeight += blockHW.height;
   }
-  flydownWidth += 2*margin + Blockly.BlockSvg.TAB_WIDTH; // TAB_WIDTH is with of plug
+  flydownWidth += 2*margin + BlockSvg.TAB_WIDTH; // TAB_WIDTH is with of plug
   flydownHeight += 2*margin + margin*this.VERTICAL_SEPARATION_FACTOR*(blocks.length - 1);
   if (this.width_ != flydownWidth) {
     for (var j = 0, block; block = blocks[j]; j++) {
@@ -139,7 +143,7 @@ Flydown.prototype.reflow = function() {
       var blockXY = block.getRelativeToSurfaceXY();
       if (Blockly.RTL) {
         // With the FlydownWidth known, right-align the blocks.
-        var dx = flydownWidth - margin - Blockly.BlockSvg.TAB_WIDTH - blockXY.x;
+        var dx = flydownWidth - margin - BlockSvg.TAB_WIDTH - blockXY.x;
         block.moveBy(dx, 0);
         blockXY.x += dx;
       }
@@ -158,8 +162,3 @@ Flydown.prototype.reflow = function() {
 };
 
 // Note: nothing additional beyond flyout disposal needs to be done to dispose of a flydown.
-
-return Flydown;
-
-});
-

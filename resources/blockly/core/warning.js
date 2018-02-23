@@ -24,24 +24,23 @@
  */
 'use strict';
 
-// goog.require('Blockly.Bubble');
-// goog.require('Blockly.Icon');
-
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Bubble from './bubble';
+import Icon from './icon';
+import {createSvgElement} from './utils';
+import {inherits} from './utils';
 
 /**
  * Class for a warning.
- * @param {!Blockly.Block} block The block associated with this warning.
- * @extends {Blockly.Icon}
+ * @param {!Block} block The block associated with this warning.
+ * @extends {Icon}
  * @constructor
  */
-var Warning = function(block) {
+export default function Warning (block) {
   Warning.super_.call(this, block);
   this.createIcon_();
 };
-util.inherits(Warning, Blockly.Icon);
+inherits(Warning, Icon);
 
 
 /**
@@ -52,14 +51,14 @@ util.inherits(Warning, Blockly.Icon);
  */
 Warning.textToDom_ = function(text) {
   var paragraph = /** @type {!SVGTextElement} */ (
-      Blockly.createSvgElement('text',
+      createSvgElement('text',
           {'class': 'blocklyText blocklyBubbleText',
-           'y': Blockly.Bubble.BORDER_WIDTH},
+           'y': Bubble.BORDER_WIDTH},
           null));
   var lines = text.split('\n');
   for (var i = 0; i < lines.length; i++) {
-    var tspanElement = Blockly.createSvgElement('tspan',
-        {'dy': '1em', 'x': Blockly.Bubble.BORDER_WIDTH}, paragraph);
+    var tspanElement = createSvgElement('tspan',
+        {'dy': '1em', 'x': Bubble.BORDER_WIDTH}, paragraph);
     var textNode = document.createTextNode(lines[i]);
     tspanElement.appendChild(textNode);
   }
@@ -77,20 +76,20 @@ Warning.prototype.text_ = '';
  * @private
  */
 Warning.prototype.createIcon_ = function() {
-  Blockly.Icon.prototype.createIcon_.call(this);
+  Icon.prototype.createIcon_.call(this);
   /* Here's the markup that will be generated:
   <path class="blocklyIconShield" d="..."/>
   <text class="blocklyIconMark" x="8" y="13">!</text>
   */
-  var iconShield = Blockly.createSvgElement('path',
+  var iconShield = createSvgElement('path',
       {'class': 'blocklyIconShield',
        'd': 'M 2,15 Q -1,15 0.5,12 L 6.5,1.7 Q 8,-1 9.5,1.7 L 15.5,12 ' +
        'Q 17,15 14,15 z'},
       this.iconGroup_);
-  this.iconMark_ = Blockly.createSvgElement('text',
+  this.iconMark_ = createSvgElement('text',
       {'class': 'blocklyIconMark',
-       'x': Blockly.Icon.RADIUS,
-       'y': 2 * Blockly.Icon.RADIUS - 3}, this.iconGroup_);
+       'x': Icon.RADIUS,
+       'y': 2 * Icon.RADIUS - 3}, this.iconGroup_);
   this.iconMark_.appendChild(document.createTextNode('!'));
 };
 
@@ -106,8 +105,8 @@ Warning.prototype.setVisible = function(visible) {
   if (visible) {
     // Create the bubble.
     var paragraph = Warning.textToDom_(this.text_);
-    this.bubble_ = new Blockly.Bubble(
-        /** @type {!Blockly.Workspace} */ (this.block_.workspace),
+    this.bubble_ = new Bubble(
+        /** @type {!Workspace} */ (this.block_.workspace),
         paragraph, this.block_.svg_.svgPath_,
         this.iconX_, this.iconY_, null, null);
     if (Blockly.RTL) {
@@ -116,7 +115,7 @@ Warning.prototype.setVisible = function(visible) {
       var maxWidth = paragraph.getBBox().width;
       for (var x = 0, textElement; textElement = paragraph.childNodes[x]; x++) {
         textElement.setAttribute('text-anchor', 'end');
-        textElement.setAttribute('x', maxWidth + Blockly.Bubble.BORDER_WIDTH);
+        textElement.setAttribute('x', maxWidth + Bubble.BORDER_WIDTH);
       }
     }
     this.updateColour();
@@ -160,9 +159,5 @@ Warning.prototype.setText = function(text) {
  */
 Warning.prototype.dispose = function() {
   this.block_.warning = null;
-  Blockly.Icon.prototype.dispose.call(this);
+  Icon.prototype.dispose.call(this);
 };
-
-return Warning;
-
-});

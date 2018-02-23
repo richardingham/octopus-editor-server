@@ -1,10 +1,16 @@
+'use strict';
+
+import {ORDER} from '../python-octo-constants';
+import {addDefinition, getVariableName, valueToCode, quote} from '../python-octo-methods';
+import PythonOcto from '../python-octo-blocks';
+
 function machineBlockGenerator (smod, mod, cls) {
   return function (block) {
-    var name = Blockly.PythonOcto.getVariableName_(block.variable_);
-    var alias = (block.variable_ ? block.variable_.getVarName() : "_");
-    var conn = Blockly.PythonOcto.valueToCode(block, 'CONNECTION',
-        Blockly.PythonOcto.ORDER_NONE) || 'dummy()';
-    Blockly.PythonOcto.definitions_['import_' + smod + '_' + mod] = 'from ' + smod + ' import ' + mod;
+    var blockVariable = block.getVariable();
+    var name = getVariableName(blockVariable);
+    var alias = (blockVariable ? blockVariable.getVarName() : "_");
+    var conn = valueToCode(block, 'CONNECTION', ORDER.NONE) || 'dummy()';
+    addDefinition('import_' + smod + '_' + mod, 'from ' + smod + ' import ' + mod);
 
     var attributes = []
     if (block.mutation) {
@@ -22,23 +28,23 @@ function machineBlockGenerator (smod, mod, cls) {
     return [
       name, ' = ', mod, '.', cls, '(', conn,
       attributes.length ? ', ' : '', attributes.join(', '),
-      ', alias = ', Blockly.PythonOcto.quote_(alias), ')'
+      ', alias = ', quote(alias), ')'
     ].join('');
   };
 };
 
-Blockly.PythonOcto['machine_vapourtec_R2R4'] = machineBlockGenerator('octopus.manufacturer', 'vapourtec', 'R2R4');
-Blockly.PythonOcto['machine_knauer_K120'] = machineBlockGenerator('octopus.manufacturer', 'knauer', 'K120');
-Blockly.PythonOcto['machine_knauer_S100'] = machineBlockGenerator('octopus.manufacturer', 'knauer', 'S100');
-Blockly.PythonOcto['machine_vici_multivalve'] = machineBlockGenerator('octopus.manufacturer', 'vici', 'MultiValve');
-Blockly.PythonOcto['machine_mt_icir'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'iCIR');
-Blockly.PythonOcto['machine_wpi_aladdin'] = machineBlockGenerator('octopus.manufacturer', 'wpi', 'Aladdin');
-Blockly.PythonOcto['machine_phidgets_phsensor'] = machineBlockGenerator('octopus.manufacturer', 'phidgets', 'PHSensor');
-Blockly.PythonOcto['machine_singletracker'] = machineBlockGenerator('octopus.image', 'tracker', 'SingleBlobTracker');
-Blockly.PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.image', 'tracker', 'MultiBlobTracker');
-Blockly.PythonOcto['machine_imageprovider'] = machineBlockGenerator('octopus.image', 'provider', 'ImageProvider');
-Blockly.PythonOcto['machine_omega_hh306a'] = machineBlockGenerator('octopus.manufacturer', 'omega', 'HH306A');
-Blockly.PythonOcto['machine_harvard_phd2000'] = machineBlockGenerator('octopus.manufacturer', 'harvard', 'PHD2000');
-Blockly.PythonOcto['machine_mt_sics_balance'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'SICSBalance');
-Blockly.PythonOcto['machine_startech_powerremotecontrol'] = machineBlockGenerator('octopus.manufacturer', 'startech', 'PowerRemoveControl');
-Blockly.PythonOcto['machine_gilson_FractionCollector203B'] = machineBlockGenerator('octopus.manufacturer', 'gilson', 'FractionCollector203B');
+PythonOcto['machine_vapourtec_R2R4'] = machineBlockGenerator('octopus.manufacturer', 'vapourtec', 'R2R4');
+PythonOcto['machine_knauer_K120'] = machineBlockGenerator('octopus.manufacturer', 'knauer', 'K120');
+PythonOcto['machine_knauer_S100'] = machineBlockGenerator('octopus.manufacturer', 'knauer', 'S100');
+PythonOcto['machine_vici_multivalve'] = machineBlockGenerator('octopus.manufacturer', 'vici', 'MultiValve');
+PythonOcto['machine_mt_icir'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'iCIR');
+PythonOcto['machine_wpi_aladdin'] = machineBlockGenerator('octopus.manufacturer', 'wpi', 'Aladdin');
+PythonOcto['machine_phidgets_phsensor'] = machineBlockGenerator('octopus.manufacturer', 'phidgets', 'PHSensor');
+PythonOcto['machine_singletracker'] = machineBlockGenerator('octopus.image', 'tracker', 'SingleBlobTracker');
+PythonOcto['machine_multitracker'] = machineBlockGenerator('octopus.image', 'tracker', 'MultiBlobTracker');
+PythonOcto['machine_imageprovider'] = machineBlockGenerator('octopus.image', 'provider', 'ImageProvider');
+PythonOcto['machine_omega_hh306a'] = machineBlockGenerator('octopus.manufacturer', 'omega', 'HH306A');
+PythonOcto['machine_harvard_phd2000'] = machineBlockGenerator('octopus.manufacturer', 'harvard', 'PHD2000');
+PythonOcto['machine_mt_sics_balance'] = machineBlockGenerator('octopus.manufacturer', 'mt', 'SICSBalance');
+PythonOcto['machine_startech_powerremotecontrol'] = machineBlockGenerator('octopus.manufacturer', 'startech', 'PowerRemoveControl');
+PythonOcto['machine_gilson_FractionCollector203B'] = machineBlockGenerator('octopus.manufacturer', 'gilson', 'FractionCollector203B');

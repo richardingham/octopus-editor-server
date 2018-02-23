@@ -24,12 +24,11 @@
  */
 'use strict';
 
-// TODO(scr): Fix circular dependencies
-// goog.require('Blockly.Block');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Block from './block';
 
 var Xml = {};
+export default Xml;
 
 /**
  * Encode a block tree as XML.
@@ -247,7 +246,7 @@ Xml.domToBlock = function(workspace, xmlBlock, opt_reuseBlock) {
   }
   var id = xmlBlock.getAttribute('id');
   if (opt_reuseBlock && id) {
-    block = Blockly.Block.getById(id, workspace);
+    block = Block.getById(id, workspace);
     // TODO: The following is for debugging.  It should never actually happen.
     if (!block) {
       throw 'Couldn\'t get Block with id: ' + id;
@@ -261,7 +260,7 @@ Xml.domToBlock = function(workspace, xmlBlock, opt_reuseBlock) {
     block.fill(workspace, prototypeName);
     block.parent_ = parentBlock;
   } else {
-    block = Blockly.Block.obtain(workspace, prototypeName);
+    block = Block.obtain(workspace, prototypeName);
   }
   if (!block.svg_) {
     block.initSvg();
@@ -410,23 +409,3 @@ Xml.deleteNext = function(xmlBlock) {
     }
   }
 };
-
-return Xml;
-
-});
-
-/*
-
-// Export symbols that would otherwise be renamed by Closure compiler.
-if (!window['Blockly']) {
-  window['Blockly'] = {};
-}
-if (!window['Blockly']['Xml']) {
-  window['Blockly']['Xml'] = {};
-}
-window['Blockly']['Xml']['domToText'] = Blockly.Xml.domToText;
-window['Blockly']['Xml']['domToWorkspace'] = Blockly.Xml.domToWorkspace;
-window['Blockly']['Xml']['textToDom'] = Blockly.Xml.textToDom;
-window['Blockly']['Xml']['workspaceToDom'] = Blockly.Xml.workspaceToDom;
-
-*/

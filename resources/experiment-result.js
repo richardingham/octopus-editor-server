@@ -1,4 +1,4 @@
-$(function ($) {
+jQuery(function ($) {
 
   var timezero = parseInt($('#viewer').data('timezero')) * 1000;
   var timeend = parseInt($('#viewer').data('timeend')) * 1000;

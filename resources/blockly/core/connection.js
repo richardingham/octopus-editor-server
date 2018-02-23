@@ -24,10 +24,12 @@
  */
 'use strict';
 
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
-
-module.exports = (function (Blockly) {
+import EventEmitter from 'events';
+import Blockly from './blockly';
+import Block from './block';
+import BlockSvg from './block_svg';
+import {getRelativeXY_, createSvgElement} from './utils';
+import {inherits} from './utils';
 
 /**
  * Class for a connection between blocks.
@@ -47,7 +49,7 @@ var Connection = function(source, type) {
 
   EventEmitter.call(this);
 };
-util.inherits(Connection, EventEmitter);
+inherits(Connection, EventEmitter);
 
 /**
  * Sever all links to this connection (not including from the source object).
@@ -284,7 +286,7 @@ Connection.prototype.targetBlock = function() {
  * @private
  */
 Connection.prototype.bumpAwayFrom_ = function(staticConnection) {
-  if (Blockly.Block.dragMode_ != 0) {
+  if (Block.dragMode_ != 0) {
     // Don't move blocks around while the user is doing the same.
     return;
   }
@@ -351,8 +353,8 @@ Connection.prototype.moveBy = function(dx, dy) {
 Connection.prototype.highlight = function() {
   var steps;
   if (this.type == Blockly.INPUT_VALUE || this.type == Blockly.OUTPUT_VALUE) {
-    var tabWidth = Blockly.RTL ? -Blockly.BlockSvg.TAB_WIDTH :
-                                 Blockly.BlockSvg.TAB_WIDTH;
+    var tabWidth = Blockly.RTL ? -BlockSvg.TAB_WIDTH :
+                                 BlockSvg.TAB_WIDTH;
     steps = 'm 0,0 v 5 c 0,10 ' + -tabWidth + ',-8 ' + -tabWidth + ',7.5 s ' +
             tabWidth + ',-2.5 ' + tabWidth + ',7.5 v 5';
   } else {
@@ -365,7 +367,7 @@ Connection.prototype.highlight = function() {
   var xy = this.sourceBlock_.getRelativeToSurfaceXY();
   var x = this.x_ - xy.x;
   var y = this.y_ - xy.y;
-  Connection.highlightedPath_ = Blockly.createSvgElement('path',
+  Connection.highlightedPath_ = createSvgElement('path',
       {'class': 'blocklyHighlightedConnectionPath',
        'd': steps,
        transform: 'translate(' + x + ', ' + y + ')'},
@@ -394,7 +396,7 @@ Connection.prototype.tighten_ = function() {
     if (!svgRoot) {
       throw 'block is not rendered.';
     }
-    var xy = Blockly.getRelativeXY_(svgRoot);
+    var xy = getRelativeXY_(svgRoot);
     block.getSvgRoot().setAttribute('transform',
         'translate(' + (xy.x - dx) + ', ' + (xy.y - dy) + ')');
     block.moveConnections_(-dx, -dy);
@@ -542,7 +544,7 @@ Connection.prototype.checkType_ = function(otherConnection) {
 Connection.prototype.setCheck = function(check) {
   if (check) {
     // Ensure that check is in an array.
-    if (!util.isArray(check)) {
+    if (!Array.isArray(check)) {
       check = [check];
     }
     this.check_ = check;
@@ -800,7 +802,4 @@ ConnectionDB.init = function(workspace) {
   workspace.connectionDBList = dbList;
 };
 
-Blockly.Connection = Connection;
-Blockly.ConnectionDB = ConnectionDB;
-
-});
+export {Connection, ConnectionDB};

@@ -24,14 +24,28 @@
  */
 'use strict';
 
-var util = require('util');
-var tinycolor = require('tinycolor2');
-var EventEmitter = require('events').EventEmitter;
+import EventEmitter from 'events';
+import {inject} from './inject';
+import Block from './block';
+import Msg from './msg';
+import Workspace from './workspace';
+import {Connection} from './connection';
+import ContextMenu from './contextmenu';
+import Flyout from './flyout';
+import Toolbox from './toolbox';
+import Xml from './xml';
+import {Scrollbar} from './scrollbar';
 
-(function () {
+import {bindEvent_, unbindEvent_, isRightButton} from './utils';
+
+// hideChaff
+import Tooltip from './tooltip';
+import WidgetDiv from './widgetdiv';
+import FieldFlydown from './field_flydown';
 
 // Top level object for Blockly.
 var Blockly = new EventEmitter();
+export default Blockly;
 
 /**
  * Path to Blockly's directory.  Can be relative, absolute, or remote.
@@ -162,14 +176,14 @@ Blockly.readOnly = false;
 
 /**
  * Currently highlighted connection (during a drag).
- * @type {Blockly.Connection}
+ * @type {Connection}
  * @private
  */
 Blockly.highlightedConnection_ = null;
 
 /**
  * Connection on dragged block that matches the highlighted connection.
- * @type {Blockly.Connection}
+ * @type {Connection}
  * @private
  */
 Blockly.localConnection_ = null;
@@ -261,7 +275,7 @@ Blockly.onMouseDown_ = function(e) {
     // Clicking on the document clears the selection.
     Blockly.selected.unselect();
   }
-  if (e.target == Blockly.svg && Blockly.isRightButton(e)) {
+  if (e.target == Blockly.svg && isRightButton(e)) {
     // Ignore right-click - handled in mouseup.
   } else if ((Blockly.readOnly || isTargetSvg) &&
              Blockly.mainWorkspace.scrollbar) {
@@ -280,12 +294,12 @@ Blockly.onMouseDown_ = function(e) {
     // is turned off and double move events are not performed on a block.
     // See comment in inject.js Blockly.init_ as to why mouseup events are
     // bound to the document instead of the SVG's surface.
-    if ('mouseup' in Blockly.bindEvent_.TOUCH_MAP) {
+    if ('mouseup' in bindEvent_.TOUCH_MAP) {
       Blockly.onTouchUpWrapper_ =
-          Blockly.bindEvent_(document, 'mouseup', null, Blockly.onMouseUp_);
+          bindEvent_(document, 'mouseup', null, Blockly.onMouseUp_);
     }
     Blockly.onMouseMoveWrapper_ =
-        Blockly.bindEvent_(document, 'mousemove', null, Blockly.onMouseMove_);
+        bindEvent_(document, 'mousemove', null, Blockly.onMouseMove_);
   }
 };
 
@@ -300,15 +314,15 @@ Blockly.onMouseUp_ = function(e) {
 
   // Unbind the touch event if it exists.
   if (Blockly.onTouchUpWrapper_) {
-    Blockly.unbindEvent_(Blockly.onTouchUpWrapper_);
+    unbindEvent_(Blockly.onTouchUpWrapper_);
     Blockly.onTouchUpWrapper_ = null;
   }
   if (Blockly.onMouseMoveWrapper_) {
-    Blockly.unbindEvent_(Blockly.onMouseMoveWrapper_);
+    unbindEvent_(Blockly.onMouseMoveWrapper_);
     Blockly.onMouseMoveWrapper_ = null;
   }
 
-  if (e.target == Blockly.svg && Blockly.isRightButton(e)) {
+  if (e.target == Blockly.svg && isRightButton(e)) {
     // Right-click.
     Blockly.showContextMenu_(e);
   }
@@ -396,8 +410,8 @@ Blockly.onKeyDown_ = function(e) {
  * @private
  */
 Blockly.terminateDrag_ = function() {
-  Blockly.Block.terminateDrag_();
-  Blockly.Flyout.terminateDrag_();
+  Block.terminateDrag_();
+  Flyout.terminateDrag_();
 };
 
 /**
@@ -477,7 +491,7 @@ Blockly.showContextMenu_ = function(e) {
     options.push(expandOption);
   }
 
-  Blockly.ContextMenu.show(e, options);
+  ContextMenu.show(e, options);
 };
 
 /**
@@ -497,14 +511,14 @@ Blockly.onContextMenu_ = function(e) {
  * @param {boolean=} opt_allowToolbox If true, don't close the toolbox.
  */
 Blockly.hideChaff = function(opt_allowToolbox) {
-  Blockly.Tooltip.hide();
-  Blockly.WidgetDiv.hide();
-  Blockly.FieldFlydown.hide();
+  Tooltip.hide();
+  WidgetDiv.hide();
+  FieldFlydown.hide();
   if (!opt_allowToolbox &&
-      Blockly.Toolbox.flyout_ && Blockly.Toolbox.flyout_.autoClose) {
+      Toolbox.flyout_ && Toolbox.flyout_.autoClose) {
 	  this.emit("hide-toolbox");
 	  // Don't think this should need to be called...
-	  Blockly.Toolbox.flyout_.hide();
+	  Toolbox.flyout_.hide();
   }
 };
 
@@ -666,9 +680,9 @@ Blockly.setCursorHand_ = function(closed) {
  */
 Blockly.getMainWorkspaceMetrics_ = function() {
   var svgSize = Blockly.svgSize();
-  svgSize.width -= Blockly.Toolbox.width;  // Zero if no Toolbox.
-  var viewWidth = svgSize.width - Blockly.Scrollbar.scrollbarThickness;
-  var viewHeight = svgSize.height - Blockly.Scrollbar.scrollbarThickness;
+  svgSize.width -= Toolbox.width;  // Zero if no Toolbox.
+  var viewWidth = svgSize.width - Scrollbar.scrollbarThickness;
+  var viewHeight = svgSize.height - Scrollbar.scrollbarThickness;
   try {
     var blockBox = Blockly.mainWorkspace.getCanvas().getBBox();
   } catch (e) {
@@ -692,7 +706,7 @@ Blockly.getMainWorkspaceMetrics_ = function() {
     var topEdge = blockBox.y;
     var bottomEdge = topEdge + blockBox.height;
   }
-  var absoluteLeft = Blockly.RTL ? 0 : Blockly.Toolbox.width;
+  var absoluteLeft = Blockly.RTL ? 0 : Toolbox.width;
   var metrics = {
     viewHeight: svgSize.height,
     viewWidth: svgSize.width,
@@ -719,11 +733,11 @@ Blockly.setMainWorkspaceMetrics_ = function(xyRatio) {
     throw 'Attempt to set main workspace scroll without scrollbars.';
   }
   var metrics = Blockly.getMainWorkspaceMetrics_();
-  if (util.isNumber(xyRatio.x)) {
+  if (typeof xyRatio.x === 'number') {
     Blockly.mainWorkspace.scrollX = -metrics.contentWidth * xyRatio.x -
         metrics.contentLeft;
   }
-  if (util.isNumber(xyRatio.y)) {
+  if (typeof xyRatio.y === 'number') {
     Blockly.mainWorkspace.scrollY = -metrics.contentHeight * xyRatio.y -
         metrics.contentTop;
   }
@@ -751,85 +765,79 @@ Blockly.doCommand = function(cmdThunk) {
   //}
 };
 
+
+
+// blockly API:
+// - mainWorkspace
+// - inject
+// - addChangeListener
+// on
+// Block.obtain -> createBlock
+// Toolbox.flyout_.show/hide -> show/hideToolbox
+// - hideChaff
+// Xml
+
+/**
+ * Returns the main workspace.
+ * @return {!Blockly.Workspace} The main workspace.
+ */
+export function getMainWorkspace () {
+  return Blockly.mainWorkspace;
+};
+
+export function addEventListener (eventName, listener) {
+  return Blockly.on(eventName, listener);
+};
+
 /**
  * When something in Blockly's workspace changes, call a function.
  * @param {!Function} func Function to call.
  * @return {!Array.<!Array>} Opaque data that can be passed to
  *     removeChangeListener.
  */
-Blockly.addChangeListener = function(func) {
-  return Blockly.bindEvent_(Blockly.mainWorkspace.getCanvas(),
-                            'blocklyWorkspaceChange', null, func);
+export function addWorkspaceChangeListener (func) {
+  return bindEvent_(
+    Blockly.mainWorkspace.getCanvas(),
+    'blocklyWorkspaceChange', null, func
+  );
 };
 
 /**
  * Stop listening for Blockly's workspace changes.
  * @param {!Array.<!Array>} bindData Opaque data from addChangeListener.
  */
-Blockly.removeChangeListener = function(bindData) {
-  Blockly.unbindEvent_(bindData);
+export function removeWorkspaceChangeListener (bindData) {
+  unbindEvent_(bindData);
 };
 
-/**
- * Returns the main workspace.
- * @return {!Blockly.Workspace} The main workspace.
- */
-Blockly.getMainWorkspace = function() {
-  return Blockly.mainWorkspace;
-};
+export function createBlock (workspace, prototypeName, id) {
+  return Block.obtain(workspace, prototypeName, id);
+}
 
+export function showToolbox (blocks) {
+  Toolbox.flyout_.show(blocks);
+}
 
+export function hideToolbox () {
+  Toolbox.flyout_.hide();
+}
 
-Blockly.Msg = {};
+export function exportWorkspaceToXml (workspace) {
+  return Xml.domToPrettyText(Xml.workspaceToDom(workspace));
+}
 
-// Blocks
-Blockly.Block = require('./block')(Blockly);
-Blockly.BlockSvg = require('./block_svg')(Blockly);
-Blockly.Blocks = require('./blocks')(Blockly);
-Blockly.Flyout = require('./flyout')(Blockly);
-Blockly.Flydown = require('./flydown')(Blockly);
+export function xmlTextToDom (text) {
+  return Xml.textToDom(text);
+}
 
-// Fields
-Blockly.Field = require('./field')(Blockly);
-Blockly.FieldCheckbox = require('./field_checkbox')(Blockly);
-Blockly.FieldColour = require('./field_colour')(Blockly);
-Blockly.FieldDropdown = require('./field_dropdown')(Blockly);
-Blockly.FieldImage = require('./field_image')(Blockly);
-Blockly.FieldLabel = require('./field_label')(Blockly);
-Blockly.FieldTextInput = require('./field_textinput')(Blockly);
-Blockly.FieldAngle = require('./field_angle')(Blockly);
+export function xmDomToBlock(workspace, xmlBlock) {
+  return Xml.domToBlock(workspace, xmlBlock);
+}
 
-Blockly.FieldFlydown = require('./field_flydown')(Blockly);
-Blockly.FieldGlobalFlydown = require('./field_global_flydown')(Blockly);
-Blockly.FieldMachineFlydown = require('./field_machine_flydown')(Blockly);
-Blockly.FieldParameterFlydown = require('./field_parameter_flydown')(Blockly);
-Blockly.FieldLexicalVariable = require('./field_lexical_variable')(Blockly);
+export function hideChaff () {
+  Blockly.hideChaff();
+}
 
-Blockly.Bubble = require('./bubble')(Blockly);
-Blockly.Icon = require('./icon')(Blockly);
-Blockly.Comment = require('./comment')(Blockly);
-Blockly.Warning = require('./warning')(Blockly);
+export {inject, Msg};
 
-Blockly.ContextMenu = require('./contextmenu')(Blockly);
-Blockly.Generator = require('./generator')(Blockly);
-Blockly.Input = require('./input')(Blockly);
-Blockly.Mutator = require('./mutator')(Blockly);
-Blockly.Names = require('./names')(Blockly);
-Blockly.Procedures = require('./procedures')(Blockly);
-Blockly.Toolbox = require('./toolbox')(Blockly);
-Blockly.Tooltip = require('./tooltip')(Blockly);
-Blockly.Trashcan = require('./trashcan')(Blockly);
-Blockly.WidgetDiv = require('./widgetdiv')(Blockly);
-Blockly.Workspace = require('./workspace')(Blockly);
-Blockly.Xml = require('./xml')(Blockly);
-
-require('./variables')(Blockly);
-require('./connection')(Blockly);
-require('./inject')(Blockly);
-require('./scrollbar')(Blockly);
-require('./utils')(Blockly);
-
-window.Blockly = Blockly;
-module.exports = Blockly;
-
-})();
+Blockly.Msg = Msg;

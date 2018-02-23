@@ -24,21 +24,22 @@
  */
 'use strict';
 
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
-
-module.exports = (function (Blockly) {
+import EventEmitter from 'events';
+import Blockly from './blockly';
+import FieldLabel from './field_label';
+import {inherits} from './utils';
+import {bindEvent_, unbindEvent_, addClass_, removeClass_, getRelativeXY_} from './utils';
 
 /**
  * Class for an input with an optional field.
  * @param {number} type The type of the input.
  * @param {string} name Language-neutral identifier which may used to find this
  *     input again.
- * @param {!Blockly.Block} block The block containing this input.
+ * @param {!Block} block The block containing this input.
  * @param {Blockly.Connection} connection Optional connection for this input.
  * @constructor
  */
-var Input = function(type, name, block, connection) {
+export default function Input (type, name, block, connection) {
   this.type = type;
   this.name = name;
   this.sourceBlock_ = block;
@@ -50,11 +51,11 @@ var Input = function(type, name, block, connection) {
 
   EventEmitter.call(this);
 };
-util.inherits(Input, EventEmitter);
+inherits(Input, EventEmitter);
 
 /**
  * Add an item to the end of the input's field row.
- * @param {string|!Blockly.Field} field Something to add as a field.
+ * @param {string|!Field} field Something to add as a field.
  * @param {string} opt_name Language-neutral identifier which may used to find
  *     this field again.  Should be unique to the host block.
  * @return {!Input} The input being append to (to allow chaining).
@@ -66,7 +67,7 @@ Input.prototype.appendField = function(field, opt_name) {
 /**
  * Insert an item into the input's field row.
  * @param {integer} position Position to insert the field. If -1, place at the end.
- * @param {string|!Blockly.Field} field Something to add as a field.
+ * @param {string|!Field} field Something to add as a field.
  * @param {string} opt_name Language-neutral identifier which may used to find
  *     this field again.  Should be unique to the host block.
  * @return {!Input} The input being append to (to allow chaining).
@@ -77,8 +78,8 @@ Input.prototype.insertField = function(position, field, opt_name) {
     return this;
   }
   // Generate a FieldLabel when given a plain text field.
-  if (util.isString(field)) {
-    field = new Blockly.FieldLabel(/** @type {string} */ (field));
+  if (typeof field === 'string') {
+    field = new FieldLabel(/** @type {string} */ (field));
   }
   if (this.sourceBlock_.svg_) {
     field.init(this.sourceBlock_);
@@ -158,7 +159,7 @@ Input.prototype.isVisible = function() {
 /**
  * Sets whether this input is visible or not.
  * @param {boolean} visible True if visible.
- * @return {!Array.<!Blockly.Block>} List of blocks to render.
+ * @return {!Array.<!Block>} List of blocks to render.
  */
 Input.prototype.setVisible = function(visible) {
   var renderList = [];
@@ -238,7 +239,3 @@ Input.prototype.dispose = function() {
   }
   this.sourceBlock_ = null;
 };
-
-return Input;
-
-});

@@ -1,9 +1,11 @@
 
-$(function ($) {
+jQuery(function ($) {
   var checkboxes = $('<div>').hide().appendTo($('form'));
   $('#variables-list tbody input[type=checkbox]').appendTo(checkboxes);
 
-  $('[data-toggle="tooltip"]').tooltip();
+  $('[data-toggle="tooltip"]').each(function () {
+    this._tooltip = new Tooltip(this, { placement: 'top' });
+  });
 
   $('#variables-list').DataTable({
     order: [[1, 'asc']],
@@ -57,16 +59,17 @@ $(function ($) {
   function setSubmitButtonState () {
     var selectedVars = $('input[checked]', checkboxes).length;
     var button = $('form .buttons button[type="submit"]');
+    var tooltipElement = button.parent('.tooltip-wrapper');
 
     button.attr('disabled', selectedVars === 0);
 
     if (selectedVars === 0) {
-      button.parent('.tooltip-wrapper').tooltip({
+      tooltipElement.data('tooltip', new Tooltip(tooltipElement, {
         title: 'Select some data variables to continue',
         placement: 'right'
-      });
+      }));
     } else {
-      button.parent('.tooltip-wrapper').tooltip('destroy');
+      tooltipElement.data('tooltip').dispose();
     }
   }
 

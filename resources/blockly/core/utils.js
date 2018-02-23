@@ -26,7 +26,7 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
 
 /**
  * Add a CSS class to a element.
@@ -35,7 +35,7 @@ module.exports = (function (Blockly) {
  * @param {string} className Name of class to add.
  * @private
  */
-Blockly.addClass_ = function(element, className) {
+export function addClass_ (element, className) {
   var classes = element.getAttribute('class') || '';
   if ((' ' + classes + ' ').indexOf(' ' + className + ' ') == -1) {
     if (classes) {
@@ -52,7 +52,7 @@ Blockly.addClass_ = function(element, className) {
  * @param {string} className Name of class to remove.
  * @private
  */
-Blockly.removeClass_ = function(element, className) {
+export function removeClass_ (element, className) {
   var classes = element.getAttribute('class');
   if ((' ' + classes + ' ').indexOf(' ' + className + ' ') != -1) {
     var classList = classes.split(/\s+/);
@@ -79,14 +79,14 @@ Blockly.removeClass_ = function(element, className) {
  * @return {!Array.<!Array>} Opaque data that can be passed to unbindEvent_.
  * @private
  */
-Blockly.bindEvent_ = function(node, name, thisObject, func) {
+export function bindEvent_ (node, name, thisObject, func) {
   var wrapFunc = function(e) {
     func.apply(thisObject, arguments);
   };
   node.addEventListener(name, wrapFunc, false);
   var bindData = [[node, name, wrapFunc]];
   // Add equivalent touch event.
-  if (name in Blockly.bindEvent_.TOUCH_MAP) {
+  if (name in bindEvent_.TOUCH_MAP) {
     wrapFunc = function(e) {
       // Punt on multitouch events.
       if (e.changedTouches.length == 1) {
@@ -100,7 +100,7 @@ Blockly.bindEvent_ = function(node, name, thisObject, func) {
       e.preventDefault();
     };
     for (var i = 0, eventName;
-         eventName = Blockly.bindEvent_.TOUCH_MAP[name][i]; i++) {
+         eventName = bindEvent_.TOUCH_MAP[name][i]; i++) {
       node.addEventListener(eventName, wrapFunc, false);
       bindData.push([node, eventName, wrapFunc]);
     }
@@ -113,9 +113,9 @@ Blockly.bindEvent_ = function(node, name, thisObject, func) {
  * in conjunction with mouse events.
  * @type {Object}
  */
-Blockly.bindEvent_.TOUCH_MAP = {};
+bindEvent_.TOUCH_MAP = {};
 if ('ontouchstart' in document.documentElement) {
-  Blockly.bindEvent_.TOUCH_MAP = {
+  bindEvent_.TOUCH_MAP = {
     'mousedown': ['touchstart'],
     'mousemove': ['touchmove'],
     'mouseup': ['touchend', 'touchcancel']
@@ -129,7 +129,7 @@ if ('ontouchstart' in document.documentElement) {
  * @return {!Function} The function call.
  * @private
  */
-Blockly.unbindEvent_ = function(bindData) {
+export function unbindEvent_ (bindData) {
   while (bindData.length) {
     var bindDatum = bindData.pop();
     var node = bindDatum[0];
@@ -145,7 +145,7 @@ Blockly.unbindEvent_ = function(bindData) {
  * @param {!EventTarget} node The event's target node.
  * @param {string} eventName Name of event (e.g. 'click').
  */
-Blockly.fireUiEventNow = function(node, eventName) {
+export function fireUiEventNow (node, eventName) {
   var doc = document;
   if (doc.createEvent) {
     // W3
@@ -166,9 +166,9 @@ Blockly.fireUiEventNow = function(node, eventName) {
  * @param {!EventTarget} node The event's target node.
  * @param {string} eventName Name of event (e.g. 'click').
  */
-Blockly.fireUiEvent = function(node, eventName) {
+export function fireUiEvent (node, eventName) {
   var fire = function() {
-    Blockly.fireUiEventNow(node, eventName);
+    fireUiEventNow(node, eventName);
   };
   setTimeout(fire, 0);
 };
@@ -177,7 +177,7 @@ Blockly.fireUiEvent = function(node, eventName) {
  * Don't do anything for this event, just halt propagation.
  * @param {!Event} e An event.
  */
-Blockly.noEvent = function(e) {
+export function noEvent (e) {
   // This event has been handled.  No need to bubble up to the document.
   e.preventDefault();
   e.stopPropagation();
@@ -190,7 +190,7 @@ Blockly.noEvent = function(e) {
  * @return {!Object} Object with .x and .y properties.
  * @private
  */
-Blockly.getRelativeXY_ = function(element) {
+export function getRelativeXY_ (element) {
   var xy = {x: 0, y: 0};
   // First, check for x and y attributes.
   var x = element.getAttribute('x');
@@ -225,12 +225,12 @@ Blockly.getRelativeXY_ = function(element) {
  * @return {!Object} Object with .x and .y properties.
  * @private
  */
-Blockly.getSvgXY_ = function(element) {
+export function getSvgXY_ (element) {
   var x = 0;
   var y = 0;
   do {
     // Loop through this block and every parent.
-    var xy = Blockly.getRelativeXY_(element);
+    var xy = getRelativeXY_(element);
     x += xy.x;
     y += xy.y;
     element = element.parentNode;
@@ -245,9 +245,9 @@ Blockly.getSvgXY_ = function(element) {
  * @return {!Object} Object with .x and .y properties.
  * @private
  */
-Blockly.getAbsoluteXY_ = function(element) {
-  var xy = Blockly.getSvgXY_(element);
-  return Blockly.convertCoordinates(xy.x, xy.y, false);
+export function getAbsoluteXY_ (element) {
+  var xy = getSvgXY_(element);
+  return convertCoordinates(xy.x, xy.y, false);
 };
 
 /**
@@ -257,7 +257,7 @@ Blockly.getAbsoluteXY_ = function(element) {
  * @param {Element=} opt_parent Optional parent on which to append the element.
  * @return {!SVGElement} Newly created SVG element.
  */
-Blockly.createSvgElement = function(name, attrs, opt_parent) {
+export function createSvgElement (name, attrs, opt_parent) {
   var e = /** @type {!SVGElement} */ (
       document.createElementNS(Blockly.SVG_NS, name));
   for (var key in attrs) {
@@ -280,7 +280,7 @@ Blockly.createSvgElement = function(name, attrs, opt_parent) {
  * @param {!Event} e Mouse event.
  * @return {boolean} True if right-click.
  */
-Blockly.isRightButton = function(e) {
+export function isRightButton (e) {
   // Control-clicking in WebKit on Mac OS X fails to change button to 2.
   return e.button == 2 || e.ctrlKey;
 };
@@ -293,7 +293,7 @@ Blockly.isRightButton = function(e) {
  *     False to convert to mouse/HTML coordinates.
  * @return {!Object} Object with x and y properties in output coordinates.
  */
-Blockly.convertCoordinates = function(x, y, toSvg) {
+export function convertCoordinates (x, y, toSvg) {
   if (toSvg) {
     x -= window.scrollX || window.pageXOffset;
     y -= window.scrollY || window.pageYOffset;
@@ -319,10 +319,10 @@ Blockly.convertCoordinates = function(x, y, toSvg) {
  * @param {!Event} e Mouse event.
  * @return {!Object} Object with .x and .y properties.
  */
-Blockly.mouseToSvg = function(e) {
+export function mouseToSvg (e) {
   var scrollX = window.scrollX || window.pageXOffset;
   var scrollY = window.scrollY || window.pageYOffset;
-  return Blockly.convertCoordinates(e.clientX + scrollX,
+  return convertCoordinates(e.clientX + scrollX,
                                     e.clientY + scrollY, true);
 };
 
@@ -331,7 +331,7 @@ Blockly.mouseToSvg = function(e) {
  * @param {!Array.<string>} array Array of strings.
  * @return {number} Length of shortest string.
  */
-Blockly.shortestStringLength = function(array) {
+export function shortestStringLength (array) {
   if (!array.length) {
     return 0;
   }
@@ -349,14 +349,14 @@ Blockly.shortestStringLength = function(array) {
  * @param {?number} opt_shortest Length of shortest string.
  * @return {number} Length of common prefix.
  */
-Blockly.commonWordPrefix = function(array, opt_shortest) {
+export function commonWordPrefix (array, opt_shortest) {
   if (!array.length) {
     return 0;
   } else if (array.length == 1) {
     return array[0].length;
   }
   var wordPrefix = 0;
-  var max = opt_shortest || Blockly.shortestStringLength(array);
+  var max = opt_shortest || shortestStringLength(array);
   for (var len = 0; len < max; len++) {
     var letter = array[0][len];
     for (var i = 1; i < array.length; i++) {
@@ -384,14 +384,14 @@ Blockly.commonWordPrefix = function(array, opt_shortest) {
  * @param {?number} opt_shortest Length of shortest string.
  * @return {number} Length of common suffix.
  */
-Blockly.commonWordSuffix = function(array, opt_shortest) {
+export function commonWordSuffix (array, opt_shortest) {
   if (!array.length) {
     return 0;
   } else if (array.length == 1) {
     return array[0].length;
   }
   var wordPrefix = 0;
-  var max = opt_shortest || Blockly.shortestStringLength(array);
+  var max = opt_shortest || shortestStringLength(array);
   for (var len = 0; len < max; len++) {
     var letter = array[0].substr(-len - 1, 1);
     for (var i = 1; i < array.length; i++) {
@@ -417,7 +417,7 @@ Blockly.commonWordSuffix = function(array, opt_shortest) {
  * @param {string} str Input string.
  * @return {boolean} True if number, false otherwise.
  */
-Blockly.isNumber = function(str) {
+export function isNumber (str) {
   return !!str.match(/^\s*-?\d+(\.\d+)?\s*$/);
 };
 
@@ -427,9 +427,9 @@ if(typeof String.prototype.trim !== 'function') {
   }
 }
 
-Blockly.string = {};
+export var string = {};
 
-Blockly.string.caseInsensitiveCompare = function(str1, str2) {
+string.caseInsensitiveCompare = function (str1, str2) {
   var test1 = String(str1).toLowerCase();
   var test2 = String(str2).toLowerCase();
 
@@ -442,7 +442,7 @@ Blockly.string.caseInsensitiveCompare = function(str1, str2) {
   }
 };
 
-Blockly.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
+string.truncate = function (str, chars, opt_protectEscapedCharacters) {
   if (opt_protectEscapedCharacters) {
     str = goog.string.unescapeEntities(str);
   }
@@ -458,4 +458,150 @@ Blockly.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
   return str;
 };
 
-});
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * From rollup-plugin-node-builtins
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+var inherits;
+if (typeof Object.create === 'function'){
+  inherits = function inherits(ctor, superCtor) {
+   // implementation from standard node.js 'util' module
+   ctor.super_ = superCtor
+   ctor.prototype = Object.create(superCtor.prototype, {
+     constructor: {
+       value: ctor,
+       enumerable: false,
+       writable: true,
+       configurable: true
+     }
+   });
+  };
+} else {
+  inherits = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+export {inherits};
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+export function _extend(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+
+// From assert
+
+var _functionsHaveNames;
+function functionsHaveNames() {
+  if (typeof _functionsHaveNames !== 'undefined') {
+    return _functionsHaveNames;
+  }
+  return _functionsHaveNames = (function () {
+    return function foo() {}.name === 'foo';
+  }());
+}
+
+var regex = /\s*function\s+([^\(\s]*)\s*/;
+// based on https://github.com/ljharb/function.prototype.name/blob/adeeeec8bfcc6068b187d7d9fb3d5bb1d3a30899/implementation.js
+function getName(func) {
+  if (!isFunction(func)) {
+    return;
+  }
+  if (functionsHaveNames()) {
+    return func.name;
+  }
+  var str = func.toString();
+  var match = str.match(regex);
+  return match && match[1];
+}
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+export function assert(value, message) {
+  if (!value) fail(value, true, message, '==', ok);
+}
+
+function ok(value, message) {
+  if (!value) fail(value, true, message, '==', ok);
+}
+assert.ok = ok;
+
+function fail(actual, expected, message, operator, stackStartFunction) {
+  throw new AssertionError({
+    message: message,
+    actual: actual,
+    expected: expected,
+    operator: operator,
+    stackStartFunction: stackStartFunction
+  });
+}
+
+// EXTENSION! allows for well behaved errors defined elsewhere.
+assert.fail = fail;
+
+assert.AssertionError = AssertionError;
+function AssertionError(options) {
+  this.name = 'AssertionError';
+  this.actual = options.actual;
+  this.expected = options.expected;
+  this.operator = options.operator;
+  if (options.message) {
+    this.message = options.message;
+    this.generatedMessage = false;
+  } else {
+    this.message = getMessage(this);
+    this.generatedMessage = true;
+  }
+  var stackStartFunction = options.stackStartFunction || fail;
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, stackStartFunction);
+  } else {
+    // non v8 browsers so we can have a stacktrace
+    var err = new Error();
+    if (err.stack) {
+      var out = err.stack;
+
+      // try to strip useless frames
+      var fn_name = getName(stackStartFunction);
+      var idx = out.indexOf('\n' + fn_name);
+      if (idx >= 0) {
+        // once we have located the function frame
+        // we need to strip out everything before it (and its line)
+        var next_line = out.indexOf('\n', idx + 1);
+        out = out.substring(next_line + 1);
+      }
+
+      this.stack = out;
+    }
+  }
+}
+
+// assert.AssertionError instanceof Error
+inherits(AssertionError, Error);

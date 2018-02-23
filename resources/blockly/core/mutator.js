@@ -25,20 +25,21 @@
  */
 'use strict';
 
-// goog.require('Blockly.Bubble');
-// goog.require('Blockly.Icon');
-
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import Icon from './icon';
+import Bubble from './bubble';
+import Workspace from './workspace';
+import Flyout from './flyout';
+import {inherits} from './utils';
+import {bindEvent_, unbindEvent_, removeClass_, createSvgElement} from './utils';
 
 /**
  * Class for a mutator dialog.
  * @param {!Array.<string>} quarkNames List of names of sub-blocks for flyout.
- * @extends {Blockly.Icon}
+ * @extends {Icon}
  * @constructor
  */
-var Mutator = function(quarkNames) {
+export default function Mutator (quarkNames) {
   Mutator.super_.call(this, null);
   this.quarkXml_ = [];
   // Convert the list of names into a list of XML objects for the flyout.
@@ -76,7 +77,7 @@ var Mutator = function(quarkNames) {
     }
   }
 };
-util.inherits(Mutator, Blockly.Icon);
+inherits(Mutator, Icon);
 
 /**
  * Width of workspace.
@@ -94,22 +95,22 @@ Mutator.prototype.workspaceHeight_ = 0;
  * Create the icon on the block.
  */
 Mutator.prototype.createIcon = function() {
-  Blockly.Icon.prototype.createIcon_.call(this);
+  Icon.prototype.createIcon_.call(this);
   /* Here's the markup that will be generated:
   <rect class="blocklyIconShield" width="16" height="16" rx="4" ry="4"/>
   <text class="blocklyIconMark" x="8" y="12">★</text>
   */
-  var quantum = Blockly.Icon.RADIUS / 2;
-  var iconShield = Blockly.createSvgElement('rect',
+  var quantum = Icon.RADIUS / 2;
+  var iconShield = createSvgElement('rect',
       {'class': 'blocklyIconShield',
        'width': 4 * quantum,
        'height': 4 * quantum,
        'rx': quantum,
        'ry': quantum}, this.iconGroup_);
-  this.iconMark_ = Blockly.createSvgElement('text',
+  this.iconMark_ = createSvgElement('text',
       {'class': 'blocklyIconMark',
-       'x': Blockly.Icon.RADIUS,
-       'y': 2 * Blockly.Icon.RADIUS - 4}, this.iconGroup_);
+       'x': Icon.RADIUS,
+       'y': 2 * Icon.RADIUS - 4}, this.iconGroup_);
   this.iconMark_.appendChild(document.createTextNode('\u2605'));
 };
 
@@ -122,7 +123,7 @@ Mutator.prototype.createIcon = function() {
  */
 Mutator.prototype.iconClick_ = function(e) {
   if (this.block_.isEditable()) {
-    Blockly.Icon.prototype.iconClick_.call(this, e);
+    Icon.prototype.iconClick_.call(this, e);
   }
 };
 
@@ -139,16 +140,16 @@ Mutator.prototype.createEditor_ = function() {
     [Workspace]
   </svg>
   */
-  this.svgDialog_ = Blockly.createSvgElement('svg',
-      {'x': Blockly.Bubble.BORDER_WIDTH, 'y': Blockly.Bubble.BORDER_WIDTH},
+  this.svgDialog_ = createSvgElement('svg',
+      {'x': Bubble.BORDER_WIDTH, 'y': Bubble.BORDER_WIDTH},
       null);
-  Blockly.createSvgElement('rect',
+  createSvgElement('rect',
       {'class': 'blocklyMutatorBackground',
        'height': '100%', 'width': '100%'}, this.svgDialog_);
   var mutator = this;
-  this.workspace_ = new Blockly.Workspace(
+  this.workspace_ = new Workspace(
       function() {return mutator.getFlyoutMetrics_();}, null);
-  this.flyout_ = new Blockly.Flyout();
+  this.flyout_ = new Flyout();
   this.flyout_.autoClose = false;
   this.svgDialog_.appendChild(this.flyout_.createDom());
   this.svgDialog_.appendChild(this.workspace_.createDom());
@@ -161,11 +162,11 @@ Mutator.prototype.createEditor_ = function() {
 Mutator.prototype.updateEditable = function() {
   if (this.block_.isEditable()) {
     // Default behaviour for an icon.
-    Blockly.Icon.prototype.updateEditable.call(this);
+    Icon.prototype.updateEditable.call(this);
   } else {
     // Close any mutator bubble.  Icon is not clickable.
     this.setVisible(false);
-    Blockly.removeClass_(/** @type {!Element} */ (this.iconGroup_),
+    removeClass_(/** @type {!Element} */ (this.iconGroup_),
                          'blocklyIconGroup');
   }
 };
@@ -176,7 +177,7 @@ Mutator.prototype.updateEditable = function() {
  * @private
  */
 Mutator.prototype.resizeBubble_ = function() {
-  var doubleBorderWidth = 2 * Blockly.Bubble.BORDER_WIDTH;
+  var doubleBorderWidth = 2 * Bubble.BORDER_WIDTH;
   var workspaceSize = this.workspace_.getCanvas().getBBox();
   var flyoutMetrics = this.flyout_.getMetrics_();
   var width;
@@ -219,7 +220,7 @@ Mutator.prototype.setVisible = function(visible) {
   }
   if (visible) {
     // Create the bubble.
-    this.bubble_ = new Blockly.Bubble(this.block_.workspace,
+    this.bubble_ = new Bubble(this.block_.workspace,
         this.createEditor_(), this.block_.svg_.svgPath_,
         this.iconX_, this.iconY_, null, null);
     var thisObj = this;
@@ -245,7 +246,7 @@ Mutator.prototype.setVisible = function(visible) {
     // Save the initial connections, then listen for further changes.
     if (this.block_.saveConnections) {
       this.block_.saveConnections(this.rootBlock_);
-      this.sourceListener_ = Blockly.bindEvent_(
+      this.sourceListener_ = bindEvent_(
           this.block_.workspace.getCanvas(),
           'blocklyWorkspaceChange', this.block_,
           function() {thisObj.block_.saveConnections(thisObj.rootBlock_)});
@@ -280,7 +281,7 @@ Mutator.prototype.setVisible = function(visible) {
     this.workspaceHeight_ = 0;
 
     if (this.sourceListener_) {
-      Blockly.unbindEvent_(this.sourceListener_);
+      unbindEvent_(this.sourceListener_);
       this.sourceListener_ = null;
     }
   }
@@ -378,9 +379,5 @@ Mutator.prototype.getFlyoutMetrics_ = function() {
  */
 Mutator.prototype.dispose = function() {
   this.block_.mutator = null;
-  Blockly.Icon.prototype.dispose.call(this);
+  Icon.prototype.dispose.call(this);
 };
-
-return Mutator;
-
-});

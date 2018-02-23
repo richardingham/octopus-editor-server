@@ -1,14 +1,15 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
 <head>
-	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
-	<script src="/bower_components/bootstrap/js/tooltip.js"></script>
-	<script src="/bower_components/datatables/media/js/jquery.dataTables.min.js"></script>
-	<script src="/bower_components/datatables-bootstrap3-plugin/media/js/datatables-bootstrap3.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="//unpkg.com/popper.js"></script>
+	<script src="//unpkg.com/tooltip.js"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap.min.js"></script>
 	<script src="/resources/download.js"></script>
 
-	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="/bower_components/font-awesome/css/font-awesome.min.css" />
-	<link rel="stylesheet" href="/bower_components/datatables-bootstrap3-plugin/media/css/datatables-bootstrap3.min.css" />
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+	<link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap.min.css" />
 
 	<title>Experiment Download</title>
 
@@ -92,7 +93,7 @@
 					</input>
 				</td>
 				<td>
-					<span data-toggle="tooltip" data-placement="top">
+					<span data-toggle="tooltip">
 						<t:attr name="title"><t:slot name="key" /></t:attr>
 						<t:slot name="name" />
 					</span>

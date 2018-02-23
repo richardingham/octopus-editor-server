@@ -24,9 +24,10 @@
  */
 'use strict';
 
-var tinycolor = require('tinycolor2');
+import Blockly from './blockly';
+import Tooltip from './tooltip';
+import {removeClass_, addClass_, getSvgXY_, fireUiEvent, createSvgElement} from './utils';
 
-module.exports = (function (Blockly) {
 
 var removeNode = function(node) {
   return node && node.parentNode ? node.parentNode.removeChild(node) : null;
@@ -40,20 +41,21 @@ var removeNode = function(node) {
 var BlockSvg = function(block) {
   this.block_ = block;
   // Create core elements for the block.
-  this.svgGroup_ = Blockly.createSvgElement('g', {}, null);
-  this.svgPathDark_ = Blockly.createSvgElement('path',
+  this.svgGroup_ = createSvgElement('g', {}, null);
+  this.svgPathDark_ = createSvgElement('path',
       {'class': 'blocklyPathDark', 'transform': 'translate(1, 1)'},
       this.svgGroup_);
-  this.svgPath_ = Blockly.createSvgElement('path', {'class': 'blocklyPath'},
+  this.svgPath_ = createSvgElement('path', {'class': 'blocklyPath'},
       this.svgGroup_);
-  this.svgPathLight_ = Blockly.createSvgElement('path',
+  this.svgPathLight_ = createSvgElement('path',
       {'class': 'blocklyPathLight'}, this.svgGroup_);
-  this.commentTextElement_ = Blockly.createSvgElement('text',
+  this.commentTextElement_ = createSvgElement('text',
       {'class': 'blocklyCommentText', 'transform': 'translate(1, -10)'}, this.svgGroup_);
   this.svgPath_.tooltip = this.block_;
-  Blockly.Tooltip.bindMouseEvents(this.svgPath_);
+  Tooltip.bindMouseEvents(this.svgPath_);
   this.updateMovable();
 };
+export default BlockSvg;
 
 /**
  * Height of this block, not including any statement blocks above or below.
@@ -91,10 +93,10 @@ BlockSvg.prototype.init = function() {
  */
 BlockSvg.prototype.updateMovable = function() {
   if (this.block_.isMovable()) {
-    Blockly.addClass_(/** @type {!Element} */ (this.svgGroup_),
+    addClass_(/** @type {!Element} */ (this.svgGroup_),
                       'blocklyDraggable');
   } else {
-    Blockly.removeClass_(/** @type {!Element} */ (this.svgGroup_),
+    removeClass_(/** @type {!Element} */ (this.svgGroup_),
                          'blocklyDraggable');
   }
 };
@@ -327,7 +329,7 @@ BlockSvg.prototype.dispose = function() {
 BlockSvg.prototype.disposeUiEffect = function() {
   Blockly.playAudio('delete');
 
-  var xy = Blockly.getSvgXY_(/** @type {!Element} */ (this.svgGroup_));
+  var xy = getSvgXY_(/** @type {!Element} */ (this.svgGroup_));
   // Deeply clone the current block.
   var clone = this.svgGroup_.cloneNode(true);
   clone.translateX_ = xy.x;
@@ -373,7 +375,7 @@ BlockSvg.prototype.connectionUiEffect = function() {
   Blockly.playAudio('click');
 
   // Determine the absolute coordinates of the inferior block.
-  var xy = Blockly.getSvgXY_(/** @type {!Element} */ (this.svgGroup_));
+  var xy = getSvgXY_(/** @type {!Element} */ (this.svgGroup_));
   // Offset the coordinates based on the two connection types.
   if (this.block_.outputConnection) {
     xy.x += Blockly.RTL ? 3 : -3;
@@ -382,7 +384,7 @@ BlockSvg.prototype.connectionUiEffect = function() {
     xy.x += Blockly.RTL ? -23 : 23;
     xy.y += 3;
   }
-  var ripple = Blockly.createSvgElement('circle',
+  var ripple = createSvgElement('circle',
       {'cx': xy.x, 'cy': xy.y, 'r': 0, 'fill': 'none',
        'stroke': '#888', 'stroke-width': 10},
       Blockly.svg);
@@ -431,11 +433,11 @@ BlockSvg.prototype.updateColour = function() {
  */
 BlockSvg.prototype.updateDisabled = function() {
   if (this.block_.disabled || this.block_.getInheritedDisabled()) {
-    Blockly.addClass_(/** @type {!Element} */ (this.svgGroup_),
+    addClass_(/** @type {!Element} */ (this.svgGroup_),
                       'blocklyDisabled');
     this.svgPath_.setAttribute('fill', 'url(#blocklyDisabledPattern)');
   } else {
-    Blockly.removeClass_(/** @type {!Element} */ (this.svgGroup_),
+    removeClass_(/** @type {!Element} */ (this.svgGroup_),
                          'blocklyDisabled');
     this.updateColour();
   }
@@ -449,7 +451,7 @@ BlockSvg.prototype.updateDisabled = function() {
  * Select this block.  Highlight it visually.
  */
 BlockSvg.prototype.addSelect = function() {
-  Blockly.addClass_(/** @type {!Element} */ (this.svgGroup_),
+  addClass_(/** @type {!Element} */ (this.svgGroup_),
                     'blocklySelected');
   // Move the selected block to the top of the stack.
   this.svgGroup_.parentNode.appendChild(this.svgGroup_);
@@ -459,7 +461,7 @@ BlockSvg.prototype.addSelect = function() {
  * Unselect this block.  Remove its highlighting.
  */
 BlockSvg.prototype.removeSelect = function() {
-  Blockly.removeClass_(/** @type {!Element} */ (this.svgGroup_),
+  removeClass_(/** @type {!Element} */ (this.svgGroup_),
                        'blocklySelected');
 };
 
@@ -468,7 +470,7 @@ BlockSvg.prototype.removeSelect = function() {
  * Also disables the highlights/shadows to improve performance.
  */
 BlockSvg.prototype.addDragging = function() {
-  Blockly.addClass_(/** @type {!Element} */ (this.svgGroup_),
+  addClass_(/** @type {!Element} */ (this.svgGroup_),
                     'blocklyDragging');
 };
 
@@ -476,7 +478,7 @@ BlockSvg.prototype.addDragging = function() {
  * Removes the dragging class from this block.
  */
 BlockSvg.prototype.removeDragging = function() {
-  Blockly.removeClass_(/** @type {!Element} */ (this.svgGroup_),
+  removeClass_(/** @type {!Element} */ (this.svgGroup_),
                        'blocklyDragging');
 };
 
@@ -510,7 +512,7 @@ BlockSvg.prototype.render = function() {
     parentBlock.render();
   } else {
     // Top-most block.  Fire an event to allow scrollbars to resize.
-    Blockly.fireUiEvent(window, 'resize');
+    fireUiEvent(window, 'resize');
   }
 };
 
@@ -1170,8 +1172,3 @@ BlockSvg.prototype.renderDrawLeft_ =
   }
   steps.push('z');
 };
-
-return BlockSvg;
-
-});
-

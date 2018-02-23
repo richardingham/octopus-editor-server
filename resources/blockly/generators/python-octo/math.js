@@ -25,32 +25,37 @@
  */
 'use strict';
 
+import {ORDER, FUNCTION_NAME_PLACEHOLDER_} from '../python-octo-constants';
+import {getVariableName, addReservedWords, provideFunction, addDefinition, statementToCode, valueToCode, prefixLines, scrub, quote} from '../python-octo-methods';
+import PythonOcto from '../python-octo-blocks';
+import {numberValidator} from '../../core/validators';
+
 
 // If any new block imports any library, add that library name here.
-Blockly.PythonOcto.addReservedWords('math,random');
+addReservedWords('math,random');
 
-Blockly.PythonOcto['math_number'] = function(block) {
+PythonOcto['math_number'] = function(block) {
   // Numeric value.
-  var code = Blockly.FieldTextInput.numberValidator(block.getFieldValue('NUM')) || 0;
-  var order = parseFloat(code) < 0 ? Blockly.PythonOcto.ORDER_UNARY_SIGN :
-              Blockly.PythonOcto.ORDER_ATOMIC;
+  var code = numberValidator(block.getFieldValue('NUM')) || 0;
+  var order = parseFloat(code) < 0 ? ORDER.UNARY_SIGN :
+              ORDER.ATOMIC;
   return [code, order];
 };
 
-Blockly.PythonOcto['math_arithmetic'] = function(block) {
+PythonOcto['math_arithmetic'] = function(block) {
   // Basic arithmetic operators, and power.
   var OPERATORS = {
-    'ADD': [' + ', Blockly.PythonOcto.ORDER_ADDITIVE],
-    'MINUS': [' - ', Blockly.PythonOcto.ORDER_ADDITIVE],
-    'MULTIPLY': [' * ', Blockly.PythonOcto.ORDER_MULTIPLICATIVE],
-    'DIVIDE': [' / ', Blockly.PythonOcto.ORDER_MULTIPLICATIVE],
-    'POWER': [' ** ', Blockly.PythonOcto.ORDER_EXPONENTIATION]
+    'ADD': [' + ', ORDER.ADDITIVE],
+    'MINUS': [' - ', ORDER.ADDITIVE],
+    'MULTIPLY': [' * ', ORDER.MULTIPLICATIVE],
+    'DIVIDE': [' / ', ORDER.MULTIPLICATIVE],
+    'POWER': [' ** ', ORDER.EXPONENTIATION]
   };
   var tuple = OPERATORS[block.getFieldValue('OP')];
   var operator = tuple[0];
   var order = tuple[1];
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'A', order) || '0';
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'B', order) || '0';
+  var argument0 = valueToCode(block, 'A', order) || '0';
+  var argument1 = valueToCode(block, 'B', order) || '0';
   var code = argument0 + operator + argument1;
   return [code, order];
   // In case of 'DIVIDE', division between integers returns different results
@@ -61,24 +66,21 @@ Blockly.PythonOcto['math_arithmetic'] = function(block) {
   // http://code.google.com/p/blockly/wiki/Language
 };
 
-Blockly.PythonOcto['math_single'] = function(block) {
+PythonOcto['math_single'] = function(block) {
   // Math operators with single operand.
   var operator = block.getFieldValue('OP');
   var code;
   var arg;
   if (operator == 'NEG') {
     // Negation is a special case given its different operator precedence.
-    var code = Blockly.PythonOcto.valueToCode(block, 'NUM',
-        Blockly.PythonOcto.ORDER_UNARY_SIGN) || '0';
-    return ['-' + code, Blockly.PythonOcto.ORDER_UNARY_SIGN];
+    var code = valueToCode(block, 'NUM', ORDER.UNARY_SIGN) || '0';
+    return ['-' + code, ORDER.UNARY_SIGN];
   }
-  Blockly.PythonOcto.definitions_['import_math'] = 'import math';
+  addDefinition('import_math', 'import math');
   if (operator == 'SIN' || operator == 'COS' || operator == 'TAN') {
-    arg = Blockly.PythonOcto.valueToCode(block, 'NUM',
-        Blockly.PythonOcto.ORDER_MULTIPLICATIVE) || '0';
+    arg = valueToCode(block, 'NUM', ORDER.MULTIPLICATIVE) || '0';
   } else {
-    arg = Blockly.PythonOcto.valueToCode(block, 'NUM',
-        Blockly.PythonOcto.ORDER_NONE) || '0';
+    arg = valueToCode(block, 'NUM', ORDER.NONE) || '0';
   }
   // First, handle cases which generate values that don't need parentheses
   // wrapping the code.
@@ -121,7 +123,7 @@ Blockly.PythonOcto['math_single'] = function(block) {
       break;
   }
   if (code) {
-    return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+    return [code, ORDER.FUNCTION_CALL];
   }
   // Second, handle cases which generate values that may need parentheses
   // wrapping the code.
@@ -138,32 +140,31 @@ Blockly.PythonOcto['math_single'] = function(block) {
     default:
       throw 'Unknown math operator: ' + operator;
   }
-  return [code, Blockly.PythonOcto.ORDER_MULTIPLICATIVE];
+  return [code, ORDER.MULTIPLICATIVE];
 };
 
-Blockly.PythonOcto['math_constant'] = function(block) {
+PythonOcto['math_constant'] = function(block) {
   // Constants: PI, E, the Golden Ratio, sqrt(2), 1/sqrt(2), INFINITY.
   var CONSTANTS = {
-    'PI': ['math.pi', Blockly.PythonOcto.ORDER_MEMBER],
-    'E': ['math.e', Blockly.PythonOcto.ORDER_MEMBER],
-    'GOLDEN_RATIO': ['(1 + math.sqrt(5)) / 2',
-                     Blockly.PythonOcto.ORDER_MULTIPLICATIVE],
-    'SQRT2': ['math.sqrt(2)', Blockly.PythonOcto.ORDER_MEMBER],
-    'SQRT1_2': ['math.sqrt(1.0 / 2)', Blockly.PythonOcto.ORDER_MEMBER],
-    'INFINITY': ['float(\'inf\')', Blockly.PythonOcto.ORDER_ATOMIC]
+    'PI': ['math.pi', ORDER.MEMBER],
+    'E': ['math.e', ORDER.MEMBER],
+    'GOLDEN_RATIO': ['(1 + math.sqrt(5)) / 2', ORDER.MULTIPLICATIVE],
+    'SQRT2': ['math.sqrt(2)', ORDER.MEMBER],
+    'SQRT1_2': ['math.sqrt(1.0 / 2)', ORDER.MEMBER],
+    'INFINITY': ['float(\'inf\')', ORDER.ATOMIC]
   };
   var constant = block.getFieldValue('CONSTANT');
   if (constant != 'INFINITY') {
-    Blockly.PythonOcto.definitions_['import_math'] = 'import math';
+    addDefinition('import_math', 'import math');
   }
   return CONSTANTS[constant];
 };
 
-Blockly.PythonOcto['math_number_property'] = function(block) {
+PythonOcto['math_number_property'] = function(block) {
   // Check if a number is even, odd, prime, whole, positive, or negative
   // or if it is divisible by certain number. Returns true or false.
-  var number_to_check = Blockly.PythonOcto.valueToCode(block, 'NUMBER_TO_CHECK',
-      Blockly.PythonOcto.ORDER_MULTIPLICATIVE) || '0';
+  var number_to_check = valueToCode(block, 'NUMBER_TO_CHECK',
+      ORDER.MULTIPLICATIVE) || '0';
   var dropdown_property = block.getFieldValue('PROPERTY');
   var code;
   switch (dropdown_property) {
@@ -183,35 +184,33 @@ Blockly.PythonOcto['math_number_property'] = function(block) {
       code = number_to_check + ' < 0';
       break;
     case 'DIVISIBLE_BY':
-      var divisor = Blockly.PythonOcto.valueToCode(block, 'DIVISOR',
-          Blockly.PythonOcto.ORDER_MULTIPLICATIVE);
+      var divisor = valueToCode(block, 'DIVISOR', ORDER.MULTIPLICATIVE);
       // If 'divisor' is some code that evals to 0, Python will raise an error.
       if (!divisor || divisor == '0') {
-        return ['False', Blockly.PythonOcto.ORDER_ATOMIC];
+        return ['False', ORDER.ATOMIC];
       }
       code = number_to_check + ' % ' + divisor + ' == 0';
       break;
   }
-  return [code, Blockly.PythonOcto.ORDER_RELATIONAL];
+  return [code, ORDER.RELATIONAL];
 };
 
-Blockly.PythonOcto['math_change'] = function(block) {
+PythonOcto['math_change'] = function(block) {
   // Add to a variable in place.
   var increment = block.getFieldValue('MODE') === 'INCREMENT';
-  var name = Blockly.PythonOcto.getVariableName_(block.getVariable());
+  var name = getVariableName(block.getVariable());
   return (increment ? 'in' : 'de') + 'crement(' + name + ')';
 };
 
 // Rounding functions have a single operand.
-Blockly.PythonOcto['math_round'] = Blockly.PythonOcto['math_single'];
+PythonOcto['math_round'] = PythonOcto['math_single'];
 // Trigonometry functions have a single operand.
-Blockly.PythonOcto['math_trig'] = Blockly.PythonOcto['math_single'];
+PythonOcto['math_trig'] = PythonOcto['math_single'];
 
-Blockly.PythonOcto['math_on_list'] = function(block) {
+PythonOcto['math_on_list'] = function(block) {
   // Math functions for lists.
   var func = block.getFieldValue('OP');
-  var list = Blockly.PythonOcto.valueToCode(block, 'LIST',
-      Blockly.PythonOcto.ORDER_NONE) || '[]';
+  var list = valueToCode(block, 'LIST', ORDER.NONE) || '[]';
   var code;
   switch (func) {
     case 'SUM':
@@ -224,22 +223,22 @@ Blockly.PythonOcto['math_on_list'] = function(block) {
       code = 'max(' + list + ')';
       break;
     case 'AVERAGE':
-      var functionName = Blockly.PythonOcto.provideFunction_(
+      var functionName = provideFunction(
           'math_mean',
           // This operation excludes null and values that aren't int or float:',
           // math_mean([null, null, "aString", 1, 9]) == 5.0.',
-          ['def ' + Blockly.PythonOcto.FUNCTION_NAME_PLACEHOLDER_ + '(myList):',
+          ['def ' + FUNCTION_NAME_PLACEHOLDER_ + '(myList):',
            '  localList = [e for e in myList if type(e) in (int, float, long)]',
            '  if not localList: return',
            '  return float(sum(localList)) / len(localList)']);
       code = functionName + '(' + list + ')';
       break;
     case 'MEDIAN':
-      var functionName = Blockly.PythonOcto.provideFunction_(
+      var functionName = provideFunction(
           'math_median',
           // This operation excludes null values:
           // math_median([null, null, 1, 3]) == 2.0.
-          ['def ' + Blockly.PythonOcto.FUNCTION_NAME_PLACEHOLDER_ + '(myList):',
+          ['def ' + FUNCTION_NAME_PLACEHOLDER_ + '(myList):',
            '  localList = sorted([e for e in myList ' +
                'if type(e) in (int, float, long)])',
            '  if not localList: return',
@@ -251,12 +250,12 @@ Blockly.PythonOcto['math_on_list'] = function(block) {
       code = functionName + '(' + list + ')';
       break;
     case 'MODE':
-      var functionName = Blockly.PythonOcto.provideFunction_(
+      var functionName = provideFunction(
           'math_modes',
           // As a list of numbers can contain more than one mode,
           // the returned result is provided as an array.
           // Mode of [3, 'x', 'x', 1, 1, 2, '3'] -> ['x', 1].
-          ['def ' + Blockly.PythonOcto.FUNCTION_NAME_PLACEHOLDER_ + '(some_list):',
+          ['def ' + FUNCTION_NAME_PLACEHOLDER_ + '(some_list):',
            '  modes = []',
            '  # Using a lists of [item, count] to keep count rather than dict',
            '  # to avoid "unhashable" errors when the counted item is ' +
@@ -279,10 +278,10 @@ Blockly.PythonOcto['math_on_list'] = function(block) {
       code = functionName + '(' + list + ')';
       break;
     case 'STD_DEV':
-      Blockly.PythonOcto.definitions_['import_math'] = 'import math';
-      var functionName = Blockly.PythonOcto.provideFunction_(
+      addDefinition('import_math', 'import math');
+      var functionName = provideFunction(
           'math_standard_deviation',
-          ['def ' + Blockly.PythonOcto.FUNCTION_NAME_PLACEHOLDER_ + '(numbers):',
+          ['def ' + FUNCTION_NAME_PLACEHOLDER_ + '(numbers):',
            '  n = len(numbers)',
            '  if n == 0: return',
            '  mean = float(sum(numbers)) / n',
@@ -291,56 +290,49 @@ Blockly.PythonOcto['math_on_list'] = function(block) {
       code = functionName + '(' + list + ')';
       break;
     case 'RANDOM':
-      Blockly.PythonOcto.definitions_['import_random'] = 'import random';
+      addDefinition('import_random', 'import random');
       code = 'random.choice(' + list + ')';
       break;
     default:
       throw 'Unknown operator: ' + func;
   }
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['math_modulo'] = function(block) {
+PythonOcto['math_modulo'] = function(block) {
   // Remainder computation.
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'DIVIDEND',
-      Blockly.PythonOcto.ORDER_MULTIPLICATIVE) || '0';
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'DIVISOR',
-      Blockly.PythonOcto.ORDER_MULTIPLICATIVE) || '0';
+  var argument0 = valueToCode(block, 'DIVIDEND', ORDER.MULTIPLICATIVE) || '0';
+  var argument1 = valueToCode(block, 'DIVISOR', ORDER.MULTIPLICATIVE) || '0';
   var code = argument0 + ' % ' + argument1;
-  return [code, Blockly.PythonOcto.ORDER_MULTIPLICATIVE];
+  return [code, ORDER.MULTIPLICATIVE];
 };
 
-Blockly.PythonOcto['math_constrain'] = function(block) {
+PythonOcto['math_constrain'] = function(block) {
   // Constrain a number between two limits.
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'VALUE',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'LOW',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
-  var argument2 = Blockly.PythonOcto.valueToCode(block, 'HIGH',
-      Blockly.PythonOcto.ORDER_NONE) || 'float(\'inf\')';
+  var argument0 = valueToCode(block, 'VALUE', ORDER.NONE) || '0';
+  var argument1 = valueToCode(block, 'LOW', ORDER.NONE) || '0';
+  var argument2 = valueToCode(block, 'HIGH', ORDER.NONE) || 'float(\'inf\')';
   var code = 'min(max(' + argument0 + ', ' + argument1 + '), ' +
       argument2 + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['math_random_int'] = function(block) {
+PythonOcto['math_random_int'] = function(block) {
   // Random integer between [X] and [Y].
-  Blockly.PythonOcto.definitions_['import_random'] = 'import random';
-  var argument0 = Blockly.PythonOcto.valueToCode(block, 'FROM',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
-  var argument1 = Blockly.PythonOcto.valueToCode(block, 'TO',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
+  addDefinition('import_random', 'import random');
+  var argument0 = valueToCode(block, 'FROM', ORDER.NONE) || '0';
+  var argument1 = valueToCode(block, 'TO', ORDER.NONE) || '0';
   var code = 'random.randint(' + argument0 + ', ' + argument1 + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['math_random_float'] = function(block) {
+PythonOcto['math_random_float'] = function(block) {
   // Random fraction between 0 and 1.
-  Blockly.PythonOcto.definitions_['import_random'] = 'import random';
-  return ['random.random()', Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  addDefinition('import_random', 'import random');
+  return ['random.random()', ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['math_framed'] = function(block) {
+PythonOcto['math_framed'] = function(block) {
   // Framed arithmetic operations
   var OPERATORS = {
     'MAX': 'Max',
@@ -349,14 +341,13 @@ Blockly.PythonOcto['math_framed'] = function(block) {
     'CHANGE': 'Change'
   };
   var fn = OPERATORS[block.getFieldValue('OP')];
-  var expr = Blockly.PythonOcto.valueToCode(block, 'INPUT',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
+  var expr = valueToCode(block, 'INPUT', ORDER.NONE) || '0';
   var time = parseFloat(block.getFieldValue('TIME')) || '0';
   var code = fn + '(' + expr + ', frame = ' + time + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };
 
-Blockly.PythonOcto['math_throttle'] = function(block) {
+PythonOcto['math_throttle'] = function(block) {
   // Framed arithmetic operations
   var OPERATORS = {
     'MAX': 'max',
@@ -365,9 +356,8 @@ Blockly.PythonOcto['math_throttle'] = function(block) {
     'LATEST': 'latest'
   };
   var fn = OPERATORS[block.getFieldValue('OP')];
-  var expr = Blockly.PythonOcto.valueToCode(block, 'INPUT',
-      Blockly.PythonOcto.ORDER_NONE) || '0';
+  var expr = valueToCode(block, 'INPUT', ORDER.NONE) || '0';
   var time = parseFloat(block.getFieldValue('TIME')) || '0';
   var code = 'Throttle(' + expr + ', method = \'' + fn + '\', frame = ' + time + ')';
-  return [code, Blockly.PythonOcto.ORDER_FUNCTION_CALL];
+  return [code, ORDER.FUNCTION_CALL];
 };

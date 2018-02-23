@@ -24,15 +24,13 @@
  */
 'use strict';
 
-module.exports = (function (Blockly) {
-
 /**
  * Class for a database of entity names (variables, functions, etc).
  * @param {string} reservedWords A comma-separated string of words that are
  *     illegal for use as names in a language (e.g. 'new,if,this,...').
  * @constructor
  */
-var Names = function(reservedWords) {
+export default function Names (reservedWords) {
   this.reservedDict_ = Object.create(null);
   if (reservedWords) {
     var splitWords = reservedWords.split(',');
@@ -133,7 +131,3 @@ Names.prototype.safeName_ = function(name) {
 Names.equals = function(name1, name2) {
   return name1.toLowerCase() == name2.toLowerCase();
 };
-
-return Names;
-
-});

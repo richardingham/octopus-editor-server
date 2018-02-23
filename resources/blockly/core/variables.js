@@ -26,9 +26,8 @@
  */
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import {inherits, _extend} from './utils';
 
 var Variable = function (name, scope, subScope) {
   this.name_ = "";
@@ -320,7 +319,7 @@ VariableScope.prototype.isAvailableName = function (name) {
  */
 VariableScope.prototype.getNamesInScope = function () {
   if (this.global_) {
-    return Blockly.GlobalScope.getVariableNames();
+    return GlobalScope.getVariableNames();
   }
   return this.getVariablesInScope().concat(
     this.getVariablesInChildScopes()
@@ -334,7 +333,7 @@ VariableScope.prototype.getNamesInScope = function () {
 VariableScope.prototype.getScopedVariable = function (name) {
   var split = name.split('::');
   if (this.global_ || (split.length > 1 && split[0].substr(0, 6) === "global")) {
-    return Blockly.GlobalScope.getVariable(split[1], split[2]);
+    return GlobalScope.getVariable(split[1], split[2]);
   } else if (!this.block_) {
     return;
   } else {
@@ -579,8 +578,8 @@ var VariableSubScope = function (scope) {
   this.superScope_ = scope.superScope_ ? scope.superScope_ : scope;
   this.variables_ = [];
 };
-util.inherits(VariableSubScope, VariableScope);
-util._extend(VariableSubScope.prototype, {
+inherits(VariableSubScope, VariableScope);
+_extend(VariableSubScope.prototype, {
   isGlobal: function () {
     return this.superScope_.global_;
   },
@@ -630,15 +629,14 @@ util._extend(VariableSubScope.prototype, {
   }
 });
 
-Blockly.Variable = Variable;
-Blockly.VariableScope = VariableScope;
-Blockly.GlobalScope = new VariableScope("global", "global");
 
-Blockly.GlobalScope.addVariable = function (name, type) {
+var GlobalScope = new VariableScope("global", "global");
+
+GlobalScope.addVariable = function (name, type) {
   if (typeof type !== "string" || type === "") {
     type = "global";
   }
   return VariableScope.prototype.addVariable.call(this, name, type);
 };
 
-});
+export {Variable, VariableScope, GlobalScope};

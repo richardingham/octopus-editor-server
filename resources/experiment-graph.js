@@ -1,3 +1,4 @@
+
 var _graphCounter = 0;
 
 function Graph (element, options) {
@@ -78,7 +79,7 @@ function Graph (element, options) {
       data: [] //[[start, 0], [now, 0]]
     });
 
-    this.streams = _.pluck(streams, 'key');
+    this.streams = _.map(streams, 'key');
 
     // Request data for added stream.
     if (options.static) {
@@ -96,7 +97,7 @@ function Graph (element, options) {
     for (var i = 0; i < streams.length; i++) {
       if (key == streams[i].key) {
         streams.splice(i, 1);
-        this.streams = _.pluck(streams, 'key');
+        this.streams = _.map(streams, 'key');
         makeLegend();
         draw();
 
@@ -111,7 +112,7 @@ function Graph (element, options) {
   };
 
   this.variables = function () {
-    return _.pluck(streams, 'variable');
+    return _.map(streams, 'variable');
   };
 
   this.unit = function () {
@@ -152,7 +153,7 @@ function Graph (element, options) {
     var start = new Date(new Date() - window);
     var end = d3.max(streams, function(s) { return d3.min(s.data, function(v) { return v[0]; }); });
 
-    options.requestData(_.pluck(streams, 'key'), start, end);
+    options.requestData(_.map(streams, 'key'), start, end);
   };
 
   var axisTimeMode = 'absolute';
@@ -171,13 +172,13 @@ function Graph (element, options) {
     return axisTimeMode;
   };
 
-  var x = d3.time.scale()
+  var x = d3.scaleTime()
       .domain([start, now]);
 
-  var y = d3.scale.linear()
+  var y = d3.scaleLinear()
       .domain([0, 1]);
 
-  var line = d3.svg.line()
+  var line = d3.line()
       .x(function(d, i) { return x(d[0]); })
       .y(function(d, i) { return y(d[1]); });
 
@@ -191,11 +192,11 @@ function Graph (element, options) {
 
   var xaxis = svg.append("g")
       .attr("class", "x axis")
-      .call(x.axis = d3.svg.axis().scale(x).orient("bottom"));
+      .call(x.axis = d3.axisBottom().scale(x));
 
   var yaxis = svg.append("g")
       .attr("class", "y axis")
-      .call(y.axis = d3.svg.axis().scale(y).orient("left"));
+      .call(y.axis = d3.axisLeft().scale(y));
 
   var xlabel = svg.append("text")
     .attr("class", "x label")
@@ -209,7 +210,7 @@ function Graph (element, options) {
     .attr("dy", ".75em")
     .attr("transform", "rotate(-90)");
 
-  var color = d3.scale.category10();
+  var color = d3.scaleOrdinal(d3.schemeCategory10);
 
   var cliparea = svg.append("g")
       .attr('clip-path', 'url(#graph' + graphId + '-clip)');
@@ -313,7 +314,7 @@ function Graph (element, options) {
 
     update.exit().remove();
 
-    update.select('.line')
+    chartarea.selectAll('.stream').select('.line')
       .attr('d', function (d) { return line(d.data); });
 
     // slide the x-axis left
@@ -333,10 +334,10 @@ function Graph (element, options) {
   } else {
     var transition = d3.select({}).transition()
         .duration(duration)
-        .ease("linear");
+        .ease(d3.easeLinear);
 
     (function tick () {
-      transition = transition.each(draw).transition().each("start", tick);
+      transition = transition.each(draw).transition().on("start", tick);
     })();
   }
 
@@ -355,31 +356,35 @@ function Graph (element, options) {
       };
     });
 
-    var lb = g.selectAll(".legend-box").data([true]),
-        li = g.selectAll(".legend-items").data([true]);
+    g.selectAll(".legend-box").data([true])
+      .enter().append("rect").classed("legend-box", true);
 
-    lb.enter().append("rect").classed("legend-box", true);
-    li.enter().append("g").classed("legend-items", true);
+    g.selectAll(".legend-items").data([true])
+        .enter().append("g").classed("legend-items", true);
 
-    li.selectAll("text")
-        .data(items, function(d) { return d.key; })
-        .call(function (d) { d.enter().append("text"); })
-        .call(function (d) { d.exit().remove(); })
+    var li = g.selectAll(".legend-items"),
+        lb = g.selectAll(".legend-box");
+
+    var text = li.selectAll("text")
+        .data(items, function(d) { return d.key; });
+
+    text.exit().remove();
+    text.enter().append("text")
         .attr("y", function (d, i) { return i + "em"; })
         .attr("x", "1em")
         .text(function(d) { return d.name; });
 
-    li.selectAll("circle")
-        .data(items, function (d) { return d.key; })
-        .call(function (d) { d.enter().append("circle"); })
-        .call(function (d) { d.exit().remove(); })
+    var circles = li.selectAll("circle")
+        .data(items, function (d) { return d.key; });
+
+    circles.exit().remove();
+    circles.enter().append("circle")
         .attr("cy", function (d, i) { return i - 0.25 + "em"; })
         .attr("cx", 0)
         .attr("r", "0.4em")
         .style("fill", function (d) { return d.color; });
 
-    // Reposition and resize the box
-    var lbbox = li[0][0].getBBox();
+    var lbbox = li.nodes()[0].getBBox()
 
     lb.attr("x", (lbbox.x - legendPadding))
         .attr("y", (lbbox.y - legendPadding))

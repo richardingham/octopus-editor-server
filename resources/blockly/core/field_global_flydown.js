@@ -9,20 +9,22 @@
 
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import FieldFlydown from './field_flydown';
+import {inherits} from './utils';
+import {GLOBAL_NAME_PREFIX} from '../constants';
 
 /**
  * Class for a clickable global variable declaration field.
  * @param {string} text The initial parameter name in the field.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
-var FieldGlobalFlydown = function(name, displayLocation, changeHandler) {
-  FieldGlobalFlydown.super_.call(this, name, true, displayLocation, changeHandler);
+var FieldGlobalFlydown = function(name, isEditable, displayLocation, changeHandler) {
+  FieldGlobalFlydown.super_.call(this, name, isEditable, displayLocation, changeHandler);
 };
-util.inherits(FieldGlobalFlydown, Blockly.FieldFlydown);
+inherits(FieldGlobalFlydown, FieldFlydown);
+export default FieldGlobalFlydown;
 
 FieldGlobalFlydown.prototype.fieldCSSClassName = 'blocklyFieldParameter';
 
@@ -38,7 +40,7 @@ FieldGlobalFlydown.prototype.flydownBlocksXML_ = function() {
   if (v) {
     name = v.getDisplay() + '@@' + v.getName();
   } else {
-    name = Blockly.globalNamePrefix + " " + this.getText(); // global name for this parameter field.
+    name = GLOBAL_NAME_PREFIX + " " + this.getText(); // global name for this parameter field.
   }
   var getterSetterXML =
       '<xml>' +
@@ -55,7 +57,3 @@ FieldGlobalFlydown.prototype.flydownBlocksXML_ = function() {
       '</xml>';
   return getterSetterXML;
 };
-
-return FieldGlobalFlydown;
-
-});

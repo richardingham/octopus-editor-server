@@ -10,35 +10,36 @@
 
 'use strict';
 
-var util = require('util');
-
-module.exports = (function (Blockly) {
+import Blockly from './blockly';
+import BlockSvg from './block_svg';
+import FieldDropdown from './field_dropdown';
+import Tooltip from './tooltip';
+import WidgetDiv from './widgetdiv';
+import {GlobalScope} from './variables';
+import {inherits} from './utils';
+import {getAbsoluteXY_, createSvgElement} from './utils';
 
 /**
  * Class for a variable's dropdown field.
  * @param {!string} varname The default name for the variable.  If null,
  *     a unique variable name will be generated.
- * @extends Blockly.FieldDropdown
+ * @extends FieldDropdown
  * @constructor
  */
-var FieldLexicalVariable = function(varname, filter, noVariablesMessage) {
+export default function FieldLexicalVariable (varname, filter, noVariablesMessage) {
   this.menuGenerator_ = FieldLexicalVariable.dropdownCreate;
-  this.arrow_ = Blockly.createSvgElement("tspan", {}, null);
-  this.arrow_.appendChild(document.createTextNode(Blockly.RTL ? Blockly.FieldDropdown.ARROW_CHAR + " " : " " + Blockly.FieldDropdown.ARROW_CHAR));
+  this.arrow_ = createSvgElement("tspan", {}, null);
+  this.arrow_.appendChild(document.createTextNode(Blockly.RTL ? FieldDropdown.ARROW_CHAR + " " : " " + FieldDropdown.ARROW_CHAR));
 
   this.noVariablesMessage = noVariablesMessage || 'No variables defined';
 
-  Blockly.FieldDropdown.super_.call(this, " ")
+  FieldDropdown.super_.call(this, " ")
 
-  if (varname) {
-    this.setText(varname);
-  } else {
-    this.setText(Blockly.Variables.generateUniqueName());
-  }
+  this.setText(varname);
 
   this.filter_ = filter || {};
 };
-util.inherits(FieldLexicalVariable, Blockly.FieldDropdown);
+inherits(FieldLexicalVariable, FieldDropdown);
 
 /**
  * Get the variable's name (use a variableDB to convert into a real name).
@@ -191,7 +192,7 @@ function _compareVariables (a, b) {
  */
 FieldLexicalVariable.getNamesInScope = function (block) {
 
-  var variables = Blockly.GlobalScope.getVariables().slice();
+  var variables = GlobalScope.getVariables().slice();
   variables.sort(_compareVariables);
 
   if (block) {
@@ -224,7 +225,7 @@ FieldLexicalVariable.dropdownCreate = function() {
  * @private
  */
 FieldLexicalVariable.prototype.showEditor_ = function() {
-  Blockly.WidgetDiv.show(this, function () {
+  WidgetDiv.show(this, function () {
     thisField.menu.closemenu();
   });
   var thisField = this;
@@ -244,7 +245,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
       thisField.setValue(value);
       thisField.emit("changed", value.getName());
     }
-    Blockly.WidgetDiv.hideIfOwner(thisField);
+    WidgetDiv.hideIfOwner(thisField);
   }
 
   function contains (a, o) {
@@ -261,7 +262,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
       return false;
     }
     if (typeof filter.type !== "undefined" && variable.getType()) {
-      if (util.isArray(filter.type) && !contains(variable.getType())) {
+      if (Array.isArray(filter.type) && !contains(variable.getType())) {
         return false;
       } else if (filter.type !== variable.getType()) {
         return false;
@@ -378,7 +379,7 @@ FieldLexicalVariable.prototype.showEditor_ = function() {
   var options = this.getOptions_();
   this.menu = new ContextMenu(build(options), callback, { selectable: true });
 
-  var xy = Blockly.getAbsoluteXY_(/** @type {!Element} */ (this.borderRect_));
+  var xy = getAbsoluteXY_(/** @type {!Element} */ (this.borderRect_));
   var borderBBox = this.borderRect_.getBBox();
   this.menu.showForBox(xy, borderBBox);
 };
@@ -399,7 +400,3 @@ FieldLexicalVariable.prefixSuffix = function(name) {
   else
     return [name, ""];
 }
-
-return FieldLexicalVariable;
-
-});

@@ -20,13 +20,19 @@
  *     text as an argument and returns the accepted text or null to abort
  *     the change. E.g., for an associated getter/setter this could change
  *     references to names in this field.
- * @extends {Blockly.Field}
+ * @extends {Field}
  * @constructor
  */
 
-var util = require('util');
+ import Blockly from './blockly';
+ import Flydown from './flydown';
+ import FieldTextInput from './field_textinput';
+ import FieldDropdown from './field_dropdown';
+ import {Variable} from './variables';
+ import Xml from './xml';
+ import {inherits} from './utils';
+ import {addClass_, removeClass_, bindEvent_, getSvgXY_} from './utils';
 
-module.exports = (function (Blockly) {
 
 var FieldFlydown = function(name, isEditable, displayLocation, opt_changeHandler) {
   FieldFlydown.super_.call(this, name, opt_changeHandler);
@@ -36,17 +42,17 @@ var FieldFlydown = function(name, isEditable, displayLocation, opt_changeHandler
   // this.fieldGroup_.style.cursor = '';
 
   // Remove inherited field css classes ...
-  Blockly.removeClass_(/** @type {!Element} */ (this.fieldGroup_),
+  removeClass_(/** @type {!Element} */ (this.fieldGroup_),
       'blocklyEditableText');
-  Blockly.removeClass_(/** @type {!Element} */ (this.fieldGroup_),
+  removeClass_(/** @type {!Element} */ (this.fieldGroup_),
       'blocklyNoNEditableText');
   // ... and add new one, so that look and feel of flyout fields can be customized
-  Blockly.addClass_(/** @type {!Element} */ (this.fieldGroup_),
+  addClass_(/** @type {!Element} */ (this.fieldGroup_),
       this.fieldCSSClassName);
 
   // Only want one flydown object and associated svg per workspace
   if (! Blockly.mainWorkspace.FieldFlydown) {
-    var flydown = new Blockly.Flydown();
+    var flydown = new Flydown();
     // ***** [lyn, 10/05/2013] NEED TO WORRY ABOUT MULTIPLE BLOCKLIES! *****
     Blockly.mainWorkspace.FieldFlydown = flydown;
     var flydownSvg = flydown.createDom(this.flyoutCSSClassName);
@@ -58,7 +64,8 @@ var FieldFlydown = function(name, isEditable, displayLocation, opt_changeHandler
     flydown.autoClose = true; // Flydown closes after selecting a block
   }
 };
-util.inherits(FieldFlydown, Blockly.FieldTextInput);
+inherits(FieldFlydown, FieldTextInput);
+export default FieldFlydown;
 
 /**
  * Milliseconds to wait before showing flydown after mouseover event on flydown field.
@@ -112,9 +119,9 @@ FieldFlydown.prototype.showEditor_ = function() {
 FieldFlydown.prototype.init = function(block) {
   FieldFlydown.super_.prototype.init.call(this, block);
   this.mouseOverWrapper_ =
-      Blockly.bindEvent_(this.fieldGroup_, 'mouseover', this, this.onMouseOver_);
+      bindEvent_(this.fieldGroup_, 'mouseover', this, this.onMouseOver_);
   this.mouseOutWrapper_ =
-      Blockly.bindEvent_(this.fieldGroup_, 'mouseout', this, this.onMouseOut_);
+      bindEvent_(this.fieldGroup_, 'mouseout', this, this.onMouseOut_);
 };
 
 FieldFlydown.prototype.onMouseOver_ = function(e) {
@@ -165,10 +172,10 @@ FieldFlydown.prototype.showFlydown_ = function() {
   var flydown = Blockly.mainWorkspace.FieldFlydown;
   flydown.setCSSClass(this.flyoutCSSClassName); // This could have been changed by another field.
   var blocksXMLText = this.flydownBlocksXML_()
-  var blocksDom = Blockly.Xml.textToDom(blocksXMLText);
+  var blocksDom = Xml.textToDom(blocksXMLText);
 
   var blocksXMLList = $(blocksDom).children(); // List of blocks for flydown
-  var xy = Blockly.getSvgXY_(this.borderRect_);
+  var xy = getSvgXY_(this.borderRect_);
   var borderBBox = this.borderRect_.getBBox();
   var x = xy.x;
   var y = xy.y;
@@ -191,7 +198,7 @@ FieldFlydown.hide = function() {
   if (flydown) {
     flydown.hide();
   }
-  Blockly.FieldDropdown.openFieldFlydown_ = null;
+  FieldDropdown.openFieldFlydown_ = null;
 };
 
 /**
@@ -202,7 +209,7 @@ FieldFlydown.prototype.dispose = function() {
     FieldFlydown.hide();
   }
   // Call parent's destructor.
-  Blockly.FieldTextInput.prototype.dispose.call(this);
+  FieldTextInput.prototype.dispose.call(this);
 };
 
 
@@ -212,13 +219,9 @@ FieldFlydown.prototype.announceChanged = function (name) {
   if (variable && variable.getName()) {
     block.workspace.startEmitTransaction();
     this.emit("changed", name);
-    Blockly.Variable.announceRenamed(variable.getName());
+    Variable.announceRenamed(variable.getName());
     block.workspace.completeEmitTransaction();
   } else {
     this.emit("changed", name);
   }
 };
-
-return FieldFlydown;
-
-});
