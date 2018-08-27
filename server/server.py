@@ -548,8 +548,6 @@ def makeWebsocketServerFactory (host, port):
 
 def makeHTTPResourcesServerFactory ():
 	# HTTP Server
-	resources_path = os.path.join(os.path.dirname(__file__), "resources")
-
 	root = resource.Resource()
 	root.putChild("", Root())
 	root.putChild("sketch", Sketch())
@@ -558,9 +556,7 @@ def makeHTTPResourcesServerFactory ():
 	root.putChild("sketches.json", SketchFind())
 	root.putChild("experiments.json", ExperimentFind())
 
-	rootDir = filepath.FilePath(os.path.join(os.path.basename(__file__), ".."))
-	root.putChild("bower_components", static.File(rootDir.child("bower_components").path))
-	root.putChild("components", static.File(rootDir.child("components").path))
+	rootDir = filepath.FilePath(os.path.join(os.path.dirname(__file__), ".."))
 	root.putChild("resources", static.File(rootDir.child("resources").path))
 
 	return server.Site(root)

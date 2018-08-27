@@ -5,7 +5,7 @@ import os
 import json
 import time, datetime
 
-templatesDir = FilePath(os.path.join(os.path.basename(__file__), "..", "templates"))
+templatesDir = FilePath(os.path.join(os.path.dirname(__file__), "..", "templates"))
 
 websocketUrl = "ws://localhost:9000"
 
