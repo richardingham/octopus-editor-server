@@ -32,8 +32,8 @@ import {inherits} from './utils';
 import {getAbsoluteXY_} from './utils';
 
 // Insert JS and CSS into body.
-$('head').append('<link rel="stylesheet" href="/bower_components/colpick/css/colpick.css" type="text/css" />');
-$('head').append('<script src="/bower_components/colpick/js/colpick.js" type="text/javascript" />');
+$('head').append('<link rel="stylesheet" href="/resources/colpick/colpick.css" type="text/css" />');
+$('head').append('<script src="/resources/colpick/colpick.js" type="text/javascript" />');
 
 /**
  * Class for a colour input field.
