@@ -4,8 +4,8 @@ from twisted.python import log
 
 def makeFinder (cls, table, _column_spec):
     _column_names = _column_spec.keys()
-    _column_sql = {n: (c['sql'] if 'sql' in c else n) for n, c in _column_spec.iteritems()}
-    _column_valfn = {n: (c['modifier'] if 'modifier' in c else None) for n, c in _column_spec.iteritems()}
+    _column_sql = {n: (c['sql'] if 'sql' in c else n) for n, c in _column_spec.items()}
+    _column_valfn = {n: (c['modifier'] if 'modifier' in c else None) for n, c in _column_spec.items()}
 
     _operators = {
         'eq': '=',
@@ -55,7 +55,7 @@ def makeFinder (cls, table, _column_spec):
                 log.err()
                 pass
 
-        for column, value in (default_search or {}).iteritems():
+        for column, value in (default_search or {}).items():
             try:
                 if 'operator' in value:
                     operator = ' ' + _operators[value['operator']] + ' ?'

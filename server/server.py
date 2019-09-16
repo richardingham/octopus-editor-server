@@ -5,8 +5,8 @@ from twisted.application import internet, service
 from twisted.enterprise import adbapi
 from twisted.internet import reactor, defer, utils
 from twisted.spread import pb
-from twisted.python import log, filepath
-from twisted.web import server, static, resource, guard
+from twisted.python import log, filepath, urlpath
+from twisted.web import server, static, resource, guard, http
 from twisted.web.template import flatten
 from twisted.web.resource import NoResource
 from twisted.cred.portal import IRealm, Portal
@@ -19,10 +19,10 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 from autobahn.websocket.compress import PerMessageDeflateOffer, PerMessageDeflateOfferAccept
 
 # Sibling Imports
-import sketch
-import experiment
-import websocket
-import template
+from . import sketch
+from . import experiment
+from . import websocket
+from . import template
 
 # System Imports
 import sys, os
@@ -63,7 +63,7 @@ loaded_sketches = websocket_runtime.sketches
 def running_experiments ():
 	return [
 		sketch.experiment
-		for sketch in loaded_sketches.itervalues()
+		for sketch in loaded_sketches.values()
 		if sketch.experiment is not None
 	]
 
@@ -71,34 +71,34 @@ def running_experiments ():
 ## Helper functions
 ##
 
-def _redirectOrJSON (result, request, url, data):
+def _redirectOrJSON (result, request: http.Request, url: urlpath.URLPath, data):
 	try:
 		if request.getHeader('x-requested-with') == 'XMLHttpRequest':
-			request.write(json.dumps(data))
+			request.write(json.dumps(data).encode('utf-8'))
 			request.finish()
 			return
 	except:
 		pass
 
-	request.redirect(url)
+	request.redirect(str(url).encode('ascii'))
 	request.finish()
 
 def _respondWithJSON (result, request):
-	request.write(json.dumps(result))
+	request.write(json.dumps(result).encode('utf-8'))
 	request.finish()
 
 def _error (failure, request):
 	try:
 		if request.getHeader('x-requested-with') == 'XMLHttpRequest':
 			request.setResponseCode(500)
-			request.write(json.dumps({ "error": str(failure) }))
+			request.write(json.dumps({ "error": str(failure) }).encode('utf-8'))
 			request.finish()
 			return
 	except:
 		pass
 
 	log.err(failure)
-	request.write("There was an error: " + str(failure))
+	request.write(f"There was an error: {str(failure)}".encode('utf-8'))
 	request.finish()
 
 def _getArg (request, arg, cast = None, default = None):
@@ -148,7 +148,7 @@ class Root (resource.Resource):
 		)
 
 		tpl = template.Root(running_experiments(), past_experiments, saved_sketches)
-		request.write("<!DOCTYPE html>\n")
+		request.write("<!DOCTYPE html>\n".encode('utf-8'))
 		d = flatten(request, tpl, request.write)
 		d.addCallbacks(lambda _: request.finish())
 		d.addErrback(_error, request)
@@ -159,7 +159,7 @@ class Root (resource.Resource):
 class Sketch (resource.Resource):
 
 	def getChild (self, id, request):
-		if id == "create":
+		if id == b"create":
 			return NewSketch()
 
 		return EditSketch(id)
@@ -184,9 +184,9 @@ class NewSketch (resource.Resource):
 
 	isLeaf = True
 
-	def render_POST (self, request):
+	def render_POST (self, request: http.Request):
 		def _redirect (id):
-			url = request.URLPath().sibling(id)
+			url = request.URLPath().sibling(id.encode('ascii'))
 			_redirectOrJSON(None, request, url, {"created": id})
 
 		sketch.Sketch.createId()\
@@ -200,17 +200,17 @@ class EditSketch (resource.Resource):
 
 	def __init__ (self, id):
 		resource.Resource.__init__(self)
-		self._id = id
+		self._id = id.decode('ascii')
 
 	def render_GET (self, request):
 		def _done (exists):
 			if not exists:
-				request.write("Sketch %s not found." % self._id)
+				request.write(f"Sketch {self._id} not found.".encode('utf-8'))
 				request.finish()
 				return
 
 			tpl = template.SketchEdit(self._id)
-			request.write("<!DOCTYPE html>\n")
+			request.write("<!DOCTYPE html>\n".encode('utf-8'))
 			d = flatten(request, tpl, request.write)
 			d.addCallbacks(lambda _: request.finish())
 
@@ -221,11 +221,11 @@ class EditSketch (resource.Resource):
 		return server.NOT_DONE_YET
 
 	def getChild (self, action, request):
-		if action == "copy":
+		if action == b"copy":
 			return CopySketch(self._id)
-		elif action == "delete":
+		elif action == b"delete":
 			return DeleteSketch(self._id)
-		elif action == "restore":
+		elif action == b"restore":
 			return UndeleteSketch(self._id)
 
 		return NoResource()
@@ -352,13 +352,13 @@ class ShowExperiment (resource.Resource):
 	def render_GET (self, request):
 		def _done (exists):
 			if not exists:
-				request.write("Experiment %s not found." % self._id)
+				request.write(f"Experiment {self._id} not found.".encode('utf-8'))
 				request.finish()
 				return
 
 			expt = next((expt for expt in running_experiments() if expt.id == self._id), None)
 
-			request.write("<!DOCTYPE html>\n")
+			request.write("<!DOCTYPE html>\n".encode('utf-8'))
 			if expt is not None:
 				tpl = template.ExperimentRunning(expt)
 			else:
@@ -437,12 +437,12 @@ class DownloadExperimentData (resource.Resource):
 
 	@defer.inlineCallbacks
 	def _render_GET (self, request):
-		request.write("<!DOCTYPE html>\n")
+		request.write("<!DOCTYPE html>\n".encode('utf-8'))
 
 		try:
 			expt = yield self._getExperiment(self._id)
 		except Exception as e:
-			request.write("There was an error: " + str(e))
+			request.write(f"There was an error: {str(e)}".encode('utf-8'))
 			request.finish()
 			return
 
@@ -480,7 +480,7 @@ class DownloadExperimentData (resource.Resource):
 			xlsxdata = yield expt.buildExcelFile(variables, time_divisor, time_dp)
 
 		except Exception as e:
-			request.write("<!DOCTYPE html>\n")
+			request.write("<!DOCTYPE html>\n".encode('utf-8'))
 			_error(e, request)
 			return
 
@@ -549,15 +549,15 @@ def makeWebsocketServerFactory (host, port):
 def makeHTTPResourcesServerFactory ():
 	# HTTP Server
 	root = resource.Resource()
-	root.putChild("", Root())
-	root.putChild("sketch", Sketch())
-	root.putChild("experiment", Experiment())
+	root.putChild(b"", Root())
+	root.putChild(b"sketch", Sketch())
+	root.putChild(b"experiment", Experiment())
 
-	root.putChild("sketches.json", SketchFind())
-	root.putChild("experiments.json", ExperimentFind())
+	root.putChild(b"sketches.json", SketchFind())
+	root.putChild(b"experiments.json", ExperimentFind())
 
 	rootDir = filepath.FilePath(os.path.join(os.path.dirname(__file__), ".."))
-	root.putChild("resources", static.File(rootDir.child("resources").path))
+	root.putChild(b"resources", static.File(rootDir.child(b"resources").path))
 
 	return server.Site(root)
 
@@ -590,7 +590,7 @@ def makeConsoleServerFactory ():
 	factory.publicKeys[b"ssh-rsa"] = keys.Key.fromFile(os.path.join(data_path, "ssh-keys", "ssh_host_rsa_key.pub"))
 	factory.privateKeys[b"ssh-rsa"] = keys.Key.fromFile(os.path.join(data_path, "ssh-keys", "ssh_host_rsa_key"))
 
-	print "Octopus SSH access credentials are octopus:%s\n\n" % shell_password
+	print ("Octopus SSH access credentials are octopus:%s\n\n" % shell_password)
 
 	return factory
 

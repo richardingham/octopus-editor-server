@@ -14,11 +14,11 @@ from twisted.python import log
 from twisted.python.filepath import FilePath
 
 # Octopus Imports
-from octopus.sequence.error import AlreadyRunning, NotRunning
+from octopus.runtime.sequence.error import AlreadyRunning, NotRunning
 
 # Package Imports
-from util import EventEmitter
-from dbutil import makeFinder
+from .util import EventEmitter
+from .dbutil import makeFinder
 
 
 class Experiment (EventEmitter):
@@ -126,7 +126,7 @@ class Experiment (EventEmitter):
 		# layout of the sketch could be replayed over the period
 		# of the experiment.
 		def onSketchEvent (protocol, topic, data):
-			print "Sketch event: %s %s %s" % (protocol, topic, data)
+			print ("Sketch event: %s %s %s" % (protocol, topic, data))
 
 			# Don't log block state events to the sketch log
 			# (there will be lots, and they are not relevant to the
@@ -256,7 +256,7 @@ class Experiment (EventEmitter):
 		# program crashes.
 		def flushFiles ():
 			try:
-				for file in openFiles.itervalues():
+				for file in openFiles.values():
 					file.flush()
 					os.fsync(file.fileno())
 			except:
@@ -286,7 +286,7 @@ class Experiment (EventEmitter):
 			except:
 				log.err()
 
-			for file in openFiles.itervalues():
+			for file in openFiles.values():
 				file.close()
 
 			# Store completed time for experiment.
@@ -327,7 +327,7 @@ class Experiment (EventEmitter):
 
 		variables = {}
 
-		for name, var in self.sketch.workspace.variables.iteritems():
+		for name, var in self.sketch.workspace.variables.items():
 			if isinstance(var, Component):
 				variables.update(var.variables)
 			elif isinstance(var, BaseVariable):
@@ -388,7 +388,7 @@ class CompletedExperiment (object):
 				"type": v["type"],
 				"unit": v["unit"]
 			}
-			for v in variables.itervalues()
+			for v in variables.values()
 			if "name" in v
 		]
 
@@ -592,12 +592,12 @@ class CompletedExperiment (object):
 				interval = end - start
 
 			spread = max(data, key = lambda x: x[1])[1] - min(data, key = lambda x: x[1])[1]
-			print "Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data)
-			print "Spread: %s" % spread
-			print "Epsilon: %s" % min(interval / 200., spread / 50.)
+			print ("Simplifying data with interval " + str(interval) + " (currently %s points)" % len(data))
+			print ("Spread: %s" % spread)
+			print ("Epsilon: %s" % min(interval / 200., spread / 50.))
 			data = rdp(data, epsilon = min(interval / 200., spread / 50.))
 
-		print " -> %s points" % len(data)
+		print (" -> %s points" % len(data))
 
 		defer.returnValue({
 			'name': name,

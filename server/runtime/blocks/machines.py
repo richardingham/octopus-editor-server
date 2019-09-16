@@ -3,6 +3,7 @@ from ..workspace import Block, Disconnected, Cancelled
 
 # Twisted Imports
 from twisted.internet import reactor, defer, task
+from twisted.python import log
 
 # Octopus Imports
 from octopus import data
@@ -41,10 +42,10 @@ class machine_declaration (Block):
 			try:
 				result = yield self.machine.ready
 			except Exception as e:
-				print "Machine connection error: " + str(e)
+				print ("Machine connection error: " + str(e))
 				raise e
 
-			print "Machine block: connection complete to " + str(self.machine)
+			print ("Machine block: connection complete to " + str(self.machine))
 
 			self.workspace.on("workspace-stopped", self._onWorkspaceStopped)
 			self.workspace.on("workspace-paused", self._onWorkspacePaused)
@@ -62,7 +63,7 @@ class machine_declaration (Block):
 		return _connect()
 
 	def _onWorkspaceStopped (self, data):
-		print "Machine block: terminating connection to " + str(self.machine)
+		print ("Machine block: terminating connection to " + str(self.machine))
 
 		self.workspace.off("workspace-stopped", self._onWorkspaceStopped)
 		self.workspace.off("workspace-paused", self._onWorkspacePaused)
@@ -90,8 +91,8 @@ class machine_declaration (Block):
 		self.machine.resume()
 
 	def getMachineClass (self):
-		raise NotImplementedException
-
+		raise NotImplementedError()
+		
 	def getMachineParams (self):
 		return {}
 
