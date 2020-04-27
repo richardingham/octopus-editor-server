@@ -75,5 +75,5 @@ class BaseTransport (object):
 		@param [Object] Message context, dependent on the transport
 		"""
 
-		for id, sketch in self.sketches.iteritems():
+		for id, sketch in self.sketches.items():
 			sketch.unsubscribe(context)

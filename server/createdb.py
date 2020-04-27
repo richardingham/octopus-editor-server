@@ -2,7 +2,7 @@ import sqlite3
 from os.path import join, dirname
 
 def createdb (dir):
-	print "Creating database " + join(dir, 'octopus.db')
+	print ("Creating database " + join(dir, 'octopus.db'))
 
 	# Create Database
 	conn = sqlite3.connect(join(dir, 'octopus.db'))

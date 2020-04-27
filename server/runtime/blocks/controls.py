@@ -3,7 +3,7 @@ from ..workspace import Block, Disconnected, Cancelled, Aborted, anyOfStackIs
 
 # Octopus Imports
 from octopus.constants import State
-from octopus.sequence.error import NotRunning, AlreadyRunning, NotPaused
+from octopus.runtime.sequence.error import NotRunning, AlreadyRunning, NotPaused
 
 # Twisted Imports
 from twisted.internet import reactor, defer
@@ -21,7 +21,7 @@ class controls_run (Block):
 class controls_parallel (Block):
 	def _getStacks (self):
 		return [
-			input for name, input in self.inputs.iteritems()
+			input for name, input in self.inputs.items()
 			if name[:5] == "STACK" and input is not None
 		]
 
@@ -119,7 +119,7 @@ class controls_if (Block):
 	def _nextInput (self, i = -1):
 		# Find the next input after IF{i}
 		return next((
-			(int(name[2:]), input) for name, input in self.inputs.iteritems()
+			(int(name[2:]), input) for name, input in self.inputs.items()
 			if input is not None and name[:2] == "IF" and int(name[2:]) > i
 		), (None, None))
 
@@ -199,8 +199,8 @@ class controls_wait (Block):
 			if timeType in (int, float):
 				duration = time
 
-			elif timeType in (str, unicode):
-				match = self._wait_re.match(time);
+			elif timeType is str:
+				match = self._wait_re.match(time)
 
 				if match is None:
 					raise Exception('{:s} is not a valid time string'.format(time))

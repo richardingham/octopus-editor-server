@@ -11,13 +11,13 @@ from twisted.python import log
 from twisted.python.filepath import FilePath
 
 # Octopus Imports
-from octopus.sequence.error import NotRunning
+from octopus.runtime.sequence.error import NotRunning
 
 # Package Imports
-from util import EventEmitter
-from dbutil import makeFinder
-from runtime.workspace import Workspace, Aborted, Cancelled
-from experiment import Experiment
+from .util import EventEmitter
+from .dbutil import makeFinder
+from .runtime.workspace import Workspace, Aborted, Cancelled
+from .experiment import Experiment
 
 
 class Sketch (EventEmitter):
@@ -192,7 +192,7 @@ class Sketch (EventEmitter):
 			self.close()
 
 	def notifySubscribers (self, protocol, topic, payload, source = None):
-		for subscriber, notifyFn in self.subscribers.iteritems():
+		for subscriber, notifyFn in self.subscribers.items():
 			if subscriber is not source:
 				notifyFn(protocol, topic, payload)
 

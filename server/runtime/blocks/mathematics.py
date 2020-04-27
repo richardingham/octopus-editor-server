@@ -34,7 +34,7 @@ class math_constant (Block):
 	}
 
 	def eval (self):
-		return defer.succeed(self._map(self.fields['CONSTANT']))
+		return defer.succeed(self._map[self.fields['CONSTANT']])
 
 		# Emit a warning if bad op given
 
@@ -93,7 +93,7 @@ class math_arithmetic (Block):
 		"ADD": operator.add,
 		"MINUS": operator.sub,
 		"MULTIPLY": operator.mul,
-		"DIVIDE": operator.div,
+		"DIVIDE": operator.truediv,
 		"POWER": math.pow
 	}
 
@@ -127,7 +127,7 @@ class math_number_property (Block):
 
 	def eval (self):
 		if self.fields['PROPERTY'] == "DIVISIBLE_BY":
-			def calculate (results):
+			def calculatedivby (results):
 				lhs, rhs = results
 
 				return float(lhs) % float(rhs) == 0
@@ -135,7 +135,7 @@ class math_number_property (Block):
 			lhs = self.getInputValue('NUMBER_TO_CHECK')
 			rhs = self.getInputValue('DIVISOR')
 
-			self._complete = defer.gatherResults([lhs, rhs]).addCallback(calculate)
+			self._complete = defer.gatherResults([lhs, rhs]).addCallback(calculatedivby)
 
 			return self._complete
 
@@ -202,7 +202,7 @@ class math_random_int (Block):
 			if low is None or high is None:
 				return None
 
-			return math.randint(low, high)
+			return random.randint(low, high)
 
 		self._complete = defer.gatherResults([
 			self.getInputValue('FROM'),

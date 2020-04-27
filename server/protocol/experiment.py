@@ -6,8 +6,9 @@ def _format (variable):
 		if variable.type in (float, int):
 			return 0
 
-	if variable.type in (str, unicode, int):
+	if variable.type in (str, int):
 		return variable.value
+
 	if variable.type is float:
 		return round(variable.value, 2)
 
@@ -98,7 +99,7 @@ class ExperimentProtocol (object):
 			"sketch": experiment.sketch.id,
 			"experiment": experiment.id,
 			"title": experiment.sketch.title,
-			"variables": [_prop(k, v) for k, v in experiment.variables().iteritems()]
+			"variables": [_prop(k, v) for k, v in experiment.variables().items()]
 		}, context)
 
 	def setProperty (self, sketch, experiment, property, value, context):

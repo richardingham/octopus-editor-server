@@ -3,8 +3,8 @@ from twisted.internet import reactor, defer, task
 from twisted.python import log
 
 # Octopus Imports
-from octopus.sequence.util import Runnable, Pausable, Cancellable, BaseStep
-from octopus.sequence.error import NotRunning, AlreadyRunning, NotPaused
+from octopus.runtime.sequence.util import Runnable, Pausable, Cancellable, BaseStep
+from octopus.runtime.sequence.error import NotRunning, AlreadyRunning, NotPaused
 from octopus.constants import State
 from octopus.data.data import BaseVariable
 from octopus.machine import Component
@@ -49,7 +49,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		block.position = [x, y]
 
 		try:
-			for field, value in fields.iteritems():
+			for field, value in fields.items():
 				block.fields[field] = value
 		except AttributeError:
 			pass
@@ -65,7 +65,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		try:
 			return self.allBlocks[id]
 		except KeyError:
-			print "Attempted to access unconnected block %s" % id
+			print("Attempted to access unconnected block {:s}".format(str(id)))
 			raise
 
 	def removeBlock (self, id):
@@ -83,7 +83,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 				prev.disconnectNextBlock(block)
 			else:
 				prevInputs = prev.inputs
-				for input in prevInputs.iterkeys():
+				for input in prevInputs.keys():
 					if prevInputs[input] is block:
 						prev.disconnectInput(input, "value")
 
@@ -97,7 +97,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		output = block.outputBlock
 		if output is not None:
 			outputInputs = output.inputs
-			for input in outputInputs.iterkeys():
+			for input in outputInputs.keys():
 				if outputInputs[input] is block:
 					output.disconnectInput(input, "value")
 
@@ -155,7 +155,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		def _runBlock (block):
 			if self.state is State.PAUSED:
 				self._onResume = _onResume
-				resumeBlocks.add(block)
+				resumeBlocks.append(block)
 				return
 
 			if block.externalStop:
@@ -317,7 +317,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 		dependencyError = False
 
 		# Create a list of all global variables defined in the workspace
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			allDeclaredGlobalVariables.update(block.getGlobalDeclarationNames())
 
 		def _generateOnConnectivityChange (block):
@@ -327,7 +327,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 			return onConnectivityChange
 
 		# Defer blocks with dependencies until these have been met.
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			deps = set(block.getUnmatchedVariableNames())
 
 			# Check that all of these dependencies will be met.
@@ -452,7 +452,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 	def _reset (self):
 		results = []
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			try:
 				results.append(block.reset())
 			except AlreadyRunning:
@@ -462,7 +462,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 	def _pause (self):
 		results = []
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			try:
 				results.append(block.pause())
 			except NotRunning:
@@ -473,7 +473,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 	def _resume (self):
 		results = []
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			try:
 				block.resume()
 			except NotPaused:
@@ -484,7 +484,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 	def _cancel (self, abort = False):
 		results = []
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			try:
 				block.cancel(abort)
 			except NotRunning:
@@ -498,7 +498,7 @@ class Workspace (Runnable, Pausable, Cancellable, EventEmitter):
 
 	def toEvents (self):
 		events = []
-		for block in self.topBlocks.itervalues():
+		for block in self.topBlocks.values():
 			events.extend(block.toEvents())
 
 		return events
@@ -539,7 +539,7 @@ class Variables (EventEmitter):
 
 		elif isinstance(variable, Component):
 			handlers = {}
-			for attrname, attr in variable.variables.iteritems():
+			for attrname, attr in variable.variables.items():
 				onChange = _makeHandler(attrname)
 				attr.on('change', onChange)
 				handlers[attrname] = onChange
@@ -565,7 +565,7 @@ class Variables (EventEmitter):
 			self.emit('variable-removed', name = name, variable = variable)
 
 		elif isinstance(variable, Component):
-			for attrname, attr in variable.variables.iteritems():
+			for attrname, attr in variable.variables.items():
 				attr.off(
 					'change',
 					self._handlers[name][attrname]
@@ -588,7 +588,7 @@ class Variables (EventEmitter):
 			return
 
 		if isinstance(variable, Component):
-			oldNames = [name for name, var in variable.variables.iteritems()]
+			oldNames = [name for name, var in variable.variables.items()]
 		else:
 			oldNames = [oldName]
 
@@ -619,11 +619,11 @@ class Variables (EventEmitter):
 	__setitem__ = add
 	__delitem__ = remove
 
-	def iteritems (self):
-		return self._variables.iteritems()
+	def items (self):
+		return self._variables.items()
 
-	def itervalues (self):
-		return self._variables.itervalues()
+	def values (self):
+		return self._variables.values()
 
 
 def anyOfStackIs (block, states):
@@ -794,7 +794,7 @@ class Block (BaseStep, EventEmitter):
 	def getChildren (self):
 		children = []
 
-		for block in self.inputs.itervalues():
+		for block in self.inputs.values():
 			if block is not None:
 				children.append(block)
 
@@ -1130,7 +1130,7 @@ class Block (BaseStep, EventEmitter):
 
 			# Cancel any inputs
 			# (cancel without propagate affects only one block + inputs.)
-			for block in self.inputs.itervalues():
+			for block in self.inputs.values():
 				# Cancel all input children
 				try:
 					results.append(block.cancel(abort, propagate = True))
@@ -1173,7 +1173,7 @@ class Block (BaseStep, EventEmitter):
 			self._onResume = None
 
 			results.append(defer.maybeDeferred(self._reset))
-			for block in self.inputs.itervalues():
+			for block in self.inputs.values():
 				try:
 					results.append(block.reset())
 				except AlreadyRunning:

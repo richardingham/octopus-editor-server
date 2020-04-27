@@ -1,10 +1,10 @@
 # Package Imports
 from ..workspace import Block, Disconnected, Cancelled
-from variables import lexical_variable
+from .variables import lexical_variable
 
 # Octopus Imports
 from octopus.constants import State
-from octopus.sequence.error import NotRunning, AlreadyRunning
+from octopus.runtime.sequence.error import NotRunning, AlreadyRunning
 
 # Twisted Imports
 from twisted.internet import reactor, defer
@@ -35,7 +35,7 @@ class controls_dependents (Block):
 			# Inputs may have changed
 			yield defer.gatherResults([
 				input.cancel()
-				for name, input in self.inputs.iteritems()
+				for name, input in self.inputs.items()
 				if input is not None
 				and input.state in (State.RUNNING, State.PAUSED)
 				and name[:3] == "DEP"
@@ -49,7 +49,7 @@ class controls_dependents (Block):
 			pass
 
 		for input in [
-			input for name, input in self.inputs.iteritems()
+			input for name, input in self.inputs.items()
 			if input is not None
 			and input.state is State.READY
 			and name[:3] == "DEP"
@@ -147,7 +147,7 @@ class controls_statemonitor (Block):
 
 		inputValues = [
 			input.eval()
-			for name, input in self.inputs.iteritems()
+			for name, input in self.inputs.items()
 			if input is not None and name[:4] == "TEST"
 		]
 		results = yield defer.DeferredList(inputValues, consumeErrors = True)
@@ -206,7 +206,7 @@ class controls_statemonitor (Block):
 		self._variables = []
 		inputs = [
 			input
-			for name, input in self.inputs.iteritems()
+			for name, input in self.inputs.items()
 			if input is not None and name[:4] == "TEST"
 		]
 		for input in inputs:

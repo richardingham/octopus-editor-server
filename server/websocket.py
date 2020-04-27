@@ -5,7 +5,7 @@ from twisted.internet import reactor
 
 import json
 
-from transport.base import BaseTransport
+from .transport.base import BaseTransport
 
 class WebSocketRuntime (BaseTransport):
 	def __init__ (self):
@@ -34,7 +34,7 @@ class WebSocketRuntime (BaseTransport):
 			log.err("Response Error: " + str(payload))
 		# log.msg("Response", response)
 
-		context.sendMessage(json.dumps(response))
+		context.sendMessage(json.dumps(response).encode('utf-8'))
 
 
 class OctopusEditorProtocol (WebSocketServerProtocol):
@@ -44,7 +44,6 @@ class OctopusEditorProtocol (WebSocketServerProtocol):
 	def onOpen (self):
 		self.subscribedExperiments = {}
 		self.sendPing()
-		pass
 
 	def onClose (self, wasClean, code, reason):
 		self.factory.runtime.disconnected(self)
