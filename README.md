@@ -1,3 +1,3 @@
 # Octopus Editor
 
-This project has been merged into [richardingham/octopus](github.com/richardingham/octopus).
+This project has been merged into [richardingham/octopus](https://github.com/richardingham/octopus).
